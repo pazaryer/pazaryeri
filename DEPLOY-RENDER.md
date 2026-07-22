@@ -35,7 +35,7 @@ Render'da şu an **Rust** seçilmiş — bu yanlış. Node.js olmalı.
 | **Language** | `Node` (Rust değil!) |
 | **Branch** | `main` |
 | **Root Directory** | *(boş bırak)* |
-| **Build Command** | `corepack enable && pnpm install --ignore-scripts && pnpm run render-build` |
+| **Build Command** | `npm run render-build:ci` |
 | **Start Command** | `node --enable-source-maps artifacts/api-server/dist/index.mjs` |
 | **Health Check Path** | `/api/healthz` |
 

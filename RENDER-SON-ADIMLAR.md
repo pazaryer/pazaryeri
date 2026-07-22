@@ -46,7 +46,7 @@ Değerleri görmek için (terminalde):
 | Alan | Değer |
 |------|-------|
 | Runtime | **Node** |
-| Build | `corepack enable && pnpm install --ignore-scripts && pnpm run render-build` |
+| Build | `npm run render-build:ci` |
 | Start | `node --enable-source-maps artifacts/api-server/dist/index.mjs` |
 | Health Check | `/api/healthz` |
 
