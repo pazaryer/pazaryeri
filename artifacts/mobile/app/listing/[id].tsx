@@ -26,6 +26,7 @@ import {
   formatTimeAgo,
 } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
+import { sitePath } from '@/lib/config';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -57,7 +58,7 @@ export default function ListingDetailScreen() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `${listing.title} - ${formatPrice(listing.price)}\nhttps://pazaryeri.app/listing/${listing.id}`,
+        message: `${listing.title} - ${formatPrice(listing.price)}\n${sitePath(`/listing/${listing.id}`)}`,
       });
     } catch {}
   };

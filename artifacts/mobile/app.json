@@ -74,6 +74,8 @@
       "eas": {
         "projectId": "pazaryeri"
       },
+      "siteUrl": "https://pazaryeri0.web.app",
+      "apiUrl": "https://pazaryerim.onrender.com",
       "router": {
         "origin": "https://pazaryeri0.web.app"
       }

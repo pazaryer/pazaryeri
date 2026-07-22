@@ -1,0 +1,23 @@
+{
+  "hosting": {
+    "site": "pazaryeri0",
+    "public": "artifacts/mobile/dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|woff2)",
+        "headers": [{ "key": "Cache-Control", "value": "public,max-age=31536000,immutable" }]
+      },
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|ico)",
+        "headers": [{ "key": "Cache-Control", "value": "public,max-age=86400" }]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
