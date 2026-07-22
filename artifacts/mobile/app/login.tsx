@@ -1,20 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
+import { signInWithGoogleViaApi } from '@/lib/google-auth';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogleIdToken, signInWithGoogleWeb } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      await signInWithGoogle();
+      if (Platform.OS === 'web') {
+        await signInWithGoogleWeb();
+        return;
+      }
+
+      const idToken = await signInWithGoogleViaApi();
+      await signInWithGoogleIdToken(idToken);
     } catch (e: any) {
       Alert.alert('Giriş Hatası', e.message ?? 'Google ile giriş başarısız');
     } finally {
