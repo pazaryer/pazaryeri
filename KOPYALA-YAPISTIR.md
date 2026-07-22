@@ -30,7 +30,7 @@ Render Dashboard → **pazaryerim** → **Settings**
 | Alan | Kopyala yapıştır |
 |------|------------------|
 | **Language** | Node |
-| **Build Command** | `npm install -g pnpm@9 && pnpm install --ignore-scripts && pnpm --filter @workspace/api-server run build` |
+| **Build Command** | `corepack enable && pnpm install --ignore-scripts && pnpm run render-build` |
 | **Start Command** | `node --enable-source-maps artifacts/api-server/dist/index.mjs` |
 | **Health Check Path** | `/api/healthz` |
 

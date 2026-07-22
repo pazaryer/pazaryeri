@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: npm install -g pnpm@9 && pnpm install --ignore-scripts && pnpm --filter @workspace/api-server run build
+    buildCommand: corepack enable && pnpm install --ignore-scripts && pnpm run render-build
     startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
     healthCheckPath: /api/healthz
     envVars:
