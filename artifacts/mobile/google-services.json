@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "445495602976",
+    "project_id": "pazaryeri0",
+    "storage_bucket": "pazaryeri0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:445495602976:android:cba9a16095076c2785f145",
+        "android_client_info": {
+          "package_name": "com.pazaryerim"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6W3BBz1_SpD-jp8dcpvFTjeBwnZlw4Dg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

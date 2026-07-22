@@ -1,0 +1,859 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 1.0.0
+  description: Pazaryeri API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: users
+  - name: listings
+  - name: favorites
+  - name: conversations
+  - name: search
+  - name: reports
+  - name: notifications
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      security: [{ bearerAuth: [] }]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      operationId: updateCurrentUser
+      tags: [users]
+      security: [{ bearerAuth: [] }]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/sync:
+    post:
+      operationId: syncUser
+      tags: [users]
+      security: [{ bearerAuth: [] }]
+      summary: Sync user profile after auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncUserRequest"
+      responses:
+        "200":
+          description: Synced profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/{userId}:
+    get:
+      operationId: getUserById
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /users/me/push-token:
+    post:
+      operationId: registerPushToken
+      tags: [users]
+      security: [{ bearerAuth: [] }]
+      summary: Register push notification token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushTokenRequest"
+      responses:
+        "200":
+          description: Token registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /listings:
+    get:
+      operationId: listListings
+      tags: [listings]
+      summary: List listings with filters
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: minPrice
+          in: query
+          schema: { type: integer }
+        - name: maxPrice
+          in: query
+          schema: { type: integer }
+        - name: city
+          in: query
+          schema: { type: string }
+        - name: sellerId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Paginated listings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingListResponse"
+    post:
+      operationId: createListing
+      tags: [listings]
+      security: [{ bearerAuth: [] }]
+      summary: Create a new listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateListingRequest"
+      responses:
+        "201":
+          description: Created listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /listings/me:
+    get:
+      operationId: getMyListings
+      tags: [listings]
+      security: [{ bearerAuth: [] }]
+      summary: Get current user's listings
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: User listings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /listings/{listingId}:
+    get:
+      operationId: getListingById
+      tags: [listings]
+      summary: Get listing detail
+      parameters:
+        - $ref: "#/components/parameters/listingId"
+      responses:
+        "200":
+          description: Listing detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateListing
+      tags: [listings]
+      security: [{ bearerAuth: [] }]
+      summary: Update listing
+      parameters:
+        - $ref: "#/components/parameters/listingId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateListingRequest"
+      responses:
+        "200":
+          description: Updated listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteListing
+      tags: [listings]
+      security: [{ bearerAuth: [] }]
+      summary: Delete listing
+      parameters:
+        - $ref: "#/components/parameters/listingId"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /listings/{listingId}/status:
+    patch:
+      operationId: updateListingStatus
+      tags: [listings]
+      security: [{ bearerAuth: [] }]
+      summary: Update listing status
+      parameters:
+        - $ref: "#/components/parameters/listingId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateListingStatusRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /favorites:
+    get:
+      operationId: listFavorites
+      tags: [favorites]
+      security: [{ bearerAuth: [] }]
+      summary: List user favorites
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: Favorites list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /favorites/{listingId}:
+    post:
+      operationId: addFavorite
+      tags: [favorites]
+      security: [{ bearerAuth: [] }]
+      summary: Add listing to favorites
+      parameters:
+        - $ref: "#/components/parameters/listingId"
+      responses:
+        "200":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    delete:
+      operationId: removeFavorite
+      tags: [favorites]
+      security: [{ bearerAuth: [] }]
+      summary: Remove listing from favorites
+      parameters:
+        - $ref: "#/components/parameters/listingId"
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      security: [{ bearerAuth: [] }]
+      summary: List conversations
+      responses:
+        "200":
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      security: [{ bearerAuth: [] }]
+      summary: Start a conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationRequest"
+      responses:
+        "200":
+          description: Conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /conversations/{conversationId}/messages:
+    get:
+      operationId: listMessages
+      tags: [conversations]
+      security: [{ bearerAuth: [] }]
+      summary: List messages in conversation
+      parameters:
+        - $ref: "#/components/parameters/conversationId"
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: sendMessage
+      tags: [conversations]
+      security: [{ bearerAuth: [] }]
+      summary: Send a message
+      parameters:
+        - $ref: "#/components/parameters/conversationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "201":
+          description: Sent message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /search:
+    get:
+      operationId: searchListings
+      tags: [search]
+      summary: Search listings
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: minPrice
+          in: query
+          schema: { type: integer }
+        - name: maxPrice
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingListResponse"
+
+  /reports:
+    post:
+      operationId: createReport
+      tags: [reports]
+      security: [{ bearerAuth: [] }]
+      summary: Report listing or user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReportRequest"
+      responses:
+        "201":
+          description: Report created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /blocks/{userId}:
+    post:
+      operationId: blockUser
+      tags: [users]
+      security: [{ bearerAuth: [] }]
+      summary: Block a user
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: Blocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    delete:
+      operationId: unblockUser
+      tags: [users]
+      security: [{ bearerAuth: [] }]
+      summary: Unblock a user
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: Unblocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      summary: List notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/{notificationId}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      summary: Mark notification as read
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    listingId:
+      name: listingId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    conversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+
+    UserProfile:
+      type: object
+      required: [id, name, rating, totalSales, isVerified, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        name: { type: string }
+        avatar: { type: string, nullable: true }
+        bio: { type: string, nullable: true }
+        city: { type: string, nullable: true }
+        district: { type: string, nullable: true }
+        rating: { type: number }
+        totalSales: { type: number }
+        isVerified: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name: { type: string }
+        avatar: { type: string }
+        bio: { type: string }
+        city: { type: string }
+        district: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+
+    SyncUserRequest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        avatar: { type: string }
+
+    PushTokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+
+    ListingSummary:
+      type: object
+      required: [id, title, price, category, status, views, createdAt, image, seller]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        price: { type: integer }
+        category: { type: string }
+        status: { type: string, enum: [active, sold, reserved, deleted] }
+        city: { type: string, nullable: true }
+        district: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        views: { type: integer }
+        isFavorite: { type: boolean }
+        distance: { type: string, nullable: true }
+        image: { type: string }
+        createdAt: { type: string, format: date-time }
+        seller:
+          type: object
+          required: [id, name, avatar, isVerified]
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            avatar: { type: string, nullable: true }
+            isVerified: { type: boolean }
+
+    ListingDetail:
+      allOf:
+        - $ref: "#/components/schemas/ListingSummary"
+        - type: object
+          required: [description, images, acceptsOffers, sellerId]
+          properties:
+            description: { type: string }
+            images:
+              type: array
+              items: { type: string }
+            acceptsOffers: { type: boolean }
+            sellerId: { type: string, format: uuid }
+            latitude: { type: number, nullable: true }
+            longitude: { type: number, nullable: true }
+            seller:
+              $ref: "#/components/schemas/UserProfile"
+
+    ListingListResponse:
+      type: object
+      required: [items, hasMore]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListingSummary"
+        nextCursor: { type: string, nullable: true }
+        hasMore: { type: boolean }
+
+    CreateListingRequest:
+      type: object
+      required: [title, price, category, description, images]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 200 }
+        price: { type: integer, minimum: 0 }
+        category: { type: string }
+        description: { type: string }
+        city: { type: string }
+        district: { type: string }
+        location: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        acceptsOffers: { type: boolean, default: true }
+        images:
+          type: array
+          items: { type: string }
+          minItems: 1
+          maxItems: 10
+
+    UpdateListingRequest:
+      type: object
+      properties:
+        title: { type: string }
+        price: { type: integer }
+        category: { type: string }
+        description: { type: string }
+        city: { type: string }
+        district: { type: string }
+        location: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        acceptsOffers: { type: boolean }
+        images:
+          type: array
+          items: { type: string }
+
+    UpdateListingStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [active, sold, reserved, deleted] }
+
+    ConversationSummary:
+      type: object
+      required: [id, listingId, listingTitle, listingImage, otherUser, lastMessage, lastMessageAt, unreadCount]
+      properties:
+        id: { type: string, format: uuid }
+        listingId: { type: string, format: uuid }
+        listingTitle: { type: string }
+        listingImage: { type: string, nullable: true }
+        otherUser:
+          type: object
+          required: [id, name, avatar]
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            avatar: { type: string, nullable: true }
+        lastMessage: { type: string, nullable: true }
+        lastMessageAt: { type: string, format: date-time, nullable: true }
+        unreadCount: { type: integer }
+
+    ConversationDetail:
+      allOf:
+        - $ref: "#/components/schemas/ConversationSummary"
+
+    ConversationListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationSummary"
+
+    Message:
+      type: object
+      required: [id, conversationId, senderId, content, isRead, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        conversationId: { type: string, format: uuid }
+        senderId: { type: string, format: uuid }
+        content: { type: string }
+        isRead: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    MessageListResponse:
+      type: object
+      required: [items, hasMore]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        nextCursor: { type: string, nullable: true }
+        hasMore: { type: boolean }
+
+    CreateConversationRequest:
+      type: object
+      required: [listingId]
+      properties:
+        listingId: { type: string, format: uuid }
+        message: { type: string }
+
+    SendMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 2000 }
+
+    CreateReportRequest:
+      type: object
+      required: [reason]
+      properties:
+        listingId: { type: string, format: uuid }
+        reportedUserId: { type: string, format: uuid }
+        reason: { type: string }
+        description: { type: string }
+
+    Notification:
+      type: object
+      required: [id, type, title, body, isRead, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        title: { type: string }
+        body: { type: string }
+        data: { type: string, nullable: true }
+        isRead: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    NotificationListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"

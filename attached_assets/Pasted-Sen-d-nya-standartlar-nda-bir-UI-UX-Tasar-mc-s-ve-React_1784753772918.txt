@@ -1,0 +1,26 @@
+Sen dünya standartlarında bir UI/UX Tasarımcısı ve React Native (Expo) uzmanısın. Seninle, ileride backend'i eklenecek olan sıfır maliyetli, Letgo tarzı bir 2. el pazar yeri uygulamasının sadece görsel prototipini (Frontend) inşa edeceğiz.
+
+Şu an hiçbir veritabanı kurmayacaksın. Amacımız göz alıcı, modern, akıcı ve sanki içinde binlerce gerçek ilan varmış gibi duran bir UI yaratmak.
+
+Kullanacağın Teknolojiler & Görsel Kurallar:
+
+Framework: React Native (Expo ve Expo Router).
+
+Stil: NativeWind (Tailwind CSS).
+
+Logolar ve İkonlar: Dışarıdan resim dosyası BEKLEME. Uygulamanın logosunu react-native-svg kullanarak ateş kırmızısı ve modern bir alışveriş/konum konseptiyle kod olarak sen çizeceksin. Arayüz ikonları için lucide-react-native kullan.
+
+Görseller (Çok Önemli): Boş kutular görmek İSTEMİYORUM. Tüm ürün ilanları (arabalar, telefonlar, mobilyalar) ve kullanıcı profil fotoğrafları için rastgele kaliteli Unsplash resim URL'leri ([https://images.unsplash.com/](https://images.unsplash.com/)...) kullan. Verileri gerçekçi JSON (Mock Data) olarak hazırla.
+
+Tasarlamanı İstediğim Ekranlar:
+
+Giriş (Auth) Ekranı: Senin SVG olarak çizeceğin şık logonun merkezde olduğu, degrade (gradient) arka plana sahip, "Google ile Giriş Yap" butonlu modern bir karşılama.
+
+Alt Menü (Tab Bar): Yarı saydam (blur effect) veya hafif gölgeli modern bir alt menü (Ana Sayfa, Keşfet, [Ortada vurgulu İlan Ver butonu], Mesajlar, Profil).
+
+Ana Sayfa (Home): Letgo ve Pinterest karışımı, 2 sütunlu Masonry (veya Grid) yapısında ürün kartları. Kartların köşeleri yuvarlatılmış (rounded-2xl) ve alt kısmında fiyat, başlık ve "2.4 km" gibi mesafe etiketleri şık bir tipografi ile yer almalı. Üstte bir arama çubuğu olmalı.
+
+Ürün Detayı: Tıklanan ürünün resminin ekranın üst yarısını kapladığı, satıcı profilinin ve altta sabit (sticky) "Sohbet Başlat / Teklif Ver" butonunun olduğu akıcı bir ekran.
+
+Uygulama Adımları:
+Lütfen önce standart Expo şablonunu oluştur. Sonra sırasıyla Mock JSON verilerini ve SVG logo component'ini hazırla. En son ekranları kodlayıp bana çalışan, görsel olarak kusursuz bir arayüz sun.

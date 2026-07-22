@@ -1,0 +1,34 @@
+Sen ödüllü bir Apple (iOS) Uygulama Tasarımcısı ve React Native ustasısın. Şu an elimizdeki pazar yeri uygulamasının kodlarını harika şekilde yazdın, şimdi senden tasarım dilini sıradan bir Letgo klonundan çıkarıp, AirBnb ve lüks e-ticaret uygulamaları seviyesine (Ultra Premium) taşımanı istiyorum.
+
+Lütfen mevcut kodu bozmadan sadece UI, Layout ve Asset (Görsel/İkon) yapılarını şu talimatlara göre baştan aşağı lüksleştir:
+
+1. Kategori Alanı (Keşfet ve Ana Sayfa)
+
+Kategoriler sıradan yazılar veya basit ikonlar olmasın. AirBnb tarzı, üstte ikon, altta ince bir metin olan ve aktif olanın altı kalın çizgili (aktif renk) şık bir yatay kaydırmalı (horizontal scroll) menü yap.
+
+Kategori görselleri için lucide-react-native ikonlarını daha büyük, daha ince (stroke-width: 1.5) ve zarif kullan.
+
+"Keşfet" ekranında kategorileri, arka planında çok kaliteli yarı saydam Unsplash görselleri olan, üzerinde büyük beyaz ve zarif fontlu yazılar bulunan devasa ve lüks ızgara (bento grid) kartlarına çevir.
+
+2. Profil Ekranı (VIP His)
+
+Profil ekranını standart bir liste olmaktan çıkar. Üst kısma, kullanıcının profil fotoğrafının ortada büyük ve etrafında hafif bir 'glow' (parlama) efekti olduğu harika bir başlık (header) yap.
+
+Hemen altına "Güvenilir Satıcı", "150+ İşlem" gibi lüks görünümlü rozetler (badge) ekle.
+
+İstatistikleri (Favoriler, İlanlarım, Yorumlar) Apple Fitness uygulaması gibi yan yana duran, şık ve gölgeli (drop-shadow) yuvarlak köşeli kutular içinde sun.
+
+3. Renk Paleti ve Tipografi
+
+Ana rengi ateş kırmızısından alıp daha sofistike, elit ve güven veren bir "Zümrüt Yeşili (Emerald)" veya "Koyu Karadut (Midnight Mulberry)" tonuna çevir, altın rengi (Gold) hafif detaylar (mesela favori ikonlarında) kullan. Hangisi sence daha premium duracaksa onu seç.
+
+Yazı tiplerini büyüt, başlıkları kalın ve okunaklı yap, açıklamaları ise daha ince ve zarif bir gri ile yaz.
+
+4. İkonlar ve Assetler (Görseller)
+
+Projedeki TÜM sahte ilan görsellerini sadece en üst kalite, profesyonel çekilmiş, lüks arabalar, yüksek segment elektronikler ve tasarım mobilyalar (Unsplash URL'leri) ile değiştir. Gecekondu işi ilanlar istemiyorum, vitrin lüks koksun.
+
+Alt menü (Tab Bar) iOS'taki gibi yarı saydam (blur/frosted glass effect) olsun, aktif olan sekmenin üstünde küçük zarif bir nokta belirtsin.
+
+Görevin:
+Lütfen bu 4 maddeyi sırasıyla uygula. Tasarım değişimi bitince bana "Premium Güncelleme Tamamlandı" de.

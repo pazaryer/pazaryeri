@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: pazaryeri
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install -g pnpm@9 && pnpm install --ignore-scripts && pnpm --filter @workspace/api-server run build
+    startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: pazaryeri-listings
+      - key: R2_PUBLIC_URL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        value: pazaryeri0
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false

@@ -1,0 +1,83 @@
+{
+  "expo": {
+    "name": "Pazaryeri",
+    "slug": "pazaryeri",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "pazaryeri",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A0A2E"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pazaryerim",
+      "infoPlist": {
+        "NSCameraUsageDescription": "İlan fotoğrafı çekmek için kamera erişimi gerekli.",
+        "NSPhotoLibraryUsageDescription": "İlan fotoğrafı seçmek için galeri erişimi gerekli.",
+        "NSLocationWhenInUseUsageDescription": "Konumunuzu ilanınıza eklemek için konum erişimi gerekli."
+      }
+    },
+    "android": {
+      "package": "com.pazaryerim",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://pazaryeri0.web.app"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#3D1A78"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "İlan fotoğrafı seçmek için galeri erişimi gerekli.",
+          "cameraPermission": "İlan fotoğrafı çekmek için kamera erişimi gerekli."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Konumunuzu ilanınıza eklemek için konum erişimi gerekli."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "pazaryeri"
+      },
+      "router": {
+        "origin": "https://pazaryeri0.web.app"
+      }
+    },
+    "owner": "pazaryeri"
+  }
+}

@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: pazaryeri-api
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd ../.. && pnpm install --ignore-scripts && pnpm --filter @workspace/api-server run build
+    startCommand: cd artifacts/api-server && node --enable-source-maps ./dist/index.mjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: pazaryeri-listings
+      - key: R2_PUBLIC_URL
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
