@@ -68,7 +68,10 @@ async function exchangeGoogleCode(
   redirectUri: string,
   codeVerifier?: string,
 ): Promise<string> {
-  const clientId = process.env.GOOGLE_WEB_CLIENT_ID ?? DEFAULT_WEB_CLIENT_ID;
+  const clientId =
+    process.env.GOOGLE_WEB_CLIENT_ID ??
+    process.env.GOOGLE_CLIENT_ID ??
+    DEFAULT_WEB_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   const params: Record<string, string> = {
@@ -78,7 +81,8 @@ async function exchangeGoogleCode(
     grant_type: "authorization_code",
   };
   if (codeVerifier) params.code_verifier = codeVerifier;
-  if (clientSecret) params.client_secret = clientSecret;
+  // PKCE ile client_secret gönderilirse Google 401 invalid_client döner
+  if (clientSecret && !codeVerifier) params.client_secret = clientSecret;
 
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -127,7 +131,10 @@ router.get("/auth/google/start", (req, res) => {
 
   const { verifier, challenge } = generatePkce();
   const state = encodeOAuthState(returnUrl, verifier);
-  const clientId = process.env.GOOGLE_WEB_CLIENT_ID ?? DEFAULT_WEB_CLIENT_ID;
+  const clientId =
+    process.env.GOOGLE_WEB_CLIENT_ID ??
+    process.env.GOOGLE_CLIENT_ID ??
+    DEFAULT_WEB_CLIENT_ID;
   const redirectUri = apiCallbackUrl();
 
   const params = new URLSearchParams({

@@ -1,40 +1,53 @@
-# Google OAuth Kurulumu (5 dk)
+# Google Giriş
 
-## 1. Firebase'den Client Secret al
-
-1. [Firebase Console](https://console.firebase.google.com/project/pazaryeri0/authentication/providers)
-2. **Authentication → Sign-in method → Google** → Açık olmalı
-3. **Web client secret** değerini kopyala
-
-## 2. Render Environment Variables
-
-| Key | Value |
-|-----|-------|
-| `GOOGLE_CLIENT_ID` | `445495602976-7sqmtkk198ucafhpgsc0girnbvuujh20.apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | Firebase'den kopyaladığın secret |
-| `API_PUBLIC_URL` | `https://pazaryerim.onrender.com` |
-
-**Save → Manual Deploy**
-
-## 3. Google Cloud Console — Redirect URI
-
-1. [Google Cloud Credentials](https://console.cloud.google.com/apis/credentials?project=pazaryeri0)
-2. **Web client** (445495602976-...) → Düzenle
-3. **Authorized redirect URIs** ekle:
+## Client ID (hepsi bu)
 
 ```
-https://pazaryerim.onrender.com/api/auth/google/callback
+637257074433-gr8vbeupacshsv6omnfsf60mn5rkef719.apps.googleusercontent.com
 ```
 
-4. Kaydet
+Firebase → Authentication → Google → **Safelist client IDs** → bu ID ekli olmalı.
 
-## 4. OAuth Consent Screen
+---
 
-[OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent?project=pazaryeri0)
+## Mobil (Expo Go) — doğrudan hesap seçici
 
-- Uygulama **Testing** modundaysa → **Test users** listesine kendi Gmail adresini ekle
-- Aksi halde "Erişim engellendi" hatası alırsın
+Web sitesi açılmaz. `accounts.google.com` hesap seçici açılır.
 
-## 5. Test
+Google Console → Web client `637257...`:
 
-Expo'yu yeniden başlat (`expo start --clear`) → Google ile Giriş Yap
+**Authorized JavaScript origins** (web girişi için zorunlu):
+
+```
+https://pazaryeri0.web.app
+https://pazaryeri0.firebaseapp.com
+http://localhost:8081
+```
+
+**Authorized redirect URIs** (mobil Expo Go):
+
+```
+https://auth.expo.io/@pazaryeri/pazaryeri
+```
+
+**Test users** (OAuth consent screen): Gmail adresinizi ekleyin.
+
+```powershell
+cd artifacts/mobile
+pnpm exec expo start --clear
+```
+
+---
+
+## Web girişi
+
+`/giris` → Google Identity Services butonu (`637257` client). Firebase popup kullanılmaz.
+
+---
+
+## Deploy
+
+```powershell
+pnpm run web:build
+pnpm run web:deploy
+```

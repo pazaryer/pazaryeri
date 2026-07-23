@@ -4,6 +4,10 @@ const DEFAULT_CLIENT_ID =
   '637257074433-gr8vbeupacshsv6omnfsf60mn5rkef719.apps.googleusercontent.com';
 
 export function getGoogleWebClientId(): string {
+  const fromEnv = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim();
+  if (fromEnv && fromEnv.includes('.apps.googleusercontent.com')) {
+    return fromEnv;
+  }
   return DEFAULT_CLIENT_ID;
 }
 
