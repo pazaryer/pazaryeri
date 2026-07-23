@@ -26,9 +26,11 @@ function apiCallbackUrl(): string {
 }
 
 function isAllowedReturnUrl(url: string): boolean {
-  return (
-    url.startsWith("https://auth.expo.io/") || url.startsWith("pazaryeri://")
-  );
+  if (url.startsWith("pazaryeri://")) return true;
+  if (url.startsWith("https://auth.expo.io/")) return true;
+  // Expo Go deep link (auth.expo.io proxy yerine)
+  if (url.startsWith("exp://") && /auth/i.test(url)) return true;
+  return false;
 }
 
 function b64url(input: Buffer | string): string {

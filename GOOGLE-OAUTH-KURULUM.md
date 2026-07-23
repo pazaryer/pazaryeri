@@ -10,25 +10,24 @@ Firebase → Authentication → Google → **Safelist client IDs** → bu ID ekl
 
 ---
 
-## Mobil (Expo Go) — doğrudan hesap seçici
-
-Web sitesi açılmaz. `accounts.google.com` hesap seçici açılır.
-
-Google Console → Web client `637257...`:
-
-**Authorized JavaScript origins** (web girişi için zorunlu):
+**Authorized JavaScript origins** (web girişi):
 
 ```
 https://pazaryeri0.web.app
 https://pazaryeri0.firebaseapp.com
-http://localhost:8081
 ```
 
-**Authorized redirect URIs** (mobil Expo Go):
+## Mobil (Expo Go) — API OAuth (auth.expo.io YOK)
+
+Hesap seçici → Google → Render API → uygulamaya `id_token` döner.
+
+Google Console → Web client `637257...` → **Authorized redirect URIs**:
 
 ```
-https://auth.expo.io/@pazaryeri/pazaryeri
+https://pazaryerim.onrender.com/api/auth/google/callback
 ```
+
+`auth.expo.io` artık gerekmez (sık hata verir).
 
 **Test users** (OAuth consent screen): Gmail adresinizi ekleyin.
 
