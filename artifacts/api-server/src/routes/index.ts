@@ -11,12 +11,12 @@ import authRouter from "./auth";
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(uploadRouter);
 router.use(authRouter);
 router.use(usersRouter);
 router.use(listingsRouter);
 router.use(favoritesRouter);
 router.use(conversationsRouter);
 router.use(miscRouter);
-router.use(uploadRouter);
 
 export default router;

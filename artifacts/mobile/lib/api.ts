@@ -46,7 +46,7 @@ export async function apiFetch<T>(
           : null;
     const message = detail
       ? `${detail} (HTTP ${res.status})`
-      : `İstek başarısız (HTTP ${res.status})`;
+      : `İstek başarısız (HTTP ${res.status}) — ${url}`;
     throw new Error(message);
   }
 

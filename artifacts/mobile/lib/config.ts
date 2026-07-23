@@ -13,15 +13,23 @@ function normalizeApiBaseUrl(url: string): string {
   return base;
 }
 
+const PRODUCTION_API_URL = 'https://pazaryerim.onrender.com';
+
 const rawApiUrl =
   process.env.EXPO_PUBLIC_API_URL ??
   Constants.expoConfig?.extra?.apiUrl ??
-  'http://localhost:5000';
+  PRODUCTION_API_URL;
 
-export const API_BASE_URL = normalizeApiBaseUrl(rawApiUrl);
+export const API_BASE_URL = normalizeApiBaseUrl(String(rawApiUrl));
 
 export function buildApiUrl(path: string): string {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  let normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  // /api/upload/image → /upload/image (çift /api önlenir)
+  if (normalizedPath.startsWith('/api/')) {
+    normalizedPath = normalizedPath.slice(4);
+  } else if (normalizedPath === '/api') {
+    normalizedPath = '/';
+  }
   return `${API_BASE_URL}/api${normalizedPath}`;
 }
 

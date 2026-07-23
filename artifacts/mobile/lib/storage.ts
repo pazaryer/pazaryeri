@@ -69,18 +69,37 @@ async function compressImageFile(file: File): Promise<{ blob: Blob; contentType:
   });
 }
 
-/** API → Cloudflare R2 (birincil) + Supabase Storage (yedek) — ücretsiz, Firebase Storage yok */
+/** API → Cloudflare R2 (birincil) + Supabase Storage (yedek) */
+async function uploadViaApi(blob: Blob, contentType: string): Promise<string> {
+  const data = await blobToBase64(blob);
+  const body = JSON.stringify({ contentType, data });
+  const paths = ['/upload/image', '/images/upload'];
+
+  let lastError: Error | null = null;
+  for (const path of paths) {
+    try {
+      const { publicUrl } = await apiFetch<{ publicUrl: string }>(path, {
+        method: 'POST',
+        body,
+      });
+      return publicUrl;
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      if (!lastError.message.includes('404')) {
+        throw lastError;
+      }
+    }
+  }
+
+  throw lastError ?? new Error('Fotoğraf yükleme endpoint bulunamadı');
+}
+
 async function uploadImageBlob(blob: Blob, contentType: string): Promise<string> {
   if (!getFirebaseAuth().currentUser) {
     throw new Error('Fotoğraf yüklemek için giriş yapın');
   }
 
-  const data = await blobToBase64(blob);
-  const { publicUrl } = await apiFetch<{ publicUrl: string }>('/upload/image', {
-    method: 'POST',
-    body: JSON.stringify({ contentType, data }),
-  });
-  return publicUrl;
+  return uploadViaApi(blob, contentType);
 }
 
 async function uploadImageNative(uri: string): Promise<string> {

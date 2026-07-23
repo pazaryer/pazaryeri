@@ -51,8 +51,11 @@ router.post("/upload/presign", authMiddleware, async (req, res, next) => {
   }
 });
 
-/** Web tarayıcısından doğrudan yükleme (R2 CORS sorunu olmadan) */
-router.post("/upload/image", authMiddleware, async (req, res, next) => {
+async function handleImageUpload(
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction,
+): Promise<void> {
   try {
     const { contentType, data } = imageUploadSchema.parse(req.body);
     const buffer = Buffer.from(data, "base64");
@@ -68,6 +71,14 @@ router.post("/upload/image", authMiddleware, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+}
+
+router.get("/upload/status", (_req, res) => {
+  res.json({ ok: true, storage: "r2+supabase" });
 });
+
+/** Web/mobil — base64 fotoğraf yükleme */
+router.post("/upload/image", authMiddleware, handleImageUpload);
+router.post("/images/upload", authMiddleware, handleImageUpload);
 
 export default router;
