@@ -69,7 +69,7 @@ async function compressImageFile(file: File): Promise<{ blob: Blob; contentType:
   });
 }
 
-/** API → Cloudflare R2 (birincil) + Supabase Storage (yedek) */
+/** API → R2 / B2 / ImgBB / Supabase (sırayla dener) */
 async function uploadViaApi(blob: Blob, contentType: string): Promise<string> {
   const data = await blobToBase64(blob);
   const body = JSON.stringify({ contentType, data });

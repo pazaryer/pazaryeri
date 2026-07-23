@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GoogleSignInButton } from '@/components/web/GoogleSignInButton';
+import { requestGoogleIdToken } from '@/lib/google-web-signin';
 import { redirectToAppWithError, redirectToAppWithToken } from '@/lib/google-web-auth';
 import { isMobileOAuthReturnUrl } from '@/lib/google-native-auth';
 
@@ -44,6 +45,29 @@ export default function MobileOAuthBridge() {
   const handleGoogleError = useCallback((e: Error) => {
     setError(e.message);
   }, []);
+
+  const autoStarted = useRef(false);
+
+  // Mobil uygulama köprüsü: sayfa açılınca Google hesap seçiciyi dene
+  useEffect(() => {
+    if (Platform.OS !== 'web' || autoStarted.current) return;
+    if (!isMobileOAuthReturnUrl(appReturn)) return;
+
+    autoStarted.current = true;
+    let cancelled = false;
+
+    requestGoogleIdToken()
+      .then((idToken) => {
+        if (!cancelled) handleCredential(idToken);
+      })
+      .catch(() => {
+        autoStarted.current = false;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appReturn, handleCredential]);
 
   if (Platform.OS !== 'web') {
     return (

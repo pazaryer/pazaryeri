@@ -15,7 +15,7 @@ const STARTED_KEY = 'pz_google_oauth_started';
 
 /**
  * Web Google giriş — Firebase redirect (yalnızca web tarayıcısı).
- * Mobil Expo Go bu sayfayı kullanmaz; API OAuth akışını kullanır.
+ * Mobil Expo Go bu sayfayı kullanmaz; doğrudan Google OAuth açılır.
  */
 export default function GoogleOAuthScreen() {
   const { return: returnParam } = useLocalSearchParams<{ return?: string }>();

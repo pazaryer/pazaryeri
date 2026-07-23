@@ -34,3 +34,7 @@ services:
         sync: false
       - key: CLOUDFLARE_ACCOUNT_ID
         sync: false
+      - key: IMGBB_API_KEY
+        sync: false
+      - key: IMGBB_API_KEYS
+        sync: false

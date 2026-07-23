@@ -1,14 +1,19 @@
+import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
 import { Platform } from 'react-native';
-import { API_BASE_URL } from './config';
+import { sitePath } from './config';
 import { GOOGLE_WEB_CLIENT_ID } from './google-client-id';
 
 WebBrowser.maybeCompleteAuthSession();
 
-/** Expo Go: exp://... — auth.expo.io kullanılmaz (sık "something went wrong" verir) */
+/**
+ * Uygulamaya dönüş adresi — auth.expo.io kullanılmaz (Expo Go'da sık kırılır).
+ */
 export function getAppOAuthRedirectUri(): string {
-  return makeRedirectUri({
+  const fromEnv = process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI?.trim();
+  if (fromEnv) return fromEnv;
+
+  return AuthSession.makeRedirectUri({
     scheme: 'pazaryeri',
     path: 'auth',
     preferLocalhost: false,
@@ -33,40 +38,33 @@ export function isMobileOAuthReturnUrl(url: string): boolean {
 }
 
 function parseParam(url: string, key: string): string | null {
-  const patterns = [
-    new RegExp(`[?&#]${key}=([^&#]+)`),
-  ];
-  for (const re of patterns) {
-    const m = url.match(re);
-    if (m?.[1]) {
-      try {
-        return decodeURIComponent(m[1]);
-      } catch {
-        return m[1];
-      }
-    }
+  const m = url.match(new RegExp(`[?&#]${key}=([^&#]+)`));
+  if (!m?.[1]) return null;
+  try {
+    return decodeURIComponent(m[1]);
+  } catch {
+    return m[1];
   }
-  return null;
 }
 
 /**
- * Mobil Google giriş — API OAuth (Render callback).
- * Google → pazaryerim.onrender.com/api/auth/google/callback → uygulama (id_token).
+ * Mobil Google giriş — pazaryeri0.web.app/oauth/mobile köprüsü (GIS).
+ * auth.expo.io ve Render API kullanılmaz.
  */
 export async function promptGoogleSignIn(): Promise<string> {
   if (Platform.OS === 'web') {
     throw new Error('Web için /giris kullanın');
   }
 
-  const returnUrl = getAppOAuthRedirectUri();
-  const startUrl = `${API_BASE_URL}/api/auth/google/start?return=${encodeURIComponent(returnUrl)}`;
+  const appRedirect = getAppOAuthRedirectUri();
+  const bridgeUrl = `${sitePath('/oauth/mobile')}?return=${encodeURIComponent(appRedirect)}`;
 
   if (__DEV__) {
-    console.log('[Google OAuth] start =', startUrl);
-    console.log('[Google OAuth] return =', returnUrl);
+    console.log('[Google OAuth] bridge =', bridgeUrl);
+    console.log('[Google OAuth] return =', appRedirect);
   }
 
-  const result = await WebBrowser.openAuthSessionAsync(startUrl, returnUrl, {
+  const result = await WebBrowser.openAuthSessionAsync(bridgeUrl, appRedirect, {
     showInRecents: true,
   });
 
@@ -85,7 +83,7 @@ export async function promptGoogleSignIn(): Promise<string> {
 
   const idToken = parseParam(result.url, 'id_token');
   if (!idToken) {
-    throw new Error('Google token alınamadı — uygulamayı yeniden başlatıp tekrar deneyin');
+    throw new Error('Google token alınamadı — tekrar deneyin');
   }
 
   return idToken;
