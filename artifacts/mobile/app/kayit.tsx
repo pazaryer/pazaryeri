@@ -12,11 +12,10 @@ import { Redirect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { WebShell } from '@/components/web/WebShell';
-import { GoogleSignInButton } from '@/components/web/GoogleSignInButton';
 
 export default function KayitScreen() {
   const router = useRouter();
-  const { signInWithGoogleIdToken, user, isLoading } = useAuth();
+  const { signInWithGooglePopup, user, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,26 +25,21 @@ export default function KayitScreen() {
     }
   }, [user, isLoading, router]);
 
-  const handleCredential = useCallback(
-    async (idToken: string) => {
-      setLoading(true);
-      setError(null);
-      try {
-        await signInWithGoogleIdToken(idToken);
-        router.replace('/');
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : 'Google ile kayıt başarısız';
+  const handleGoogleSignup = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await signInWithGooglePopup();
+      router.replace('/');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Google ile kayıt başarısız';
+      if (!msg.includes('popup-closed') && !msg.includes('cancel')) {
         setError(msg);
-      } finally {
-        setLoading(false);
       }
-    },
-    [signInWithGoogleIdToken, router],
-  );
-
-  const handleGoogleError = useCallback((e: Error) => {
-    setError(e.message || 'Google ile kayıt başarısız');
-  }, []);
+    } finally {
+      setLoading(false);
+    }
+  }, [signInWithGooglePopup, router]);
 
   if (Platform.OS !== 'web') {
     return <Redirect href="/login" />;
@@ -84,11 +78,14 @@ export default function KayitScreen() {
                 <Text style={styles.loadingText}>Hesap oluşturuluyor...</Text>
               </View>
             ) : (
-              <GoogleSignInButton
-                buttonId="pazaryeri-google-kayit"
-                onCredential={handleCredential}
-                onError={handleGoogleError}
-              />
+              <Pressable
+                style={styles.googleBtn}
+                onPress={handleGoogleSignup}
+                disabled={loading}
+              >
+                <Text style={styles.googleIcon}>G</Text>
+                <Text style={styles.googleBtnText}>Google ile Devam Et</Text>
+              </Pressable>
             )}
 
             <View style={styles.divider}>
@@ -147,6 +144,19 @@ const styles = StyleSheet.create({
     borderColor: '#FECACA',
   },
   errorText: { color: '#B91C1C', fontSize: 12, fontWeight: '600', lineHeight: 17 },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    height: 52,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#DADCE0',
+    backgroundColor: '#FFFFFF',
+  },
+  googleIcon: { fontSize: 18, fontWeight: '800', color: '#EA4335' },
+  googleBtnText: { fontSize: 15, fontWeight: '700', color: '#1A0A2E' },
   fallbackBtn: { alignItems: 'center', paddingVertical: 4 },
   fallbackText: { color: '#7A6B8A', fontSize: 12, textDecorationLine: 'underline' },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10 },
