@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,15 +6,23 @@ import {
   ActivityIndicator,
   Platform,
   Image,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { GoogleSignInButton } from '@/components/web/GoogleSignInButton';
-import { requestGoogleIdToken } from '@/lib/google-web-signin';
 import { redirectToAppWithError, redirectToAppWithToken } from '@/lib/google-web-auth';
 import { isMobileOAuthReturnUrl } from '@/lib/google-native-auth';
+import {
+  getMobileOAuthReturn,
+  parseOAuthHash,
+  saveMobileOAuthReturn,
+  startMobileGoogleOAuth,
+} from '@/lib/google-oauth-bridge';
 
-/** Mobil uygulama Google giriş köprüsü — GIS ile id_token, Firebase redirect yok */
+/**
+ * Mobil Google giriş — OAuth2 id_token (redirect_uri: pazaryeri0.web.app/oauth/mobile).
+ * GIS yerine açık OAuth kullanılır (in-app tarayıcıda redirect_uri_mismatch önlenir).
+ */
 export default function MobileOAuthBridge() {
   const { return: returnParam } = useLocalSearchParams<{ return?: string }>();
   const [loading, setLoading] = useState(false);
@@ -25,7 +33,7 @@ export default function MobileOAuthBridge() {
       ? returnParam
       : 'pazaryeri://auth';
 
-  const handleCredential = useCallback(
+  const finishWithToken = useCallback(
     (idToken: string) => {
       setLoading(true);
       setError(null);
@@ -42,32 +50,20 @@ export default function MobileOAuthBridge() {
     [appReturn],
   );
 
-  const handleGoogleError = useCallback((e: Error) => {
-    setError(e.message);
-  }, []);
-
-  const autoStarted = useRef(false);
-
-  // Mobil uygulama köprüsü: sayfa açılınca Google hesap seçiciyi dene
   useEffect(() => {
-    if (Platform.OS !== 'web' || autoStarted.current) return;
-    if (!isMobileOAuthReturnUrl(appReturn)) return;
+    if (Platform.OS !== 'web') return;
 
-    autoStarted.current = true;
-    let cancelled = false;
+    saveMobileOAuthReturn(appReturn);
 
-    requestGoogleIdToken()
-      .then((idToken) => {
-        if (!cancelled) handleCredential(idToken);
-      })
-      .catch(() => {
-        autoStarted.current = false;
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [appReturn, handleCredential]);
+    const { idToken, error: oauthError } = parseOAuthHash();
+    if (oauthError) {
+      setError(oauthError);
+      return;
+    }
+    if (idToken) {
+      finishWithToken(idToken);
+    }
+  }, [appReturn, finishWithToken]);
 
   if (Platform.OS !== 'web') {
     return (
@@ -76,6 +72,12 @@ export default function MobileOAuthBridge() {
       </View>
     );
   }
+
+  const handleGooglePress = () => {
+    setError(null);
+    saveMobileOAuthReturn(getMobileOAuthReturn() || appReturn);
+    startMobileGoogleOAuth();
+  };
 
   return (
     <View style={styles.container}>
@@ -94,11 +96,9 @@ export default function MobileOAuthBridge() {
         {loading ? (
           <ActivityIndicator size="large" color="#3D1A78" style={{ marginVertical: 20 }} />
         ) : (
-          <GoogleSignInButton
-            buttonId="pazaryeri-google-mobile-oauth"
-            onCredential={handleCredential}
-            onError={handleGoogleError}
-          />
+          <Pressable style={styles.googleBtn} onPress={handleGooglePress}>
+            <Text style={styles.googleBtnText}>Google ile Devam Et</Text>
+          </Pressable>
         )}
       </View>
     </View>
@@ -125,6 +125,18 @@ const styles = StyleSheet.create({
   icon: { width: 64, height: 64, borderRadius: 14 },
   title: { fontSize: 22, fontWeight: '800', color: '#1A0A2E' },
   subtitle: { fontSize: 14, color: '#7A6B8A', textAlign: 'center' },
+  googleBtn: {
+    width: '100%',
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DADCE0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  googleBtnText: { fontSize: 16, fontWeight: '700', color: '#1A0A2E' },
   errorBox: {
     backgroundColor: '#FEF2F2',
     padding: 10,

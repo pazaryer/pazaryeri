@@ -33,12 +33,26 @@ export async function completeGoogleRedirect(): Promise<UserCredential | null> {
   return getRedirectResult(auth);
 }
 
+function openDeepLink(target: string) {
+  if (typeof window === 'undefined') return;
+  const anchor = document.createElement('a');
+  anchor.href = target;
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  window.setTimeout(() => anchor.remove(), 200);
+}
+
 export function redirectToAppWithToken(returnUrl: string, idToken: string) {
-  const sep = returnUrl.includes('?') ? '&' : '?';
-  window.location.href = `${returnUrl}${sep}id_token=${encodeURIComponent(idToken)}`;
+  const safeReturn = /auth\.expo\.io/i.test(returnUrl) ? 'pazaryeri://auth' : returnUrl;
+  const sep = safeReturn.includes('?') ? '&' : '?';
+  const target = `${safeReturn}${sep}id_token=${encodeURIComponent(idToken)}`;
+  openDeepLink(target);
 }
 
 export function redirectToAppWithError(returnUrl: string, error: string) {
-  const sep = returnUrl.includes('?') ? '&' : '?';
-  window.location.href = `${returnUrl}${sep}error=${encodeURIComponent(error)}`;
+  const safeReturn = /auth\.expo\.io/i.test(returnUrl) ? 'pazaryeri://auth' : returnUrl;
+  const sep = safeReturn.includes('?') ? '&' : '?';
+  const target = `${safeReturn}${sep}error=${encodeURIComponent(error)}`;
+  openDeepLink(target);
 }

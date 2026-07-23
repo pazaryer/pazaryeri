@@ -10,6 +10,7 @@ import {
   type DbListing,
   type DbUser,
 } from "../lib/supabase-db";
+import { isPostgresConfigured, pgCreateListing, pgEnsureUser, pgGetListingRow } from "../lib/postgres-db";
 import { authMiddleware, optionalAuth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 
@@ -26,13 +27,42 @@ const createListingSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   acceptsOffers: z.boolean().default(true),
-  images: z.array(z.string().url()).min(1).max(10),
+  images: z
+    .array(z.string().min(1).refine((u) => /^https?:\/\//i.test(u), "Geçersiz görsel URL"))
+    .min(1)
+    .max(10),
 });
 
 const updateListingSchema = createListingSchema.partial();
 const statusSchema = z.object({ status: z.enum(["active", "sold", "reserved", "deleted"]) });
 
 async function buildListingDetail(listingId: string, userId?: string) {
+  if (isPostgresConfigured()) {
+    const row = await pgGetListingRow(listingId);
+    if (!row?.seller) throw new AppError("İlan bulunamadı", 404);
+    const listing = row.listing as DbListing;
+    const seller = row.seller as DbUser;
+    const favSet = userId
+      ? await getFavoriteSet(userId, [listingId]).catch(() => new Set<string>())
+      : new Set<string>();
+    const summary = await formatListingSummary(
+      listing,
+      seller,
+      row.images[0] ?? "",
+      favSet.has(listingId),
+    );
+    return {
+      ...summary,
+      description: listing.description,
+      images: row.images,
+      acceptsOffers: listing.accepts_offers,
+      sellerId: listing.seller_id,
+      latitude: listing.latitude,
+      longitude: listing.longitude,
+      seller: formatUser(seller),
+    };
+  }
+
   const sb = getSupabaseAdmin();
   const { data: listing, error } = await sb.from("listings").select("*").eq("id", listingId).single();
   if (error || !listing || listing.status === "deleted") throw new AppError("İlan bulunamadı", 404);
@@ -187,6 +217,18 @@ router.get("/listings/:listingId", optionalAuth, async (req, res, next) => {
 router.post("/listings", authMiddleware, async (req, res, next) => {
   try {
     const body = createListingSchema.parse(req.body);
+
+    if (isPostgresConfigured()) {
+      await pgEnsureUser(req.user!.id, {
+        email: req.user!.email,
+        phone: req.user!.phone,
+      });
+      const listingId = await pgCreateListing(req.user!.id, body);
+      const detail = await buildListingDetail(listingId, req.user!.id);
+      res.status(201).json(detail);
+      return;
+    }
+
     await ensureUser(req.user!.id);
     const sb = getSupabaseAdmin();
 

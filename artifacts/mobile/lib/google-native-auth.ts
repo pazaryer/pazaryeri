@@ -1,4 +1,4 @@
-import * as AuthSession from 'expo-auth-session';
+import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import { sitePath } from './config';
@@ -6,18 +6,25 @@ import { GOOGLE_WEB_CLIENT_ID } from './google-client-id';
 
 WebBrowser.maybeCompleteAuthSession();
 
+function isBrokenExpoProxy(url: string): boolean {
+  return /auth\.expo\.io/i.test(url);
+}
+
 /**
- * Uygulamaya dönüş adresi — auth.expo.io kullanılmaz (Expo Go'da sık kırılır).
+ * Uygulamaya dönüş — auth.expo.io ASLA kullanılmaz (Expo Go'da kırık).
  */
 export function getAppOAuthRedirectUri(): string {
   const fromEnv = process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI?.trim();
-  if (fromEnv) return fromEnv;
+  if (fromEnv && !isBrokenExpoProxy(fromEnv)) {
+    return fromEnv;
+  }
 
-  return AuthSession.makeRedirectUri({
-    scheme: 'pazaryeri',
-    path: 'auth',
-    preferLocalhost: false,
-  });
+  const linked = Linking.createURL('auth');
+  if (linked && !isBrokenExpoProxy(linked)) {
+    return linked;
+  }
+
+  return 'pazaryeri://auth';
 }
 
 export function getGoogleClientIds() {
@@ -30,11 +37,8 @@ export function getGoogleRedirectUri(): string {
 }
 
 export function isMobileOAuthReturnUrl(url: string): boolean {
-  return (
-    url.startsWith('pazaryeri://') ||
-    url.startsWith('exp://') ||
-    url.startsWith('https://auth.expo.io/')
-  );
+  if (!url || isBrokenExpoProxy(url)) return false;
+  return url.startsWith('pazaryeri://') || url.startsWith('exp://');
 }
 
 function parseParam(url: string, key: string): string | null {
@@ -49,7 +53,6 @@ function parseParam(url: string, key: string): string | null {
 
 /**
  * Mobil Google giriş — pazaryeri0.web.app/oauth/mobile köprüsü (GIS).
- * auth.expo.io ve Render API kullanılmaz.
  */
 export async function promptGoogleSignIn(): Promise<string> {
   if (Platform.OS === 'web') {
@@ -66,6 +69,7 @@ export async function promptGoogleSignIn(): Promise<string> {
 
   const result = await WebBrowser.openAuthSessionAsync(bridgeUrl, appRedirect, {
     showInRecents: true,
+    createTask: false,
   });
 
   if (result.type === 'cancel' || result.type === 'dismiss') {
