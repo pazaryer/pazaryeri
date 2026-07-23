@@ -2,7 +2,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import { sitePath } from './config';
-import { GOOGLE_WEB_CLIENT_ID } from './google-client-id';
+import { resolveGoogleWebClientId } from './google-client-id';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -28,7 +28,7 @@ export function getAppOAuthRedirectUri(): string {
 }
 
 export function getGoogleClientIds() {
-  return { webClientId: GOOGLE_WEB_CLIENT_ID };
+  return { webClientId: resolveGoogleWebClientId() };
 }
 
 /** @deprecated use getAppOAuthRedirectUri */

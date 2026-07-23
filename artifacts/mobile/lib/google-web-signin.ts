@@ -1,12 +1,8 @@
 import Constants from 'expo-constants';
-import { GOOGLE_WEB_CLIENT_ID } from './google-client-id';
+import { resolveGoogleWebClientId } from './google-client-id';
 
 export function getGoogleWebClientId(): string {
-  const fromEnv = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim();
-  if (fromEnv && fromEnv.includes('.apps.googleusercontent.com')) {
-    return fromEnv;
-  }
-  return GOOGLE_WEB_CLIENT_ID;
+  return resolveGoogleWebClientId();
 }
 
 let scriptPromise: Promise<void> | null = null;

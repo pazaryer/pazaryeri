@@ -1,14 +1,14 @@
 import "./node-polyfills";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "") ?? "";
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 let admin: SupabaseClient | null = null;
 
 export function getSupabaseAdmin(): SupabaseClient {
   if (!supabaseUrl || !serviceKey) {
-    throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required");
+    throw new Error("SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY gerekli");
   }
   if (!admin) {
     admin = createClient(supabaseUrl, serviceKey, {
@@ -105,10 +105,10 @@ export async function ensureUser(
   id: string,
   data?: { name?: string; email?: string; phone?: string; avatar?: string },
 ): Promise<DbUser> {
-  if (process.env.DATABASE_URL?.trim()) {
-    const { pgEnsureUser } = await import("./postgres-db");
-    return pgEnsureUser(id, data);
-  }
+    if (await isPostgresAvailable()) {
+      const { pgEnsureUser } = await import("./postgres-db");
+      return pgEnsureUser(id, data);
+    }
 
   const sb = getSupabaseAdmin();
   const { data: existing } = await sb.from("users").select("*").eq("id", id).single();

@@ -9,6 +9,11 @@ export function isPostgresConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL?.trim());
 }
 
+export async function isPostgresAvailable(): Promise<boolean> {
+  if (!isPostgresConfigured()) return false;
+  return pgHealthCheck();
+}
+
 export function getPgPool(): pg.Pool {
   const url = process.env.DATABASE_URL?.trim();
   if (!url) {
@@ -109,7 +114,7 @@ export async function pgCreateListing(
 }
 
 export async function pgHealthCheck(): Promise<boolean> {
-  if (!isPostgresConfigured()) return false;
+  if (!process.env.DATABASE_URL?.trim()) return false;
   try {
     await getPgPool().query("SELECT 1");
     return true;

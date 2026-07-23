@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,23 +6,14 @@ import {
   ActivityIndicator,
   Platform,
   Image,
-  Pressable,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GoogleSignInButton } from '@/components/web/GoogleSignInButton';
 import { redirectToAppWithError, redirectToAppWithToken } from '@/lib/google-web-auth';
 import { isMobileOAuthReturnUrl } from '@/lib/google-native-auth';
-import {
-  getMobileOAuthReturn,
-  parseOAuthHash,
-  saveMobileOAuthReturn,
-  startMobileGoogleOAuth,
-} from '@/lib/google-oauth-bridge';
 
-/**
- * Mobil Google giriş — OAuth2 id_token (redirect_uri: pazaryeri0.web.app/oauth/mobile).
- * GIS yerine açık OAuth kullanılır (in-app tarayıcıda redirect_uri_mismatch önlenir).
- */
+/** Mobil uygulama Google giriş — Firebase uyumlu GIS (web /giris ile aynı) */
 export default function MobileOAuthBridge() {
   const { return: returnParam } = useLocalSearchParams<{ return?: string }>();
   const [loading, setLoading] = useState(false);
@@ -33,7 +24,7 @@ export default function MobileOAuthBridge() {
       ? returnParam
       : 'pazaryeri://auth';
 
-  const finishWithToken = useCallback(
+  const handleCredential = useCallback(
     (idToken: string) => {
       setLoading(true);
       setError(null);
@@ -50,20 +41,9 @@ export default function MobileOAuthBridge() {
     [appReturn],
   );
 
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-
-    saveMobileOAuthReturn(appReturn);
-
-    const { idToken, error: oauthError } = parseOAuthHash();
-    if (oauthError) {
-      setError(oauthError);
-      return;
-    }
-    if (idToken) {
-      finishWithToken(idToken);
-    }
-  }, [appReturn, finishWithToken]);
+  const handleGoogleError = useCallback((e: Error) => {
+    setError(e.message);
+  }, []);
 
   if (Platform.OS !== 'web') {
     return (
@@ -72,12 +52,6 @@ export default function MobileOAuthBridge() {
       </View>
     );
   }
-
-  const handleGooglePress = () => {
-    setError(null);
-    saveMobileOAuthReturn(getMobileOAuthReturn() || appReturn);
-    startMobileGoogleOAuth();
-  };
 
   return (
     <View style={styles.container}>
@@ -96,9 +70,11 @@ export default function MobileOAuthBridge() {
         {loading ? (
           <ActivityIndicator size="large" color="#3D1A78" style={{ marginVertical: 20 }} />
         ) : (
-          <Pressable style={styles.googleBtn} onPress={handleGooglePress}>
-            <Text style={styles.googleBtnText}>Google ile Devam Et</Text>
-          </Pressable>
+          <GoogleSignInButton
+            buttonId="pazaryeri-google-mobile-oauth"
+            onCredential={handleCredential}
+            onError={handleGoogleError}
+          />
         )}
       </View>
     </View>
@@ -125,18 +101,6 @@ const styles = StyleSheet.create({
   icon: { width: 64, height: 64, borderRadius: 14 },
   title: { fontSize: 22, fontWeight: '800', color: '#1A0A2E' },
   subtitle: { fontSize: 14, color: '#7A6B8A', textAlign: 'center' },
-  googleBtn: {
-    width: '100%',
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DADCE0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  googleBtnText: { fontSize: 16, fontWeight: '700', color: '#1A0A2E' },
   errorBox: {
     backgroundColor: '#FEF2F2',
     padding: 10,

@@ -10,7 +10,7 @@ import {
   type DbListing,
   type DbUser,
 } from "../lib/supabase-db";
-import { isPostgresConfigured, pgCreateListing, pgEnsureUser, pgGetListingRow } from "../lib/postgres-db";
+import { isPostgresAvailable, pgCreateListing, pgEnsureUser, pgGetListingRow } from "../lib/postgres-db";
 import { authMiddleware, optionalAuth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 
@@ -37,7 +37,7 @@ const updateListingSchema = createListingSchema.partial();
 const statusSchema = z.object({ status: z.enum(["active", "sold", "reserved", "deleted"]) });
 
 async function buildListingDetail(listingId: string, userId?: string) {
-  if (isPostgresConfigured()) {
+  if (await isPostgresAvailable()) {
     const row = await pgGetListingRow(listingId);
     if (!row?.seller) throw new AppError("İlan bulunamadı", 404);
     const listing = row.listing as DbListing;
@@ -218,7 +218,7 @@ router.post("/listings", authMiddleware, async (req, res, next) => {
   try {
     const body = createListingSchema.parse(req.body);
 
-    if (isPostgresConfigured()) {
+    if (await isPostgresAvailable()) {
       await pgEnsureUser(req.user!.id, {
         email: req.user!.email,
         phone: req.user!.phone,
