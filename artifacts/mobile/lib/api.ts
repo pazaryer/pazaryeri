@@ -1,5 +1,5 @@
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
-import { API_BASE_URL } from './config';
+import { API_BASE_URL, buildApiUrl } from './config';
 import { getFirebaseAuth } from './firebase';
 
 let initialized = false;
@@ -30,19 +30,23 @@ export async function apiFetch<T>(
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE_URL}/api${path}`, {
+  const url = buildApiUrl(path);
+  const res = await fetch(url, {
     ...options,
     headers,
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    const message =
+    const detail =
       typeof err.error === 'string'
         ? err.error
         : typeof err.message === 'string'
           ? err.message
-          : `İstek başarısız (HTTP ${res.status})`;
+          : null;
+    const message = detail
+      ? `${detail} (HTTP ${res.status})`
+      : `İstek başarısız (HTTP ${res.status})`;
     throw new Error(message);
   }
 
