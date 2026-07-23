@@ -1,3 +1,4 @@
+import "./lib/node-polyfills";
 import app from "./app";
 import { logger } from "./lib/logger";
 

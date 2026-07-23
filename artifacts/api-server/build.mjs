@@ -28,6 +28,7 @@ async function buildAll() {
     // - uses native modules and loads them dynamically (e.g. sharp)
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
+      "ws",
       "*.node",
       "sharp",
       "better-sqlite3",
@@ -115,6 +116,10 @@ import __bannerUrl from 'node:url';
 globalThis.require = __bannerCrReq(import.meta.url);
 globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
 globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
+try {
+  const __ws = globalThis.require("ws");
+  globalThis.WebSocket = __ws.WebSocket ?? __ws;
+} catch {}
     `,
     },
   });

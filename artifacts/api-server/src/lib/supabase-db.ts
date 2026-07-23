@@ -1,3 +1,4 @@
+import "./node-polyfills";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL!;
@@ -12,6 +13,7 @@ export function getSupabaseAdmin(): SupabaseClient {
   if (!admin) {
     admin = createClient(supabaseUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
+      realtime: { enabled: false },
     });
   }
   return admin;

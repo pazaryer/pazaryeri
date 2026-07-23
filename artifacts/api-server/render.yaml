@@ -2,6 +2,7 @@ services:
   - type: web
     name: pazaryeri-api
     runtime: node
+    nodeVersion: 22
     region: frankfurt
     plan: free
     buildCommand: cd ../.. && pnpm install --ignore-scripts && pnpm --filter @workspace/api-server run build
@@ -26,6 +27,10 @@ services:
       - key: R2_BUCKET_NAME
         value: pazaryeri-listings
       - key: R2_PUBLIC_URL
+        sync: false
+      - key: GOOGLE_WEB_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: CLOUDFLARE_ACCOUNT_ID
         sync: false

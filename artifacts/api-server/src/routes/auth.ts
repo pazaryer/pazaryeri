@@ -1,134 +1,212 @@
-import { Router, type IRouter, type Request } from "express";
+import { Router, type IRouter } from "express";
+import crypto from "crypto";
+import { z } from "zod/v4";
 import { AppError } from "../middleware/errorHandler";
 
 const router: IRouter = Router();
 
-function getGoogleClientId(): string {
+const SITE_PUBLIC_URL =
+  process.env.SITE_PUBLIC_URL ?? "https://pazaryeri0.web.app";
+
+const API_PUBLIC_URL =
+  process.env.API_PUBLIC_URL ?? "https://pazaryerim.onrender.com";
+
+const DEFAULT_WEB_CLIENT_ID =
+  "637257074433-gr8vbeupacshsv6omnfsf60mn5rkef719.apps.googleusercontent.com";
+
+function siteUrl(path: string): string {
+  const base = SITE_PUBLIC_URL.replace(/\/$/, "");
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${p}`;
+}
+
+function apiCallbackUrl(): string {
+  const base = API_PUBLIC_URL.replace(/\/$/, "");
+  return `${base}/api/auth/google/callback`;
+}
+
+function isAllowedReturnUrl(url: string): boolean {
   return (
-    process.env.GOOGLE_CLIENT_ID ??
-    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ??
-    ""
+    url.startsWith("https://auth.expo.io/") || url.startsWith("pazaryeri://")
   );
 }
 
-function getGoogleClientSecret(): string {
-  return process.env.GOOGLE_CLIENT_SECRET ?? "";
+function b64url(input: Buffer | string): string {
+  const buf = typeof input === "string" ? Buffer.from(input) : input;
+  return buf.toString("base64url");
 }
 
-function getPublicUrl(req: Request): string {
-  if (process.env.API_PUBLIC_URL) {
-    return process.env.API_PUBLIC_URL.replace(/\/$/, "");
-  }
-  const proto = req.get("x-forwarded-proto") ?? req.protocol;
-  const host = req.get("x-forwarded-host") ?? req.get("host");
-  return `${proto}://${host}`;
+function generatePkce() {
+  const verifier = b64url(crypto.randomBytes(32));
+  const challenge = b64url(
+    crypto.createHash("sha256").update(verifier).digest(),
+  );
+  return { verifier, challenge };
 }
 
-function encodeState(appRedirect: string): string {
-  return Buffer.from(JSON.stringify({ appRedirect }), "utf8").toString("base64url");
+function encodeOAuthState(returnUrl: string, verifier: string): string {
+  return b64url(JSON.stringify({ returnUrl, verifier }));
 }
 
-function decodeState(state: string): { appRedirect: string } {
+function decodeOAuthState(
+  state: string,
+): { returnUrl: string; verifier: string } | null {
   try {
-    const parsed = JSON.parse(Buffer.from(state, "base64url").toString("utf8")) as {
-      appRedirect?: string;
-    };
-    if (!parsed.appRedirect?.startsWith("pazaryeri://")) {
-      throw new Error("invalid redirect");
-    }
-    return { appRedirect: parsed.appRedirect };
+    const parsed = JSON.parse(
+      Buffer.from(state, "base64url").toString("utf8"),
+    ) as { returnUrl?: string; verifier?: string };
+    if (!parsed.returnUrl || !parsed.verifier) return null;
+    if (!isAllowedReturnUrl(parsed.returnUrl)) return null;
+    return { returnUrl: parsed.returnUrl, verifier: parsed.verifier };
   } catch {
-    throw new AppError("Geçersiz OAuth state", 400);
+    return null;
   }
 }
 
-router.get("/auth/google/mobile", (req, res) => {
-  const clientId = getGoogleClientId();
-  const clientSecret = getGoogleClientSecret();
-  if (!clientId || !clientSecret) {
-    res.status(503).json({
-      error: "Google OAuth yapılandırılmamış (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)",
-    });
+async function exchangeGoogleCode(
+  code: string,
+  redirectUri: string,
+  codeVerifier?: string,
+): Promise<string> {
+  const clientId = process.env.GOOGLE_WEB_CLIENT_ID ?? DEFAULT_WEB_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  const params: Record<string, string> = {
+    code,
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    grant_type: "authorization_code",
+  };
+  if (codeVerifier) params.code_verifier = codeVerifier;
+  if (clientSecret) params.client_secret = clientSecret;
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(params),
+  });
+
+  const data = (await tokenRes.json()) as {
+    id_token?: string;
+    error?: string;
+    error_description?: string;
+  };
+
+  if (!data.id_token) {
+    const detail =
+      data.error_description ?? data.error ?? "Google token alınamadı";
+    throw new AppError(
+      `${detail}. Redirect URI: ${redirectUri}`,
+      400,
+    );
+  }
+
+  return data.id_token;
+}
+
+function redirectWithToken(returnUrl: string, idToken: string) {
+  const sep = returnUrl.includes("?") ? "&" : "?";
+  return `${returnUrl}${sep}id_token=${encodeURIComponent(idToken)}`;
+}
+
+function redirectWithError(returnUrl: string, error: string) {
+  const sep = returnUrl.includes("?") ? "&" : "?";
+  return `${returnUrl}${sep}error=${encodeURIComponent(error)}`;
+}
+
+/**
+ * Expo Go / mobil — tek seferlik Google OAuth (redirect döngüsü yok).
+ * GET /api/auth/google/start?return=https://auth.expo.io/@owner/slug
+ */
+router.get("/auth/google/start", (req, res) => {
+  const returnUrl = String(req.query.return ?? "");
+  if (!isAllowedReturnUrl(returnUrl)) {
+    res.status(400).send("Geçersiz return URL");
     return;
   }
 
-  const appRedirect = String(req.query.app_redirect ?? "");
-  if (!appRedirect.startsWith("pazaryeri://")) {
-    res.status(400).json({ error: "Geçersiz app_redirect" });
-    return;
-  }
-
-  const callbackUri = `${getPublicUrl(req)}/api/auth/google/callback`;
-  const state = encodeState(appRedirect);
+  const { verifier, challenge } = generatePkce();
+  const state = encodeOAuthState(returnUrl, verifier);
+  const clientId = process.env.GOOGLE_WEB_CLIENT_ID ?? DEFAULT_WEB_CLIENT_ID;
+  const redirectUri = apiCallbackUrl();
 
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: callbackUri,
+    redirect_uri: redirectUri,
     response_type: "code",
     scope: "openid email profile",
     state,
+    code_challenge: challenge,
+    code_challenge_method: "S256",
     prompt: "select_account",
+    access_type: "online",
   });
 
-  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  res.redirect(302, `https://accounts.google.com/o/oauth2/v2/auth?${params}`);
 });
 
-router.get("/auth/google/callback", async (req, res, next) => {
+/** Google OAuth callback — id_token ile uygulamaya döner */
+router.get("/auth/google/callback", async (req, res) => {
+  const stateRaw = String(req.query.state ?? "");
+  const decoded = decodeOAuthState(stateRaw);
+  const fallbackReturn = decoded?.returnUrl ?? "pazaryeri://auth";
+
   try {
-    const clientId = getGoogleClientId();
-    const clientSecret = getGoogleClientSecret();
-    if (!clientId || !clientSecret) {
-      throw new AppError("Google OAuth yapılandırılmamış", 503);
-    }
-
     const oauthError = req.query.error;
-    const state = String(req.query.state ?? "");
-    let appRedirect = "pazaryeri://auth";
-    try {
-      appRedirect = decodeState(state).appRedirect;
-    } catch {
-      // state decode failed
-    }
-
     if (oauthError) {
       res.redirect(
-        `${appRedirect}?error=${encodeURIComponent(String(oauthError))}`,
+        302,
+        redirectWithError(fallbackReturn, String(oauthError)),
       );
       return;
     }
 
-    const code = req.query.code;
-    if (!code || typeof code !== "string") {
-      res.redirect(`${appRedirect}?error=missing_code`);
+    const code = String(req.query.code ?? "");
+    if (!decoded || !code) {
+      res.status(400).send("Geçersiz OAuth yanıtı");
       return;
     }
 
-    const callbackUri = `${getPublicUrl(req)}/api/auth/google/callback`;
-    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: callbackUri,
-        grant_type: "authorization_code",
-      }),
-    });
+    const idToken = await exchangeGoogleCode(
+      code,
+      apiCallbackUrl(),
+      decoded.verifier,
+    );
+    res.redirect(302, redirectWithToken(decoded.returnUrl, idToken));
+  } catch (err) {
+    const msg =
+      err instanceof AppError
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : "Google girişi başarısız";
+    res.redirect(302, redirectWithError(fallbackReturn, msg));
+  }
+});
 
-    const tokens = (await tokenRes.json()) as {
-      id_token?: string;
-      error?: string;
-      error_description?: string;
-    };
+/** Mobil Google giriş — API OAuth akışına yönlendir */
+router.get("/auth/google/mobile", (req, res) => {
+  const appRedirect = String(req.query.app_redirect ?? "");
+  if (isAllowedReturnUrl(appRedirect)) {
+    const start = `${API_PUBLIC_URL.replace(/\/$/, "")}/api/auth/google/start?return=${encodeURIComponent(appRedirect)}`;
+    res.redirect(302, start);
+    return;
+  }
+  res.redirect(302, siteUrl("/giris"));
+});
 
-    if (!tokenRes.ok || !tokens.id_token) {
-      const msg = tokens.error_description ?? tokens.error ?? "token_exchange_failed";
-      res.redirect(`${appRedirect}?error=${encodeURIComponent(msg)}`);
-      return;
-    }
+const exchangeSchema = z.object({
+  code: z.string().min(1),
+  redirectUri: z.string().url(),
+  codeVerifier: z.string().min(1).optional(),
+});
 
-    res.redirect(`${appRedirect}?id_token=${encodeURIComponent(tokens.id_token)}`);
+/** Mobil — authorization code → id_token (PKCE) */
+router.post("/auth/google/exchange", async (req, res, next) => {
+  try {
+    const { code, redirectUri, codeVerifier } = exchangeSchema.parse(req.body);
+    const idToken = await exchangeGoogleCode(code, redirectUri, codeVerifier);
+    res.json({ idToken });
   } catch (err) {
     next(err);
   }
