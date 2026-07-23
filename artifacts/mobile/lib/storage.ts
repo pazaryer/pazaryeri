@@ -1,6 +1,145 @@
+import { Platform } from 'react-native';
 import { apiFetch } from './api';
 
+function guessContentType(uri: string): string {
+  const ext = uri.split('.').pop()?.split('?')[0]?.toLowerCase();
+  const map: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    heic: 'image/heic',
+    heif: 'image/heif',
+  };
+  return map[ext ?? ''] ?? 'image/jpeg';
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1] ?? result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Fotoğraf okunamadı'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Web: resmi küçült + sıkıştır (maliyet ve hız için) */
+async function compressImageFile(file: File): Promise<{ blob: Blob; contentType: string }> {
+  if (typeof document === 'undefined') {
+    return { blob: file, contentType: file.type || 'image/jpeg' };
+  }
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const maxW = 1600;
+      const scale = Math.min(1, maxW / img.width);
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve({ blob: file, contentType: file.type || 'image/jpeg' });
+        return;
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve({ blob, contentType: 'image/jpeg' });
+          else resolve({ blob: file, contentType: file.type || 'image/jpeg' });
+        },
+        'image/jpeg',
+        0.82,
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Fotoğraf işlenemedi'));
+    };
+    img.src = objectUrl;
+  });
+}
+
+async function uploadViaServer(blob: Blob, contentType: string): Promise<string> {
+  const data = await blobToBase64(blob);
+  const { publicUrl } = await apiFetch<{ publicUrl: string }>('/upload/image', {
+    method: 'POST',
+    body: JSON.stringify({ contentType, data }),
+  });
+  return publicUrl;
+}
+
+async function uploadImageNative(uri: string): Promise<string> {
+  const contentType = guessContentType(uri);
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const data = await blobToBase64(blob);
+  const { publicUrl } = await apiFetch<{ publicUrl: string }>('/upload/image', {
+    method: 'POST',
+    body: JSON.stringify({ contentType, data }),
+  });
+  return publicUrl;
+}
+
+async function uploadImageWeb(file: File): Promise<string> {
+  const { blob, contentType } = await compressImageFile(file);
+  return uploadViaServer(blob, contentType);
+}
+
+function pickImagesWeb(max: number): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp,image/heic,image/*';
+    input.multiple = max > 1;
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    const cleanup = () => {
+      if (input.parentNode) input.parentNode.removeChild(input);
+    };
+
+    input.onchange = async () => {
+      const files = Array.from(input.files ?? []).slice(0, max);
+      cleanup();
+      if (files.length === 0) {
+        resolve([]);
+        return;
+      }
+      try {
+        const urls: string[] = [];
+        for (const file of files) {
+          const url = await uploadImageWeb(file);
+          urls.push(url);
+        }
+        resolve(urls);
+      } catch (e) {
+        reject(e);
+      }
+    };
+
+    input.addEventListener('cancel', () => {
+      cleanup();
+      resolve([]);
+    });
+
+    input.click();
+  });
+}
+
 export async function pickImages(max = 10): Promise<string[]> {
+  if (Platform.OS === 'web') {
+    return pickImagesWeb(max);
+  }
+
   const ImagePicker = await import('expo-image-picker');
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
@@ -11,14 +150,14 @@ export async function pickImages(max = 10): Promise<string[]> {
     mediaTypes: ['images'],
     allowsMultipleSelection: true,
     selectionLimit: max,
-    quality: 0.8,
+    quality: 0.7,
   });
 
   if (result.canceled || !result.assets.length) return [];
 
   const urls: string[] = [];
   for (const asset of result.assets) {
-    const url = await uploadImage(asset.uri);
+    const url = await uploadImageNative(asset.uri);
     if (url) urls.push(url);
   }
   return urls;
@@ -31,35 +170,7 @@ export async function takePhoto(): Promise<string | null> {
     throw new Error('Kamera izni gerekli');
   }
 
-  const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+  const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
   if (result.canceled || !result.assets[0]) return null;
-  return uploadImage(result.assets[0].uri);
-}
-
-async function uploadImage(uri: string): Promise<string> {
-  const ext = uri.split('.').pop()?.toLowerCase() ?? 'jpg';
-  const contentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-
-  const { uploadUrl, publicUrl } = await apiFetch<{
-    uploadUrl: string;
-    publicUrl: string;
-  }>('/upload/presign', {
-    method: 'POST',
-    body: JSON.stringify({ contentType }),
-  });
-
-  const response = await fetch(uri);
-  const blob = await response.blob();
-
-  const uploadRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    body: blob,
-    headers: { 'Content-Type': contentType },
-  });
-
-  if (!uploadRes.ok) {
-    throw new Error('Fotoğraf yüklenemedi');
-  }
-
-  return publicUrl;
+  return uploadImageNative(result.assets[0].uri);
 }

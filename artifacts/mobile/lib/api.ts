@@ -36,8 +36,14 @@ export async function apiFetch<T>(
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'İstek başarısız' }));
-    throw new Error(err.error ?? `HTTP ${res.status}`);
+    const err = await res.json().catch(() => ({}));
+    const message =
+      typeof err.error === 'string'
+        ? err.error
+        : typeof err.message === 'string'
+          ? err.message
+          : `İstek başarısız (HTTP ${res.status})`;
+    throw new Error(message);
   }
 
   return res.json();
