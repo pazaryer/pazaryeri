@@ -3,7 +3,7 @@
 ## Client ID (hepsi bu)
 
 ```
-637257074433-gr8vbeupacshsv6omnfsf60mn5rkef719.apps.googleusercontent.com
+637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com
 ```
 
 Firebase → Authentication → Google → **Safelist client IDs** → bu ID ekli olmalı.

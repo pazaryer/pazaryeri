@@ -12,7 +12,7 @@ const API_PUBLIC_URL =
   process.env.API_PUBLIC_URL ?? "https://pazaryerim.onrender.com";
 
 const DEFAULT_WEB_CLIENT_ID =
-  "637257074433-gr8vbeupacshsv6omnfsf60mn5rkef719.apps.googleusercontent.com";
+  "637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com";
 
 function siteUrl(path: string): string {
   const base = SITE_PUBLIC_URL.replace(/\/$/, "");

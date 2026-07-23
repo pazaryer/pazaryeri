@@ -21,10 +21,10 @@ const updateUserSchema = z.object({
 });
 
 const syncUserSchema = z.object({
-  name: z.string().optional(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  avatar: z.string().url().optional(),
+  name: z.string().min(1).max(100).optional(),
+  email: z.union([z.string().email(), z.literal('')]).optional(),
+  phone: z.string().max(30).optional(),
+  avatar: z.union([z.string().url(), z.literal('')]).optional(),
 });
 
 router.post("/users/sync", authMiddleware, async (req, res, next) => {
@@ -32,9 +32,9 @@ router.post("/users/sync", authMiddleware, async (req, res, next) => {
     const body = syncUserSchema.parse(req.body);
     const user = await ensureUser(req.user!.id, {
       name: body.name,
-      email: body.email ?? req.user!.email,
+      email: body.email || req.user!.email,
       phone: body.phone ?? req.user!.phone,
-      avatar: body.avatar,
+      avatar: body.avatar || undefined,
     });
     res.json(formatUser(user));
   } catch (err) {

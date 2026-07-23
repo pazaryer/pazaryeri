@@ -27,10 +27,29 @@ app.use(
     },
   }),
 );
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      'https://pazaryeri0.web.app',
+      'https://pazaryeri0.firebaseapp.com',
+      'http://localhost:8081',
+      'http://localhost:19006',
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimit);
+
+app.get("/", (_req, res) => {
+  res.json({
+    name: "Pazaryeri API",
+    status: "ok",
+    health: "/api/healthz",
+    site: "https://pazaryeri0.web.app",
+  });
+});
 
 app.use("/api", router);
 

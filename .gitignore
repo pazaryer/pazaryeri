@@ -47,6 +47,8 @@ Thumbs.db
 .env.*.local
 !.env.example
 !**/.env.example
+client_secret_*.json
+web-deploy.log
 *-firebase-adminsdk-*.json
 **/firebase-adminsdk*.json
 *.exe

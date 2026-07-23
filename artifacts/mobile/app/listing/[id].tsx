@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { FavoriteButton } from '@/components/FavoriteButton';
+import { WebListingDetailPage } from '@/components/web/WebListingDetailPage';
 import {
   useListing,
   useToggleFavorite,
@@ -31,6 +32,13 @@ import { sitePath } from '@/lib/config';
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ListingDetailScreen() {
+  if (Platform.OS === 'web') {
+    return <WebListingDetailPage />;
+  }
+  return <MobileListingDetailScreen />;
+}
+
+function MobileListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const colors = useColors();

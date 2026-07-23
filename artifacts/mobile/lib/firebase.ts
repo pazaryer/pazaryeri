@@ -4,7 +4,6 @@ import {
   getAuth,
   type Auth,
 } from 'firebase/auth';
-import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
@@ -37,7 +36,6 @@ const firebaseConfig = {
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
-let storage: FirebaseStorage | null = null;
 
 function initAuthInstance(firebaseApp: FirebaseApp): Auth {
   if (Platform.OS === 'web') {
@@ -84,11 +82,4 @@ export function getFirebaseAuth(): Auth {
     throw new Error('Firebase Auth başlatılamadı');
   }
   return auth;
-}
-
-export function getFirebaseStorage(): FirebaseStorage {
-  if (!storage) {
-    storage = getStorage(initFirebase());
-  }
-  return storage;
 }

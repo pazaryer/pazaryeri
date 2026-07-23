@@ -1,0 +1,97 @@
+/* Pazaryeri — global web stilleri (production build) */
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #EDE8F5;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(61, 26, 120, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(201, 168, 76, 0.1) 0%, transparent 40%),
+    linear-gradient(160deg, #F4F1FA 0%, #EDE8F5 50%, #E8E0F4 100%);
+  color: #1A0A2E;
+  -webkit-font-smoothing: antialiased;
+  overflow-y: auto;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+[role="tablist"] {
+  display: none !important;
+}
+
+/* Duyuru bandı — kesintisiz kayan marquee */
+.pz-marquee-track {
+  display: flex;
+  flex-direction: row;
+  width: max-content;
+  animation: pz-marquee-scroll 35s linear infinite;
+  will-change: transform;
+}
+.pz-marquee-item {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding-right: 3rem;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 38px;
+}
+@keyframes pz-marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.pz-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* Google Sign-In */
+.google-signin-host {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+.google-signin-host > div {
+  width: 100% !important;
+  display: flex;
+  justify-content: center;
+}
+
+/* İlan grid fallback */
+#pz-listing-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+#pz-listing-grid a {
+  display: block !important;
+  width: 100% !important;
+  text-decoration: none !important;
+  transition: transform 0.15s ease;
+}
+#pz-listing-grid a:hover {
+  transform: translateY(-3px);
+}
+
+#pz-category-grid {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  #pz-listing-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+    gap: 12px !important;
+  }
+}

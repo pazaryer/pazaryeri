@@ -1,46 +1,54 @@
-# Web Sitesi — https://pazaryeri0.web.app
+# Web Sitesi Kurulumu — pazaryeri0.web.app
 
-Pazaryeri web arayüzü Firebase Hosting üzerinde yayınlanır.
+## Sorun: Site bos / 404
 
-## Hızlı Deploy
+Site henuz Firebase'e yuklenmemis. **WEB-DEPLOY basarisiz** cunku Firebase girisi yapilmamis.
 
-```powershell
-cd pazaryeri
-pnpm run web:build
-firebase login
-pnpm run web:deploy
+---
+
+## Yontem A — Bilgisayardan deploy (onerilen)
+
+### Adim 1: Firebase giris
+```
+FIREBASE-GIRIS.bat
+```
+Tarayicida Google hesabinizla giris yapin.
+
+### Adim 2: Siteyi yayinla
+```
+WEB-DEPLOY.bat
 ```
 
-Veya: **`WEB-DEPLOY.bat`** çift tıkla
+Basarili olunca: **https://pazaryeri0.web.app**
 
-## Ortam Değişkenleri (mobil `.env`)
+---
 
-```
-EXPO_PUBLIC_SITE_URL=https://pazaryeri0.web.app
-EXPO_PUBLIC_API_URL=https://pazaryerim.onrender.com
-```
+## Yontem B — GitHub uzerinden otomatik deploy
 
-## Firebase Auth — Authorized Domains
+1. [Firebase Console](https://console.firebase.google.com/project/pazaryeri0/settings/serviceaccounts/adminsdk) → **Generate new private key** → JSON indir
+2. GitHub repo → **Settings → Secrets → Actions** → `FIREBASE_SERVICE_ACCOUNT` olarak JSON icerigini ekle
+3. Kodu `main` branch'e push et → otomatik deploy
 
-[Firebase Console → Authentication → Settings → Authorized domains](https://console.firebase.google.com/project/pazaryeri0/authentication/settings)
+---
 
-Şunlar listede olmalı:
-- `pazaryeri0.web.app`
-- `pazaryeri0.firebaseapp.com`
-- `localhost` (geliştirme)
+## Auth calismasi icin (Firebase Console)
 
-## Google OAuth
+1. [Authentication → Settings → Authorized domains](https://console.firebase.google.com/project/pazaryeri0/authentication/settings)
+   - `pazaryeri0.web.app` ekli olmali
+   - `localhost` ekli olmali
 
-Web client redirect URI (Google Cloud Console):
-```
-https://pazaryeri0.web.app
-https://pazaryeri0.firebaseapp.com/__/auth/handler
-https://pazaryerim.onrender.com/api/auth/google/callback
-```
+2. [Sign-in method → Google](https://console.firebase.google.com/project/pazaryeri0/authentication/providers) → **Enabled**
 
-## Paylaşım Linkleri
+3. [Sign-in method → Email/Password](https://console.firebase.google.com/project/pazaryeri0/authentication/providers) → **Enabled**
 
-İlan paylaşım URL'leri otomatik olarak şu formatta:
-```
-https://pazaryeri0.web.app/listing/{id}
-```
+4. OAuth Testing modundaysa: [Google Cloud Consent](https://console.cloud.google.com/apis/credentials/consent?project=pazaryeri0) → Test users → kendi Gmail'inizi ekleyin
+
+---
+
+## Test
+
+| Ozellik | URL |
+|---------|-----|
+| Web giris | https://pazaryeri0.web.app/login |
+| Google OAuth koprusu | https://pazaryeri0.web.app/oauth/google |
+| API saglik | https://pazaryerim.onrender.com/api/healthz |

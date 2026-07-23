@@ -1,29 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, Platform, Image } from 'react-native';
+import { Redirect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithGoogleViaApi } from '@/lib/google-auth';
+import { promptGoogleSignIn } from '@/lib/google-native-auth';
 
 export default function LoginScreen() {
+  if (Platform.OS === 'web') {
+    return <Redirect href="/giris" />;
+  }
+  return <MobileLoginScreen />;
+}
+
+function MobileLoginScreen() {
   const router = useRouter();
-  const { signInWithGoogleIdToken, signInWithGoogleWeb } = useAuth();
+  const { signInWithGoogleIdToken } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      if (Platform.OS === 'web') {
-        await signInWithGoogleWeb();
-        return;
-      }
-
-      const idToken = await signInWithGoogleViaApi();
+      const idToken = await promptGoogleSignIn();
       await signInWithGoogleIdToken(idToken);
     } catch (e: any) {
-      Alert.alert('Giriş Hatası', e.message ?? 'Google ile giriş başarısız');
+      const msg = e?.message ?? '';
+      if (msg.includes('iptal') || msg.includes('cancel')) return;
+      Alert.alert('Giriş Hatası', msg || 'Google ile giriş başarısız');
     } finally {
       setLoading(false);
     }
@@ -40,9 +43,7 @@ export default function LoginScreen() {
 
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Logo size={64} color="#C9A84C" />
-          </View>
+          <Image source={require('@/assets/images/icon.png')} style={styles.appIcon} />
           <Text style={styles.title}>Pazaryeri</Text>
           <Text style={styles.tagline}>Satmak bu kadar kolay</Text>
         </View>
@@ -63,10 +64,7 @@ export default function LoginScreen() {
             )}
           </Pressable>
 
-          <Pressable
-            style={styles.phoneLink}
-            onPress={() => router.push('/email-auth')}
-          >
+          <Pressable style={styles.phoneLink} onPress={() => router.push('/email-auth')}>
             <Text style={styles.phoneLinkText}>E-posta ile Devam Et</Text>
           </Pressable>
 
@@ -97,18 +95,15 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   logoContainer: { alignItems: 'center', gap: 16 },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+  appIcon: {
+    width: 96,
+    height: 96,
+    borderRadius: 22,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
   title: {
     fontSize: 36,

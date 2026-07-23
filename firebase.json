@@ -1,7 +1,4 @@
 {
-  "storage": {
-    "rules": "storage.rules"
-  },
   "hosting": {
     "site": "pazaryeri0",
     "public": "artifacts/mobile/dist",

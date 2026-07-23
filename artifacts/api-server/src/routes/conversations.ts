@@ -11,23 +11,38 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
   try {
     const sb = getSupabaseAdmin();
     const userId = req.user!.id;
-    const { data: convos } = await sb
+    const { data: convos, error } = await sb
       .from("conversations")
       .select("*")
       .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-      .order("last_message_at", { ascending: false });
+      .order("last_message_at", { ascending: false, nullsFirst: false });
+
+    if (error) {
+      throw new AppError(error.message, 500);
+    }
+
+    if (!convos?.length) {
+      res.json({ items: [] });
+      return;
+    }
 
     const items = await Promise.all(
-      (convos ?? []).map(async (convo) => {
+      convos.map(async (convo) => {
         const otherUserId = convo.buyer_id === userId ? convo.seller_id : convo.buyer_id;
         const [{ data: otherUser }, { data: listing }] = await Promise.all([
-          sb.from("users").select("id, name, avatar").eq("id", otherUserId).single(),
-          sb.from("listings").select("title").eq("id", convo.listing_id).single(),
+          sb.from("users").select("id, name, avatar").eq("id", otherUserId).maybeSingle(),
+          sb.from("listings").select("title").eq("id", convo.listing_id).maybeSingle(),
         ]);
-        const imageMap = await getListingImages([convo.listing_id]);
+        let listingImage: string | null = null;
+        try {
+          const imageMap = await getListingImages([convo.listing_id]);
+          listingImage = imageMap.get(convo.listing_id)?.[0] ?? null;
+        } catch {
+          listingImage = null;
+        }
         const { count } = await sb
           .from("messages")
-          .select("*", { count: "exact", head: true })
+          .select("id", { count: "exact", head: true })
           .eq("conversation_id", convo.id)
           .eq("is_read", false)
           .neq("sender_id", userId);
@@ -36,7 +51,7 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
           id: convo.id,
           listingId: convo.listing_id,
           listingTitle: listing?.title ?? "İlan",
-          listingImage: imageMap.get(convo.listing_id)?.[0] ?? null,
+          listingImage,
           otherUser: { id: otherUser?.id ?? otherUserId, name: otherUser?.name ?? "Kullanıcı", avatar: otherUser?.avatar ?? null },
           lastMessage: convo.last_message,
           lastMessageAt: convo.last_message_at,

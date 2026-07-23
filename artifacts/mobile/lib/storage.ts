@@ -1,7 +1,6 @@
 import { Platform } from 'react-native';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { apiFetch } from './api';
-import { getFirebaseAuth, getFirebaseStorage } from './firebase';
+import { getFirebaseAuth } from './firebase';
 
 function guessContentType(uri: string): string {
   const ext = uri.split('.').pop()?.split('?')[0]?.toLowerCase();
@@ -70,54 +69,18 @@ async function compressImageFile(file: File): Promise<{ blob: Blob; contentType:
   });
 }
 
-async function uploadToFirebase(blob: Blob, contentType: string): Promise<string> {
-  const user = getFirebaseAuth().currentUser;
-  if (!user) {
+/** API → Cloudflare R2 (birincil) + Supabase Storage (yedek) — ücretsiz, Firebase Storage yok */
+async function uploadImageBlob(blob: Blob, contentType: string): Promise<string> {
+  if (!getFirebaseAuth().currentUser) {
     throw new Error('Fotoğraf yüklemek için giriş yapın');
   }
 
-  const ext = contentType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
-  const path = `listings/${user.uid}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
-  const storageRef = ref(getFirebaseStorage(), path);
-  await uploadBytes(storageRef, blob, { contentType });
-  return getDownloadURL(storageRef);
-}
-
-async function uploadViaApi(blob: Blob, contentType: string): Promise<string> {
   const data = await blobToBase64(blob);
   const { publicUrl } = await apiFetch<{ publicUrl: string }>('/upload/image', {
     method: 'POST',
     body: JSON.stringify({ contentType, data }),
   });
   return publicUrl;
-}
-
-async function uploadImageBlob(blob: Blob, contentType: string): Promise<string> {
-  if (!getFirebaseAuth().currentUser) {
-    throw new Error('Fotoğraf yüklemek için giriş yapın');
-  }
-
-  try {
-    return await uploadViaApi(blob, contentType);
-  } catch (apiErr) {
-    const apiMsg = apiErr instanceof Error ? apiErr.message : '';
-    const retryWithFirebase =
-      apiMsg.includes('404') ||
-      apiMsg.includes('Failed to fetch') ||
-      apiMsg.includes('Network request failed');
-
-    if (!retryWithFirebase) {
-      throw apiErr;
-    }
-
-    try {
-      return await uploadToFirebase(blob, contentType);
-    } catch (firebaseErr) {
-      const fbMsg =
-        firebaseErr instanceof Error ? firebaseErr.message : 'Firebase yükleme hatası';
-      throw new Error(`Fotoğraf yüklenemedi. ${apiMsg} / ${fbMsg}`);
-    }
-  }
 }
 
 async function uploadImageNative(uri: string): Promise<string> {

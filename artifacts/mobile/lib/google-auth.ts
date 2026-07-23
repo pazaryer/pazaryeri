@@ -1,9 +1,15 @@
+/**
+ * @deprecated Mobil için `google-native-auth.ts` kullanın.
+ * Web köprüsü (pazaryeri0.web.app) artık iOS/Android'de kullanılmıyor.
+ */
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { Platform } from 'react-native';
-import { API_BASE_URL } from './config';
+import { SITE_URL } from './config';
 
 WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_BRIDGE_URL = 'https://pazaryeri0.web.app/oauth/google';
 
 export function getGoogleAppRedirectUri(): string {
   return AuthSession.makeRedirectUri({
@@ -12,15 +18,20 @@ export function getGoogleAppRedirectUri(): string {
   });
 }
 
-export async function signInWithGoogleViaApi(): Promise<string> {
+/** Expo Go / mobil: pazaryeri0.web.app üzerinden Google girişi (Render API değil) */
+export async function signInWithGoogleViaWebBridge(): Promise<string> {
   if (Platform.OS === 'web') {
     throw new Error('Web için signInWithGoogleWeb kullanın');
   }
 
   const appRedirect = getGoogleAppRedirectUri();
-  const authUrl = `${API_BASE_URL}/api/auth/google/mobile?app_redirect=${encodeURIComponent(appRedirect)}`;
+  const siteBase = (SITE_URL || GOOGLE_BRIDGE_URL.replace('/oauth/google', '')).replace(/\/$/, '');
+  const bridgeUrl = `${siteBase}/oauth/google?return=${encodeURIComponent(appRedirect)}`;
 
-  const result = await WebBrowser.openAuthSessionAsync(authUrl, appRedirect);
+  const result = await WebBrowser.openAuthSessionAsync(bridgeUrl, appRedirect, {
+    preferEphemeralSession: false,
+    showInRecents: true,
+  });
 
   if (result.type !== 'success') {
     throw new Error('Google girişi iptal edildi');

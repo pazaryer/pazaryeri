@@ -1,5 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Platform } from 'react-native';
 import { apiFetch } from './api';
+import { updateWebProfile } from './web-profile';
 
 export interface ListingSummary {
   id: string;
@@ -87,6 +89,8 @@ export function useListings(params?: {
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
+    refetchInterval: Platform.OS === 'web' ? 300_000 : false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -95,6 +99,8 @@ export function useListing(id: string) {
     queryKey: ['listing', id],
     queryFn: () => apiFetch<ListingDetail>(`/listings/${id}`),
     enabled: !!id,
+    refetchInterval: Platform.OS === 'web' ? 300_000 : false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -206,11 +212,31 @@ export interface Message {
   createdAt: string;
 }
 
+export function useUpdateProfile() {
+  return useMutation({
+    mutationFn: (data: {
+      name?: string;
+      bio?: string;
+      city?: string;
+      district?: string;
+    }) => {
+      if (Platform.OS === 'web') {
+        return updateWebProfile(data);
+      }
+      return apiFetch('/users/me', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+  });
+}
+
 export function useConversations() {
   return useQuery({
     queryKey: ['conversations'],
     queryFn: () => apiFetch<{ items: ConversationSummary[] }>('/conversations'),
-    refetchInterval: 10000,
+    refetchInterval: Platform.OS === 'web' ? false : 60_000,
+    refetchOnWindowFocus: Platform.OS !== 'web',
   });
 }
 
@@ -222,7 +248,8 @@ export function useMessages(conversationId: string) {
         `/conversations/${conversationId}/messages`,
       ),
     enabled: !!conversationId,
-    refetchInterval: 3000,
+    refetchInterval: Platform.OS === 'web' ? false : 15_000,
+    refetchOnWindowFocus: Platform.OS !== 'web',
   });
 }
 

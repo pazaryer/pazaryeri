@@ -11,11 +11,12 @@
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1A0A2E"
+      "backgroundColor": "#E31E24"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.pazaryerim",
+      "icon": "./assets/images/icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "İlan fotoğrafı çekmek için kamera erişimi gerekli.",
         "NSPhotoLibraryUsageDescription": "İlan fotoğrafı seçmek için galeri erişimi gerekli.",
@@ -25,6 +26,10 @@
     "android": {
       "package": "com.pazaryerim",
       "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#E31E24"
+      },
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -49,7 +54,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
-          "color": "#3D1A78"
+          "color": "#E31E24"
         }
       ],
       [
@@ -76,6 +81,18 @@
       },
       "siteUrl": "https://pazaryeri0.web.app",
       "apiUrl": "https://pazaryerim.onrender.com",
+      "firebase": {
+        "apiKey": "AIzaSyB6W3BBz1_SpD-jp8dcpvFTjeBwnZlw4Dg",
+        "authDomain": "pazaryeri0.firebaseapp.com",
+        "projectId": "pazaryeri0",
+        "storageBucket": "pazaryeri0.firebasestorage.app",
+        "messagingSenderId": "445495602976",
+        "appId": "1:445495602976:web:a9d405b30d0cab7d85f145",
+        "measurementId": "G-X4KF641X5R"
+      },
+      "google": {
+        "webClientId": "637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com"
+      },
       "router": {
         "origin": "https://pazaryeri0.web.app"
       }

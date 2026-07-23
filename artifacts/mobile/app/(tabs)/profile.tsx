@@ -26,12 +26,30 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { profile, signOut } = useAuth();
+  const { profile, user, signOut, refreshProfile } = useAuth();
   const isWeb = Platform.OS === 'web';
   const paddingTop = isWeb ? 67 : insets.top + 20;
 
   const { data, isLoading } = useMyListings();
   const userListings = data?.pages.flatMap((p) => p.items) ?? [];
+
+  React.useEffect(() => {
+    if (user && !profile) refreshProfile();
+  }, [user, profile, refreshProfile]);
+
+  const displayProfile =
+    profile ??
+    (user
+      ? {
+          id: user.uid,
+          name: user.displayName ?? 'Kullanıcı',
+          email: user.email,
+          avatar: user.photoURL,
+          rating: 0,
+          totalSales: 0,
+          isVerified: false,
+        }
+      : null);
 
   const handleLogout = async () => {
     Alert.alert('Çıkış Yap', 'Hesabınızdan çıkmak istediğinize emin misiniz?', [
@@ -40,7 +58,7 @@ export default function ProfileScreen() {
     ]);
   };
 
-  if (!profile) {
+  if (!displayProfile) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -68,13 +86,13 @@ export default function ProfileScreen() {
           <View style={styles.avatarContainer}>
             <View style={styles.avatarGlow} />
             <Image
-              source={{ uri: profile.avatar ?? 'https://ui-avatars.com/api/?name=' + encodeURIComponent(profile.name) }}
+              source={{ uri: displayProfile.avatar ?? 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayProfile.name) }}
               style={styles.avatar}
             />
           </View>
-          <Text style={styles.name}>{profile.name}</Text>
+          <Text style={styles.name}>{displayProfile.name}</Text>
           <View style={styles.badgesRow}>
-            {profile.isVerified && (
+            {displayProfile.isVerified && (
               <View style={styles.badgeGold}>
                 <Text style={styles.badgeGoldText}>Güvenilir Satıcı</Text>
                 <Ionicons name="checkmark-circle" size={12} color="#1A0A2E" />
@@ -82,7 +100,7 @@ export default function ProfileScreen() {
             )}
             <View style={styles.badgeWhite}>
               <Text style={[styles.badgeWhiteText, { color: colors.primary }]}>
-                {profile.totalSales}+ İşlem
+                {displayProfile.totalSales}+ İşlem
               </Text>
             </View>
           </View>
@@ -95,7 +113,7 @@ export default function ProfileScreen() {
           <Text style={[styles.statBoxLabel, { color: colors.mutedForeground }]}>İlan</Text>
         </View>
         <View style={[styles.statBox, { backgroundColor: colors.card }]}>
-          <Text style={[styles.statBoxValue, { color: colors.primary }]}>{profile.rating} ★</Text>
+          <Text style={[styles.statBoxValue, { color: colors.primary }]}>{displayProfile.rating} ★</Text>
           <Text style={[styles.statBoxLabel, { color: colors.mutedForeground }]}>Puan</Text>
         </View>
         <View style={[styles.statBox, { backgroundColor: colors.card }]}>

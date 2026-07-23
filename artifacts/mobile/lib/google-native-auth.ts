@@ -4,13 +4,12 @@ import { makeRedirectUri } from 'expo-auth-session';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+import { GOOGLE_WEB_CLIENT_ID } from './google-client-id';
+
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_CLIENT_ID =
-  '637257074433-gr8vbeupacshsv6omnfsf60mn5rkef719.apps.googleusercontent.com';
-
 export function getGoogleClientIds() {
-  return { webClientId: GOOGLE_CLIENT_ID };
+  return { webClientId: GOOGLE_WEB_CLIENT_ID };
 }
 
 /** Expo Go: https://auth.expo.io/@pazaryeri/pazaryeri — Google Console'a ekleyin */

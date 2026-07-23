@@ -24,17 +24,19 @@ async function storeImage(
   buffer: Buffer,
   contentType: string,
 ): Promise<string> {
+  const ext = contentType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
+  const key = `listings/${userId}/${randomUUID()}.${ext}`;
+
   try {
-    return await uploadToSupabaseStorage(userId, buffer, contentType);
-  } catch (supabaseErr) {
-    const ext = contentType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
-    const key = `listings/${userId}/${randomUUID()}.${ext}`;
+    return await uploadBuffer(key, buffer, contentType);
+  } catch (r2Err) {
     try {
-      return await uploadBuffer(key, buffer, contentType);
-    } catch {
-      const msg =
-        supabaseErr instanceof Error ? supabaseErr.message : "Depolama hatası";
-      throw new AppError(msg, 500);
+      return await uploadToSupabaseStorage(userId, buffer, contentType);
+    } catch (supabaseErr) {
+      const r2Msg = r2Err instanceof Error ? r2Err.message : "R2 hatası";
+      const sbMsg =
+        supabaseErr instanceof Error ? supabaseErr.message : "Supabase hatası";
+      throw new AppError(`Fotoğraf depolanamadı: ${r2Msg} / ${sbMsg}`, 500);
     }
   }
 }
