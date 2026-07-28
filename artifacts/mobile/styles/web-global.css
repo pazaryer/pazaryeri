@@ -71,8 +71,8 @@ body {
 /* İlan grid fallback */
 #pz-listing-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
-  gap: 16px !important;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+  gap: 12px !important;
   width: 100% !important;
 }
 #pz-listing-grid a {

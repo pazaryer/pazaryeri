@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, ActivityIndicator, Image } from 'rea
 import { useRouter } from 'expo-router';
 import { WebShell } from './WebShell';
 import { WebPage } from './WebPage';
-import { useConversations } from '@/lib/hooks';
+import { useConversations, formatLastActive } from '@/lib/hooks';
 
 export function WebMessagesPage() {
   const router = useRouter();
@@ -34,14 +34,20 @@ export function WebMessagesPage() {
                 style={[styles.row, index < messages.length - 1 && styles.rowBorder]}
                 onPress={() => router.push(`/chat/${item.id}`)}
               >
-                <Image
-                  source={{
-                    uri:
-                      item.otherUser.avatar ??
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(item.otherUser.name)}&background=3D1A78&color=fff`,
-                  }}
-                  style={styles.avatar}
-                />
+                {item.listingImage ? (
+                  <Image source={{ uri: item.listingImage }} style={styles.listingThumb} />
+                ) : null}
+                <View style={styles.avatarWrap}>
+                  <Image
+                    source={{
+                      uri:
+                        item.otherUser.avatar ??
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(item.otherUser.name)}&background=3D1A78&color=fff`,
+                    }}
+                    style={styles.avatar}
+                  />
+                  {item.otherUser.isOnline && <View style={styles.onlineDot} />}
+                </View>
                 <View style={styles.content}>
                   <View style={styles.rowTop}>
                     <Text style={styles.name}>{item.otherUser.name}</Text>
@@ -54,6 +60,9 @@ export function WebMessagesPage() {
                         : ''}
                     </Text>
                   </View>
+                  <Text style={styles.presence}>
+                    {formatLastActive(item.otherUser.lastActiveAt, item.otherUser.isOnline)}
+                  </Text>
                   <Text style={styles.listingTitle} numberOfLines={1}>
                     {item.listingTitle}
                   </Text>
@@ -105,15 +114,29 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    gap: 16,
+    padding: 16,
+    gap: 12,
     width: '100%',
   },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: '#F0EBF8' },
-  avatar: { width: 52, height: 52, borderRadius: 26 },
-  content: { flex: 1, gap: 3 },
+  listingThumb: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#EDE8F5' },
+  avatarWrap: { position: 'relative' },
+  avatar: { width: 48, height: 48, borderRadius: 24 },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 1,
+    right: 1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#22C55E',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  content: { flex: 1, gap: 2 },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontSize: 16, fontWeight: '700', color: '#1A0A2E' },
+  name: { fontSize: 15, fontWeight: '700', color: '#1A0A2E' },
+  presence: { fontSize: 11, color: '#22C55E', fontWeight: '600' },
   time: { fontSize: 12, color: '#7A6B8A' },
   timeUnread: { color: '#3D1A78', fontWeight: '700' },
   listingTitle: { fontSize: 12, color: '#7A6B8A' },

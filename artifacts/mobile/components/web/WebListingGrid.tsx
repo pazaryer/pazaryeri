@@ -2,14 +2,18 @@ import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { useListings } from '@/lib/hooks';
 import { WebListingCard } from './WebListingCard';
+import type { LocationFilterValue } from '@/components/LocationFilterBar';
 
 interface WebListingGridProps {
   category?: string;
   query?: string;
   title?: string;
+  location?: LocationFilterValue;
+  lat?: number;
+  lon?: number;
 }
 
-export function WebListingGrid({ category, query, title }: WebListingGridProps) {
+export function WebListingGrid({ category, query, title, location, lat, lon }: WebListingGridProps) {
   const {
     data,
     isLoading,
@@ -18,7 +22,15 @@ export function WebListingGrid({ category, query, title }: WebListingGridProps) 
     hasNextPage,
     isFetchingNextPage,
     refetch,
-  } = useListings({ category, q: query });
+  } = useListings({
+    category,
+    q: query,
+    city: location?.city,
+    district: location?.district,
+    radiusKm: location?.radiusKm,
+    lat,
+    lon,
+  });
 
   const items = data?.pages.flatMap((p) => p.items) ?? [];
 
