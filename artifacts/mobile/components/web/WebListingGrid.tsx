@@ -93,7 +93,7 @@ export function WebListingGrid({ category, query, title, location, lat, lon }: W
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: '100%', paddingHorizontal: 16, paddingVertical: 16 },
+  wrap: { width: '100%', paddingHorizontal: 12, paddingVertical: 12 },
   wrapMobile: { paddingHorizontal: 12, paddingVertical: 12 },
   header: {
     marginBottom: 14,

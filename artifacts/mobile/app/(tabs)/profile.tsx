@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice, useMyListings, useUpdateProfile, type ListingSummary } from '@/lib/hooks';
@@ -109,14 +108,11 @@ export default function ProfileScreen() {
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={colors.primary} />}
       showsVerticalScrollIndicator={false}
     >
-      <LinearGradient
-        colors={['#3D1A78', '#2A1254']}
-        style={[styles.hero, { paddingTop }]}
-      >
+      <View style={[styles.hero, { paddingTop, backgroundColor: '#FFFFFF', borderBottomColor: colors.border }]}>
         <View style={styles.heroTop}>
-          <Text style={styles.heroTitle}>Profilim</Text>
-          <Pressable style={styles.iconBtn} onPress={() => router.push('/settings')}>
-            <Ionicons name="create-outline" size={20} color="#FFF" />
+          <Text style={[styles.heroTitle, { color: colors.foreground }]}>Profilim</Text>
+          <Pressable style={[styles.iconBtn, { backgroundColor: colors.muted }]} onPress={() => router.push('/settings')}>
+            <Ionicons name="settings-outline" size={20} color={colors.foreground} />
           </Pressable>
         </View>
 
@@ -127,14 +123,14 @@ export default function ProfileScreen() {
               {uploadingAvatar ? (
                 <ActivityIndicator size="small" color="#1A0A2E" />
               ) : (
-                <Ionicons name="camera" size={14} color="#1A0A2E" />
+                <Ionicons name="camera" size={14} color="#FFF" />
               )}
             </View>
           </Pressable>
           <Text style={styles.name}>{displayProfile.name}</Text>
           {locationLabel ? (
             <View style={styles.locRow}>
-              <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.7)" />
+              <Ionicons name="location-outline" size={13} color="#717171" />
               <Text style={styles.locText}>{locationLabel}</Text>
             </View>
           ) : null}
@@ -151,7 +147,7 @@ export default function ProfileScreen() {
           <StatPill value={String(totalViews)} label="Görüntülenme" />
           <StatPill value={displayProfile.rating > 0 ? displayProfile.rating.toFixed(1) : '—'} label="Puan" />
         </View>
-      </LinearGradient>
+      </View>
 
       <View style={styles.actionsRow}>
         <ActionBtn icon="add-circle" label="İlan Ver" primary onPress={() => router.push('/(tabs)/post')} colors={colors} />
@@ -275,13 +271,13 @@ function MenuItem({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  hero: { paddingHorizontal: 20, paddingBottom: 20, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
+  hero: { paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: 1 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  heroTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
-  iconBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+  heroTitle: { fontSize: 18, fontWeight: '700' },
+  iconBtn: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   profileCenter: { alignItems: 'center', gap: 6 },
   avatarBtn: { position: 'relative' },
-  avatar: { width: 88, height: 88, borderRadius: 44, borderWidth: 3, borderColor: '#C9A84C' },
+  avatar: { width: 88, height: 88, borderRadius: 44, borderWidth: 3, borderColor: '#FF3B30' },
   cameraBadge: {
     position: 'absolute',
     bottom: 0,
@@ -289,27 +285,27 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#C9A84C',
+    backgroundColor: '#FF3B30',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#2A1254',
+    borderColor: '#FFFFFF',
   },
-  name: { fontSize: 22, fontWeight: '800', color: '#FFF', marginTop: 8 },
+  name: { fontSize: 22, fontWeight: '800', color: '#2C2C2C', marginTop: 8 },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locText: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
-  phoneText: { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
-  bio: { fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', paddingHorizontal: 20, marginTop: 4 },
+  locText: { fontSize: 13, color: '#717171' },
+  phoneText: { fontSize: 13, color: '#9E9E9E' },
+  bio: { fontSize: 13, color: '#717171', textAlign: 'center', paddingHorizontal: 20, marginTop: 4 },
   statsRow: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 20 },
   statPill: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 10,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: '#F4F4F4',
   },
-  statValue: { fontSize: 18, fontWeight: '800', color: '#FFF' },
-  statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 },
+  statValue: { fontSize: 18, fontWeight: '800', color: '#2C2C2C' },
+  statLabel: { fontSize: 11, color: '#717171', marginTop: 2 },
   actionsRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginTop: 16 },
   actionBtn: {
     flex: 1,

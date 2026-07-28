@@ -16,6 +16,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { initApi } from '@/lib/api';
 import { initFirebase } from '@/lib/firebase';
+import { isOnboardingComplete } from '@/lib/onboarding';
 
 try {
   initApi();
@@ -39,19 +40,27 @@ function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(Platform.OS === 'web' ? true : null);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (Platform.OS === 'web') return;
+    isOnboardingComplete().then(setOnboardingDone);
+  }, []);
+
+  useEffect(() => {
+    if (isLoading || onboardingDone === null) return;
 
     const isWeb = Platform.OS === 'web';
     const seg = segments[0];
     const segName = segments[0] as string | undefined;
+    const inOnboarding = segName === 'onboarding';
     const inAuth =
       segName === 'login' ||
       segName === 'email-auth' ||
       segName === 'oauth' ||
       segName === 'giris' ||
-      segName === 'kayit';
+      segName === 'kayit' ||
+      inOnboarding;
     const inLegal = seg === 'privacy' || seg === 'terms';
     const isPublicWeb =
       isWeb &&
@@ -81,15 +90,21 @@ function RootLayoutNav() {
       return;
     }
 
+    if (!isWeb && !onboardingDone && !inOnboarding) {
+      router.replace('/onboarding');
+      return;
+    }
+
     if (!user && !inAuth && !inLegal && !isPublicWeb) {
       router.replace(isWeb ? '/giris' : '/login');
     } else if (user && inAuth) {
       router.replace(isWeb ? '/' : '/(tabs)');
     }
-  }, [user, isLoading, segments, router]);
+  }, [user, isLoading, onboardingDone, segments, router]);
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Stack.Screen name="onboarding" />
       <Stack.Screen name="index" />
       <Stack.Screen name="giris" />
       <Stack.Screen name="kayit" />

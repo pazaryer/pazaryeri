@@ -77,16 +77,16 @@ export default function ExploreScreen() {
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
     >
       <LinearGradient
-        colors={['#3D1A78', '#1A0A2E']}
+        colors={['#FFFFFF', '#F4F4F4']}
         style={[styles.hero, { paddingTop: paddingTop + 10 }]}
       >
-        <Text style={styles.heroTitle}>Keşfet</Text>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color="#9D8BB5" />
+        <Text style={[styles.heroTitle, { color: colors.foreground }]}>Keşfet</Text>
+        <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.mutedForeground} />
           <TextInput
-            placeholder="Ne arıyorsunuz?"
-            placeholderTextColor="#9D8BB5"
-            style={styles.searchInput}
+            placeholder="İlan, marka, kategori ara..."
+            placeholderTextColor={colors.mutedForeground}
+            style={[styles.searchInput, { color: colors.foreground }]}
             value={searchQuery}
             onChangeText={(t) => {
               setSearchQuery(t);
@@ -95,7 +95,7 @@ export default function ExploreScreen() {
           />
           {searchQuery.length > 0 && (
             <Pressable onPress={() => { setSearchQuery(''); setSelectedCategory(null); }}>
-              <Ionicons name="close-circle" size={18} color="#C9A84C" />
+              <Ionicons name="close-circle" size={18} color={colors.mutedForeground} />
             </Pressable>
           )}
         </View>
@@ -173,16 +173,16 @@ export default function ExploreScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  hero: { paddingHorizontal: 16, paddingBottom: 18, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 },
-  heroTitle: { fontSize: 26, fontWeight: '800', color: '#FFF', marginBottom: 10 },
+  hero: { paddingHorizontal: 16, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: '#E8E8E8' },
+  heroTitle: { fontSize: 24, fontWeight: '800', marginBottom: 10 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: 22,
+    paddingHorizontal: 14,
     height: 44,
     gap: 8,
+    borderWidth: 1.5,
   },
   searchInput: { flex: 1, fontSize: 15, color: '#1A0A2E' },
   section: { paddingHorizontal: 14, marginTop: 12 },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     overflow: 'hidden',
   },
-  categoryCardActive: { borderWidth: 2, borderColor: '#C9A84C' },
+  categoryCardActive: { borderWidth: 2, borderColor: '#FF3B30' },
   categoryLabel: { fontSize: 11, fontWeight: '700', color: '#FFF' },
   resultsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -2 },
 });

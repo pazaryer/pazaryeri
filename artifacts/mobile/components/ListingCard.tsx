@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   soldText: { color: '#FFF', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   details: { padding: 10, gap: 3 },
   compactDetails: { padding: 8, gap: 2 },
-  price: { fontSize: 15, fontWeight: '800' },
+  price: { fontSize: 15, fontWeight: '800', color: '#2C2C2C' },
   compactPrice: { fontSize: 14 },
   title: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
   compactTitle: { fontSize: 11, lineHeight: 15 },

@@ -10,8 +10,8 @@ import {
   Image,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { signInWithGoogleMobile } from '@/lib/google-native-auth';
 
 export default function LoginScreen() {
@@ -23,6 +23,7 @@ export default function LoginScreen() {
 
 function MobileLoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -40,126 +41,87 @@ function MobileLoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['#3D1A78', '#1A0A2E']}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }]}>
+      <View style={styles.hero}>
+        <Image source={require('@/assets/images/icon.png')} style={styles.appIcon} />
+        <Text style={styles.title}>Pazaryeri</Text>
+        <Text style={styles.tagline}>Satmak bu kadar kolay</Text>
+      </View>
 
-      <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <Image source={require('@/assets/images/icon.png')} style={styles.appIcon} />
-          <Text style={styles.title}>Pazaryeri</Text>
-          <Text style={styles.tagline}>Satmak bu kadar kolay</Text>
-        </View>
+      <View style={styles.actions}>
+        <Pressable
+          style={[styles.btn, styles.googleBtn, googleLoading && styles.disabled]}
+          onPress={handleGoogleLogin}
+          disabled={googleLoading}
+        >
+          {googleLoading ? (
+            <ActivityIndicator color="#2C2C2C" />
+          ) : (
+            <>
+              <Ionicons name="logo-google" size={22} color="#EA4335" />
+              <Text style={styles.btnTextDark}>Google ile devam et</Text>
+            </>
+          )}
+        </Pressable>
 
-        <View style={styles.actions}>
-          <Pressable
-            style={[styles.optionButton, styles.googleButton, googleLoading && styles.disabled]}
-            onPress={handleGoogleLogin}
-            disabled={googleLoading}
-          >
-            {googleLoading ? (
-              <ActivityIndicator color="#3D1A78" />
-            ) : (
-              <>
-                <Ionicons name="logo-google" size={22} color="#EA4335" />
-                <Text style={styles.googleText}>Google ile Giriş Yap</Text>
-              </>
-            )}
-          </Pressable>
+        <Pressable style={styles.btn} onPress={() => router.push('/email-auth')}>
+          <Ionicons name="mail-outline" size={22} color="#2C2C2C" />
+          <Text style={styles.btnTextDark}>E-posta ile devam et</Text>
+        </Pressable>
 
-          <Pressable
-            style={styles.optionButton}
-            onPress={() => router.push('/email-auth')}
-          >
-            <Ionicons name="mail-outline" size={22} color="#3D1A78" />
-            <Text style={styles.optionText}>E-posta ile Giriş Yap</Text>
-          </Pressable>
+        <Pressable
+          style={[styles.btn, styles.primaryBtn]}
+          onPress={() => router.push('/email-auth?mode=register')}
+        >
+          <Ionicons name="person-add-outline" size={22} color="#FFF" />
+          <Text style={styles.btnTextLight}>Hesap oluştur</Text>
+        </Pressable>
 
-          <Pressable
-            style={[styles.optionButton, styles.registerButton]}
-            onPress={() => router.push('/email-auth?mode=register')}
-          >
-            <Ionicons name="person-add-outline" size={22} color="#FFFFFF" />
-            <Text style={styles.registerText}>Kayıt Ol</Text>
-          </Pressable>
-
-          <Text style={styles.legal}>
-            Devam ederek{' '}
-            <Text style={styles.legalLink} onPress={() => router.push('/terms')}>
-              Kullanım Şartları
-            </Text>
-            {' '}ve{' '}
-            <Text style={styles.legalLink} onPress={() => router.push('/privacy')}>
-              Gizlilik Politikası
-            </Text>
-            'nı kabul etmiş olursunuz.
+        <Text style={styles.legal}>
+          Devam ederek{' '}
+          <Text style={styles.legalLink} onPress={() => router.push('/terms')}>
+            Kullanım Şartları
           </Text>
-        </View>
+          {' '}ve{' '}
+          <Text style={styles.legalLink} onPress={() => router.push('/privacy')}>
+            Gizlilik Politikası
+          </Text>
+          'nı kabul edersiniz.
+        </Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: {
+  container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 24,
     justifyContent: 'space-between',
-    padding: 28,
-    paddingTop: 100,
-    paddingBottom: 48,
   },
-  logoContainer: { alignItems: 'center', gap: 14 },
-  appIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 22,
-    elevation: 6,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -1,
-  },
-  tagline: {
-    fontSize: 17,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
-  },
+  hero: { alignItems: 'center', gap: 10, marginTop: 40 },
+  appIcon: { width: 88, height: 88, borderRadius: 20 },
+  title: { fontSize: 34, fontWeight: '900', color: '#FF3B30', letterSpacing: -0.5 },
+  tagline: { fontSize: 16, color: '#717171', fontWeight: '500' },
   actions: { gap: 12 },
-  optionButton: {
+  btn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    borderRadius: 14,
+    borderRadius: 28,
     gap: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F4F4F4',
     minHeight: 54,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
   },
-  googleButton: {},
-  registerButton: {
-    backgroundColor: '#C9A84C',
-    marginTop: 4,
-  },
+  googleBtn: { backgroundColor: '#FFFFFF' },
+  primaryBtn: { backgroundColor: '#FF3B30', borderColor: '#FF3B30', marginTop: 4 },
   disabled: { opacity: 0.7 },
-  googleText: { fontSize: 16, fontWeight: '600', color: '#1A0A2E' },
-  optionText: { fontSize: 16, fontWeight: '600', color: '#1A0A2E' },
-  registerText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  legal: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 8,
-  },
-  legalLink: {
-    color: '#C9A84C',
-    textDecorationLine: 'underline',
-  },
+  btnTextDark: { fontSize: 16, fontWeight: '600', color: '#2C2C2C' },
+  btnTextLight: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  legal: { color: '#9E9E9E', fontSize: 12, textAlign: 'center', lineHeight: 18, marginTop: 8 },
+  legalLink: { color: '#FF3B30', fontWeight: '600' },
 });
