@@ -16,6 +16,9 @@ body {
   color: #1A0A2E;
   -webkit-font-smoothing: antialiased;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
 }
 
 #root {
@@ -23,6 +26,7 @@ body {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
+  overflow-x: hidden;
 }
 
 [role="tablist"] {
@@ -68,7 +72,7 @@ body {
   justify-content: center;
 }
 
-/* İlan grid fallback */
+/* İlan grid */
 #pz-listing-grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
@@ -93,13 +97,6 @@ body {
   transform: translateY(-2px);
 }
 
-@media (max-width: 768px) {
-  #pz-listing-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
-    gap: 12px !important;
-  }
-}
-
 /* İlan detay — geniş ekranda bilgi paneli sabit */
 @media (min-width: 900px) {
   #pz-listing-detail {
@@ -120,4 +117,68 @@ body {
   margin: 12px 16px 4px;
   padding: 12px 0 8px;
   box-shadow: 0 2px 8px rgba(61, 26, 120, 0.04);
+}
+
+/* ─── Mobil web (< 640px) ─── */
+@media (max-width: 640px) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Yapışkan header — kaydırırken üstte kalır */
+  #pz-web-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 200 !important;
+    padding-top: env(safe-area-inset-top);
+    background: #FFFFFF;
+  }
+
+  /* Duyuru bandı mobilde daha kompakt */
+  .pz-marquee-item {
+    font-size: 12px;
+    line-height: 34px;
+  }
+
+  /* İlan grid — 2 sütun */
+  #pz-listing-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Filtre kartı */
+  #pz-filter-section {
+    margin: 12px 12px 4px !important;
+    border-radius: 12px !important;
+    padding: 10px 0 8px !important;
+  }
+
+  /* İlan detay mobil */
+  #pz-listing-detail {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  /* Yatay taşmayı engelle */
+  html, body, #root {
+    overflow-x: hidden !important;
+  }
+
+  /* Dokunma hedefleri */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Input zoom engelle (iOS) */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #pz-listing-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+    gap: 10px !important;
+  }
 }

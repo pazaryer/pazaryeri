@@ -24,11 +24,13 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { WebImage } from '@/components/WebImage';
 import { getListingContactPhone } from '@/lib/contact';
 import { showAlert } from '@/lib/web-alert';
+import { useIsMobileWeb } from '@/hooks/useIsMobileWeb';
 
 export function WebListingDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const mobileWeb = useIsMobileWeb();
   const { user, profile } = useAuth();
   const listingId = Array.isArray(id) ? id[0] : id;
   const { data: listing, isLoading, isError, error, refetch, isFetching } = useListing(listingId ?? '');
@@ -86,110 +88,126 @@ export function WebListingDetailPage() {
     }
   };
 
-  return (
-    <WebShell hideFooter>
-      <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
-        <Pressable style={styles.back} onPress={() => router.back()}>
-          <Text style={styles.backIcon}>←</Text>
-          <Text style={styles.backText}>Geri</Text>
-        </Pressable>
+  const content = (
+    <>
+      <Pressable style={styles.back} onPress={() => router.back()}>
+        <Text style={styles.backIcon}>←</Text>
+        <Text style={styles.backText}>Geri</Text>
+      </Pressable>
 
-        <View nativeID="pz-listing-detail" style={[styles.layout, isWide && styles.layoutWide]}>
-          <View style={[styles.gallery, isWide && styles.galleryWide]}>
-            <Pressable onPress={openImageFullscreen} style={styles.mainImageWrap}>
-              <WebImage uri={images[activeImage]} alt={listing.title} style={styles.mainImage} />
-            </Pressable>
-            {images.length > 1 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbs}>
-                {images.map((img, i) => (
-                  <Pressable key={i} onPress={() => setActiveImage(i)}>
-                    <WebImage
-                      uri={img}
-                      alt={`${listing.title} ${i + 1}`}
-                      style={[styles.thumb, activeImage === i && styles.thumbActive]}
-                    />
-                  </Pressable>
-                ))}
-              </ScrollView>
-            )}
+      <View nativeID="pz-listing-detail" style={[styles.layout, isWide && styles.layoutWide]}>
+        <View style={[styles.gallery, isWide && styles.galleryWide]}>
+          <Pressable onPress={openImageFullscreen} style={styles.mainImageWrap}>
+            <WebImage
+              uri={images[activeImage]}
+              alt={listing.title}
+              style={[styles.mainImage, mobileWeb && styles.mainImageMobile]}
+            />
+          </Pressable>
+          {images.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbs}>
+              {images.map((img, i) => (
+                <Pressable key={i} onPress={() => setActiveImage(i)}>
+                  <WebImage
+                    uri={img}
+                    alt={`${listing.title} ${i + 1}`}
+                    style={[styles.thumb, activeImage === i && styles.thumbActive]}
+                  />
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        <View style={[styles.info, isWide && styles.infoWide]}>
+          <Text style={[styles.price, mobileWeb && styles.priceMobile]}>{formatPrice(listing.price)}</Text>
+          <Text style={styles.title}>{listing.title}</Text>
+
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaIcon}>📍</Text>
+              <Text style={styles.metaText}>{listing.city ?? listing.location ?? 'Türkiye'}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaIcon}>🕐</Text>
+              <Text style={styles.metaText}>{formatTimeAgo(listing.createdAt)}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaIcon}>👁️</Text>
+              <Text style={styles.metaText}>{listing.views} görüntülenme</Text>
+            </View>
           </View>
 
-          <View style={[styles.info, isWide && styles.infoWide]}>
-            <Text style={styles.price}>{formatPrice(listing.price)}</Text>
-            <Text style={styles.title}>{listing.title}</Text>
-
-            <View style={styles.metaRow}>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaIcon}>📍</Text>
-                <Text style={styles.metaText}>{listing.city ?? listing.location ?? 'Türkiye'}</Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaIcon}>🕐</Text>
-                <Text style={styles.metaText}>{formatTimeAgo(listing.createdAt)}</Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaIcon}>👁️</Text>
-                <Text style={styles.metaText}>{listing.views} görüntülenme</Text>
-              </View>
-            </View>
-
-            <View style={styles.seller}>
-              <UserAvatar name={listing.seller.name} avatar={listing.seller.avatar} size={48} />
-              <View style={styles.sellerInfo}>
-                <Text style={styles.sellerName}>{listing.seller.name}</Text>
-                <Text style={styles.sellerMeta}>
-                  ★ {listing.seller.rating} · {listing.seller.totalSales} satış
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.sectionTitle}>Açıklama</Text>
-            <Text style={styles.description}>{listing.description || 'Açıklama eklenmemiş.'}</Text>
-
-            <View style={styles.safetyBox}>
-              <Text style={styles.safetyIcon}>🛡️</Text>
-              <Text style={styles.safetyText}>
-                Güvenliğiniz için ödeme ve teslimatı yüz yüze yapmayı tercih edin.
+          <View style={styles.seller}>
+            <UserAvatar name={listing.seller.name} avatar={listing.seller.avatar} size={48} />
+            <View style={styles.sellerInfo}>
+              <Text style={styles.sellerName}>{listing.seller.name}</Text>
+              <Text style={styles.sellerMeta}>
+                ★ {listing.seller.rating} · {listing.seller.totalSales} satış
               </Text>
             </View>
-
-            {!isOwner && listing.status === 'active' && (
-              <View style={styles.actions}>
-                <ContactActions
-                  phone={contactPhone}
-                  listingTitle={listing.title}
-                  onMessage={handleChat}
-                  messageLoading={startConversation.isPending}
-                />
-                {user && (
-                  <Pressable
-                    style={styles.favBtn}
-                    onPress={() =>
-                      toggleFavorite.mutate({ listingId: listing.id, isFavorite: listing.isFavorite })
-                    }
-                  >
-                    <Text style={styles.favIcon}>{listing.isFavorite ? '❤️' : '🤍'}</Text>
-                  </Pressable>
-                )}
-              </View>
-            )}
-
-            {listing.status === 'sold' && (
-              <View style={styles.soldBadge}>
-                <Text style={styles.soldBadgeText}>Bu ilan satıldı</Text>
-              </View>
-            )}
-
-            {isOwner && (
-              <ListingOwnerActions
-                listingId={listing.id}
-                status={listing.status}
-                onDeleted={() => router.replace('/hesabim')}
-              />
-            )}
           </View>
+
+          <Text style={styles.sectionTitle}>Açıklama</Text>
+          <Text style={styles.description}>{listing.description || 'Açıklama eklenmemiş.'}</Text>
+
+          <View style={styles.safetyBox}>
+            <Text style={styles.safetyIcon}>🛡️</Text>
+            <Text style={styles.safetyText}>
+              Güvenliğiniz için ödeme ve teslimatı yüz yüze yapmayı tercih edin.
+            </Text>
+          </View>
+
+          {!isOwner && listing.status === 'active' && (
+            <View style={styles.actions}>
+              <ContactActions
+                phone={contactPhone}
+                listingTitle={listing.title}
+                onMessage={handleChat}
+                messageLoading={startConversation.isPending}
+              />
+              {user && (
+                <Pressable
+                  style={styles.favBtn}
+                  onPress={() =>
+                    toggleFavorite.mutate({ listingId: listing.id, isFavorite: listing.isFavorite })
+                  }
+                >
+                  <Text style={styles.favIcon}>{listing.isFavorite ? '❤️' : '🤍'}</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {listing.status === 'sold' && (
+            <View style={styles.soldBadge}>
+              <Text style={styles.soldBadgeText}>Bu ilan satıldı</Text>
+            </View>
+          )}
+
+          {isOwner && (
+            <ListingOwnerActions
+              listingId={listing.id}
+              status={listing.status}
+              onDeleted={() => router.replace('/hesabim')}
+            />
+          )}
         </View>
-      </ScrollView>
+      </View>
+    </>
+  );
+
+  return (
+    <WebShell hideFooter>
+      {mobileWeb ? (
+        <View style={styles.page}>
+          <View style={[styles.pageContent, styles.pageContentMobile]}>{content}</View>
+        </View>
+      ) : (
+        <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
+          {content}
+        </ScrollView>
+      )}
     </WebShell>
   );
 }
@@ -204,6 +222,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingBottom: 60,
   },
+  pageContentMobile: { paddingHorizontal: 12, paddingVertical: 12, paddingBottom: 40 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 400 },
   errorTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8, color: '#1A0A2E' },
   errorSub: { color: '#666', marginBottom: 16, textAlign: 'center', paddingHorizontal: 24 },
@@ -218,12 +237,14 @@ const styles = StyleSheet.create({
   galleryWide: { flex: 1.1, minWidth: 0 },
   mainImageWrap: { width: '100%', borderRadius: 16, overflow: 'hidden', backgroundColor: '#EDE8F5' },
   mainImage: { width: '100%', height: 360, borderRadius: 16, backgroundColor: '#EDE8F5' },
+  mainImageMobile: { height: 260, borderRadius: 12 },
   thumbs: { gap: 8, paddingVertical: 4 },
   thumb: { width: 72, height: 72, borderRadius: 10, opacity: 0.7, backgroundColor: '#EDE8F5' },
   thumbActive: { opacity: 1, borderWidth: 2, borderColor: '#3D1A78' },
   info: { gap: 12, width: '100%' },
   infoWide: { flex: 1, minWidth: 0, paddingTop: 4 },
   price: { fontSize: 32, fontWeight: '800', color: '#3D1A78' },
+  priceMobile: { fontSize: 26 },
   title: { fontSize: 22, fontWeight: '700', color: '#1A0A2E', lineHeight: 30 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 4 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },

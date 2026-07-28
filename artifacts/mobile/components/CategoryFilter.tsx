@@ -3,6 +3,7 @@ import { ScrollView, Text, Pressable, StyleSheet, Platform } from 'react-native'
 import { useColors } from '@/hooks/useColors';
 import { Ionicons } from '@expo/vector-icons';
 import { categoryEmoji } from '@/lib/category-icons';
+import { useIsMobileWeb } from '@/hooks/useIsMobileWeb';
 
 interface CategoryFilterProps {
   categories: string[];
@@ -35,12 +36,13 @@ const NATIVE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export function CategoryFilter({ categories, selectedCategory, onSelect }: CategoryFilterProps) {
   const colors = useColors();
   const useEmoji = Platform.OS === 'web';
+  const mobileWeb = useIsMobileWeb();
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, mobileWeb && styles.containerMobile]}
     >
       {categories.map((category) => {
         const selected = category === selectedCategory;
@@ -50,6 +52,7 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Categ
             onPress={() => onSelect(category)}
             style={[
               styles.chip,
+              mobileWeb && styles.chipMobile,
               {
                 backgroundColor: selected ? colors.primary : colors.card,
                 borderColor: selected ? colors.primary : colors.border,
@@ -57,7 +60,7 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Categ
             ]}
           >
             {useEmoji ? (
-              <Text style={styles.emoji}>{categoryEmoji(category)}</Text>
+              <Text style={[styles.emoji, mobileWeb && styles.emojiMobile]}>{categoryEmoji(category)}</Text>
             ) : (
               <Ionicons
                 name={NATIVE_ICONS[category] ?? 'grid'}
@@ -65,7 +68,7 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Categ
                 color={selected ? '#FFF' : colors.mutedForeground}
               />
             )}
-            <Text style={[styles.chipText, { color: selected ? '#FFF' : colors.foreground }]}>
+            <Text style={[styles.chipText, mobileWeb && styles.chipTextMobile, { color: selected ? '#FFF' : colors.foreground }]}>
               {category}
             </Text>
           </Pressable>
@@ -77,6 +80,7 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Categ
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 12, gap: 8, paddingVertical: 4 },
+  containerMobile: { paddingHorizontal: 10, gap: 6 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -86,6 +90,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
+  chipMobile: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 18 },
   emoji: { fontSize: 13 },
+  emojiMobile: { fontSize: 12 },
   chipText: { fontSize: 12, fontWeight: '600' },
+  chipTextMobile: { fontSize: 11 },
 });

@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
 import { WEB_CATEGORIES } from '@/lib/categories';
 import { WebAnnouncementBanner } from './WebAnnouncementBanner';
+import { useIsMobileWeb, useIsTabletWeb } from '@/hooks/useIsMobileWeb';
 
 const HEADER_CATEGORIES = WEB_CATEGORIES;
 
@@ -34,29 +35,92 @@ export function WebShell({
   const { width } = useWindowDimensions();
   const router = useRouter();
   const { user, profile } = useAuth();
-  const mobile = width < 640;
-  const tablet = width < 1024;
+  const mobileWeb = useIsMobileWeb();
+  const tabletWeb = useIsTabletWeb();
+  const mobile = mobileWeb || width < 640;
+  const tablet = tabletWeb || width < 1024;
 
   return (
-    <View style={styles.root}>
-      <WebAnnouncementBanner />
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Link href="/" asChild>
-            <Pressable style={styles.brand}>
-              <Logo size={mobile ? 30 : 36} />
-              {!mobile && <Text style={styles.brandText}>Pazaryeri</Text>}
-            </Pressable>
-          </Link>
+    <View style={[styles.root, mobileWeb && styles.rootMobileWeb]}>
+      <View nativeID="pz-web-header" style={styles.headerSticky}>
+        <WebAnnouncementBanner />
+        <View style={[styles.header, mobileWeb && styles.headerMobile]}>
+          <View style={[styles.headerTop, mobileWeb && styles.headerTopMobile]}>
+            <Link href="/" asChild>
+              <Pressable style={styles.brand}>
+                <Logo size={mobileWeb ? 28 : mobile ? 30 : 36} />
+                <Text style={[styles.brandText, mobileWeb && styles.brandTextMobile]}>
+                  Pazaryeri
+                </Text>
+              </Pressable>
+            </Link>
 
-          {!mobile && (
-            <View style={styles.searchWrap}>
+            {!mobile && (
+              <View style={styles.searchWrap}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={onSearchChange}
+                  onSubmitEditing={onSearchSubmit}
+                  placeholder={tablet ? 'Ara...' : 'Ne aramıştınız? Telefon, araba, mobilya...'}
+                  placeholderTextColor="#9D8BB5"
+                  style={styles.searchInput}
+                  returnKeyType="search"
+                />
+              </View>
+            )}
+
+            <View style={[styles.headerActions, mobileWeb && styles.headerActionsMobile]}>
+              {user ? (
+                <>
+                  <Pressable
+                    style={[styles.actionBtn, mobileWeb && styles.actionBtnMobile]}
+                    onPress={() => router.push('/ilan-ver')}
+                  >
+                    <Text style={styles.actionIcon}>＋</Text>
+                    {!tablet && <Text style={styles.actionText}>İlan Ver</Text>}
+                  </Pressable>
+                  <Pressable
+                    style={[styles.actionBtn, mobileWeb && styles.actionBtnMobile]}
+                    onPress={() => router.push('/mesajlar')}
+                  >
+                    <Text style={styles.actionIcon}>💬</Text>
+                    {!tablet && <Text style={styles.actionText}>Mesajlar</Text>}
+                  </Pressable>
+                  <Pressable
+                    style={[styles.profileBtn, mobileWeb && styles.profileBtnMobile]}
+                    onPress={() => router.push('/hesabim')}
+                  >
+                    <Text style={styles.profileBtnText} numberOfLines={1}>
+                      {mobileWeb ? '👤' : (profile?.name?.split(' ')[0] ?? 'Hesabım')}
+                    </Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Link href="/giris" asChild>
+                    <Pressable style={[styles.ghostBtn, mobileWeb && styles.ghostBtnMobile]}>
+                      <Text style={styles.ghostBtnText}>Giriş</Text>
+                    </Pressable>
+                  </Link>
+                  <Link href="/kayit" asChild>
+                    <Pressable style={[styles.primaryBtn, mobileWeb && styles.primaryBtnMobile]}>
+                      <Text style={styles.primaryBtnText}>{mobile ? 'Kayıt' : 'Kayıt Ol'}</Text>
+                    </Pressable>
+                  </Link>
+                </>
+              )}
+            </View>
+          </View>
+
+          {mobile && (
+            <View style={[styles.searchWrapMobile, mobileWeb && styles.searchWrapMobileCompact]}>
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 value={searchQuery}
                 onChangeText={onSearchChange}
                 onSubmitEditing={onSearchSubmit}
-                placeholder={tablet ? 'Ara...' : 'Ne aramıştınız? Telefon, araba, mobilya...'}
+                placeholder="Ne aramıştınız?"
                 placeholderTextColor="#9D8BB5"
                 style={styles.searchInput}
                 returnKeyType="search"
@@ -64,83 +128,37 @@ export function WebShell({
             </View>
           )}
 
-          <View style={styles.headerActions}>
-            {user ? (
-              <>
-                <Pressable style={styles.actionBtn} onPress={() => router.push('/ilan-ver')}>
-                  <Text style={styles.actionIcon}>＋</Text>
-                  {!tablet && <Text style={styles.actionText}>İlan Ver</Text>}
-                </Pressable>
-                <Pressable style={styles.actionBtn} onPress={() => router.push('/mesajlar')}>
-                  <Text style={styles.actionIcon}>💬</Text>
-                  {!tablet && <Text style={styles.actionText}>Mesajlar</Text>}
-                </Pressable>
-                <Pressable style={styles.profileBtn} onPress={() => router.push('/hesabim')}>
-                  <Text style={styles.profileBtnText}>
-                    {profile?.name?.split(' ')[0] ?? 'Hesabım'}
-                  </Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Link href="/giris" asChild>
-                  <Pressable style={styles.ghostBtn}>
-                    <Text style={styles.ghostBtnText}>Giriş</Text>
+          {!mobileWeb && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.navRow}
+              style={styles.navScroll}
+            >
+              {HEADER_CATEGORIES.map((cat) => (
+                <Link key={cat.label} href={cat.href as any} asChild>
+                  <Pressable style={styles.navChip}>
+                    <Text style={styles.navChipText}>
+                      {cat.icon} {cat.label}
+                    </Text>
                   </Pressable>
                 </Link>
-                <Link href="/kayit" asChild>
-                  <Pressable style={styles.primaryBtn}>
-                    <Text style={styles.primaryBtnText}>{mobile ? 'Kayıt' : 'Kayıt Ol'}</Text>
-                  </Pressable>
-                </Link>
-              </>
-            )}
-          </View>
+              ))}
+            </ScrollView>
+          )}
         </View>
-
-        {mobile && (
-          <View style={styles.searchWrapMobile}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              value={searchQuery}
-              onChangeText={onSearchChange}
-              onSubmitEditing={onSearchSubmit}
-              placeholder="Ne aramıştınız?"
-              placeholderTextColor="#9D8BB5"
-              style={styles.searchInput}
-              returnKeyType="search"
-            />
-          </View>
-        )}
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.navRow}
-          style={styles.navScroll}
-        >
-          {HEADER_CATEGORIES.map((cat) => (
-            <Link key={cat.label} href={cat.href as any} asChild>
-              <Pressable style={styles.navChip}>
-                <Text style={styles.navChipText}>
-                  {cat.icon} {cat.label}
-                </Text>
-              </Pressable>
-            </Link>
-          ))}
-        </ScrollView>
       </View>
 
-      <View style={styles.main}>{children}</View>
+      <View style={[styles.main, mobileWeb && styles.mainMobileWeb]}>{children}</View>
 
       {!hideFooter && (
-        <View style={styles.footer}>
-          <View style={styles.footerInner}>
+        <View style={[styles.footer, mobileWeb && styles.footerMobile]}>
+          <View style={[styles.footerInner, mobileWeb && styles.footerInnerMobile]}>
             <View style={styles.footerLeft}>
-              <Logo size={24} />
+              <Logo size={22} />
               <Text style={styles.footerTitle}>Pazaryeri</Text>
             </View>
-            <View style={styles.footerLinks}>
+            <View style={[styles.footerLinks, mobileWeb && styles.footerLinksMobile]}>
               <Link href="/kesfet" asChild>
                 <Pressable><Text style={styles.footerLink}>İlanlar</Text></Pressable>
               </Link>
@@ -175,6 +193,8 @@ export function WebShell({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent', minHeight: '100%', width: '100%' },
+  rootMobileWeb: { flex: 0, minHeight: '100vh' as unknown as number },
+  headerSticky: { width: '100%', zIndex: 100 },
   header: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
@@ -186,6 +206,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
+  headerMobile: { shadowOpacity: 0.04, shadowRadius: 8 },
   headerTop: {
     width: '100%',
     maxWidth: 1400,
@@ -197,8 +218,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 12,
   },
+  headerTopMobile: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6, gap: 8 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   brandText: { fontSize: 22, fontWeight: '800', color: '#1A0A2E', letterSpacing: -0.8 },
+  brandTextMobile: { fontSize: 17, letterSpacing: -0.5 },
   searchWrap: {
     flex: 1,
     flexDirection: 'row',
@@ -225,6 +248,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 8,
   },
+  searchWrapMobileCompact: { marginHorizontal: 12, marginBottom: 10, height: 40, borderRadius: 20 },
   searchIcon: { fontSize: 15, flexShrink: 0 },
   searchInput: { flex: 1, fontSize: 14, color: '#1A0A2E', outlineStyle: 'none', minWidth: 0 } as any,
   headerActions: {
@@ -234,6 +258,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     marginLeft: 'auto',
   },
+  headerActionsMobile: { gap: 6 },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -243,9 +268,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#F4F1FA',
   },
+  actionBtnMobile: { paddingHorizontal: 8, paddingVertical: 7, borderRadius: 8 },
   actionIcon: { fontSize: 15 },
   actionText: { color: '#3D1A78', fontWeight: '700', fontSize: 13 },
   ghostBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  ghostBtnMobile: { paddingHorizontal: 10, paddingVertical: 7 },
   ghostBtnText: { color: '#3D1A78', fontWeight: '700', fontSize: 13 },
   primaryBtn: {
     backgroundColor: '#3D1A78',
@@ -253,13 +280,16 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 10,
   },
+  primaryBtnMobile: { paddingHorizontal: 12, paddingVertical: 8 },
   primaryBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
   profileBtn: {
     backgroundColor: '#3D1A78',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 18,
+    maxWidth: 100,
   },
+  profileBtnMobile: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, maxWidth: 36 },
   profileBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
   navScroll: { width: '100%' },
   navRow: {
@@ -281,12 +311,14 @@ const styles = StyleSheet.create({
   },
   navChipText: { color: '#3D1A78', fontWeight: '600', fontSize: 11 },
   main: { flex: 1, width: '100%', alignSelf: 'stretch', backgroundColor: 'transparent' },
+  mainMobileWeb: { flex: 0, width: '100%' },
   footer: {
     backgroundColor: '#1A0A2E',
     paddingVertical: 16,
     width: '100%',
     marginTop: 'auto',
   },
+  footerMobile: { paddingVertical: 20 },
   footerInner: {
     width: '100%',
     maxWidth: 1400,
@@ -298,9 +330,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
+  footerInnerMobile: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    gap: 14,
+  },
   footerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   footerTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
   footerLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  footerLinksMobile: { justifyContent: 'center', gap: 12 },
   footerLink: { color: '#C9A84C', fontSize: 13, fontWeight: '600' },
   footerCopy: { color: 'rgba(255,255,255,0.35)', fontSize: 11 },
 });

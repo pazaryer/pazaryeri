@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-nati
 import { useListings } from '@/lib/hooks';
 import { WebListingCard } from './WebListingCard';
 import type { LocationFilterValue } from '@/components/LocationFilterBar';
+import { useIsMobileWeb } from '@/hooks/useIsMobileWeb';
 
 interface WebListingGridProps {
   category?: string;
@@ -14,6 +15,7 @@ interface WebListingGridProps {
 }
 
 export function WebListingGrid({ category, query, title, location, lat, lon }: WebListingGridProps) {
+  const mobileWeb = useIsMobileWeb();
   const {
     data,
     isLoading,
@@ -43,26 +45,26 @@ export function WebListingGrid({ category, query, title, location, lat, lon }: W
   }, [refetch]);
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, mobileWeb && styles.wrapMobile]}>
       {title && (
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
+        <View style={[styles.header, mobileWeb && styles.headerMobile]}>
+          <Text style={[styles.title, mobileWeb && styles.titleMobile]}>{title}</Text>
           <Pressable style={styles.refreshBtn} onPress={handleRefresh} disabled={isRefetching}>
             {isRefetching ? (
               <ActivityIndicator size="small" color="#3D1A78" />
             ) : (
-              <Text style={styles.refreshText}>↻ Yenile</Text>
+              <Text style={styles.refreshText}>↻</Text>
             )}
           </Pressable>
         </View>
       )}
 
       {isLoading ? (
-        <View style={styles.center}>
+        <View style={[styles.center, mobileWeb && styles.centerMobile]}>
           <ActivityIndicator size="large" color="#3D1A78" />
         </View>
       ) : items.length === 0 ? (
-        <View style={styles.center}>
+        <View style={[styles.center, mobileWeb && styles.centerMobile]}>
           <Text style={styles.empty}>Henüz ilan bulunamadı</Text>
           <Text style={styles.emptyHint}>İlk ilanı siz verin!</Text>
         </View>
@@ -74,11 +76,11 @@ export function WebListingGrid({ category, query, title, location, lat, lon }: W
             ))}
           </View>
           {hasNextPage && (
-            <Pressable style={styles.moreBtn} onPress={loadMore} disabled={isFetchingNextPage}>
+            <Pressable style={[styles.moreBtn, mobileWeb && styles.moreBtnMobile]} onPress={loadMore} disabled={isFetchingNextPage}>
               {isFetchingNextPage ? (
                 <ActivityIndicator color="#3D1A78" />
               ) : (
-                <Text style={styles.moreBtnText}>Daha Fazla İlan Yükle</Text>
+                <Text style={styles.moreBtnText}>Daha Fazla Yükle</Text>
               )}
             </Pressable>
           )}
@@ -96,6 +98,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
+  wrapMobile: { paddingHorizontal: 12, paddingVertical: 12 },
   header: {
     marginBottom: 16,
     flexDirection: 'row',
@@ -103,20 +106,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  headerMobile: { marginBottom: 12 },
   title: { fontSize: 20, fontWeight: '800', color: '#1A0A2E', letterSpacing: -0.5, flex: 1 },
+  titleMobile: { fontSize: 17 },
   refreshBtn: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E8E0F4',
     backgroundColor: '#FFFFFF',
-    minWidth: 80,
+    minWidth: 40,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  refreshText: { color: '#3D1A78', fontWeight: '700', fontSize: 13 },
+  refreshText: { color: '#3D1A78', fontWeight: '700', fontSize: 16 },
   grid: { width: '100%' },
   center: { padding: 60, alignItems: 'center', gap: 8 },
+  centerMobile: { padding: 40 },
   empty: { color: '#1A0A2E', fontSize: 18, fontWeight: '600' },
   emptyHint: { color: '#7A6B8A', fontSize: 14 },
   moreBtn: {
@@ -128,5 +135,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#3D1A78',
   },
-  moreBtnText: { color: '#3D1A78', fontWeight: '700', fontSize: 15 },
+  moreBtnMobile: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, width: '100%' },
+  moreBtnText: { color: '#3D1A78', fontWeight: '700', fontSize: 15, textAlign: 'center' },
 });
