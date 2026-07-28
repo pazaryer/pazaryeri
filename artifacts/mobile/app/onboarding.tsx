@@ -11,11 +11,13 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { BRAND } from '@/constants/brand';
 import { AppBrandMark } from '@/components/AppBrandMark';
 import { AppIcon } from '@/components/AppIcon';
 import { useAuth } from '@/contexts/AuthContext';
+import { setOnboardingComplete } from '@/lib/onboarding';
 
 const { width } = Dimensions.get('window');
 
@@ -64,7 +66,7 @@ export default function OnboardingScreen() {
   const requestPermissions = async () => {
     try {
       await Location.requestForegroundPermissionsAsync();
-      if (Platform.OS !== 'web') {
+      if (Platform.OS !== 'web' && Constants.appOwnership !== 'expo') {
         const Notifications = await import('expo-notifications');
         await Notifications.requestPermissionsAsync();
       }
