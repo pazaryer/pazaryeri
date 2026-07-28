@@ -25,9 +25,15 @@ interface ImageGalleryModalProps {
 export function ImageGalleryModal({ images, initialIndex = 0, visible, onClose }: ImageGalleryModalProps) {
   const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(initialIndex);
+  const scrollRef = React.useRef<ScrollView>(null);
 
   React.useEffect(() => {
-    if (visible) setIndex(initialIndex);
+    if (visible) {
+      setIndex(initialIndex);
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ x: initialIndex * SCREEN_WIDTH, animated: false });
+      });
+    }
   }, [visible, initialIndex]);
 
   if (!visible || images.length === 0) return null;
@@ -40,21 +46,21 @@ export function ImageGalleryModal({ images, initialIndex = 0, visible, onClose }
           <Ionicons name="close" size={28} color="#FFF" />
         </Pressable>
 
-        <Text style={styles.counter}>
+        <Text style={[styles.counter, { top: insets.top + 16 }]}>
           {index + 1} / {images.length}
         </Text>
 
         <ScrollView
+          ref={scrollRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          contentOffset={{ x: index * SCREEN_WIDTH, y: 0 }}
           onMomentumScrollEnd={(e) => {
             setIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH));
           }}
         >
           {images.map((uri, i) => (
-            <View key={i} style={styles.slide}>
+            <View key={`${uri}-${i}`} style={styles.slide}>
               <Image source={{ uri }} style={styles.image} contentFit="contain" />
             </View>
           ))}

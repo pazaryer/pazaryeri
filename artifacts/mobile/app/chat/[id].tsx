@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useColors } from '@/hooks/useColors';
-import { useMessages, useSendMessage } from '@/lib/hooks';
+import { useMessages, useSendMessage, useHeartbeat, formatLastActive } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function ChatScreen() {
@@ -28,10 +28,18 @@ export default function ChatScreen() {
 
   const { data, isLoading } = useMessages(conversationId ?? '');
   const sendMessage = useSendMessage();
+  const heartbeat = useHeartbeat();
   const [text, setText] = useState('');
 
   const messages = data?.items ?? [];
+  const conversation = data?.conversation;
   const headerHeight = insets.top + 56;
+
+  useEffect(() => {
+    heartbeat.mutate();
+    const t = setInterval(() => heartbeat.mutate(), 60_000);
+    return () => clearInterval(t);
+  }, [conversationId]);
 
   const scrollToEnd = useCallback(() => {
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
@@ -64,7 +72,17 @@ export default function ChatScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={28} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Sohbet</Text>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={[styles.headerTitle, { color: colors.foreground }]} numberOfLines={1}>
+            {conversation?.otherUser.name ?? 'Sohbet'}
+          </Text>
+          <Text style={[styles.headerSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+            {conversation?.otherUser.isOnline
+              ? 'Çevrimiçi'
+              : formatLastActive(conversation?.otherUser.lastActiveAt, conversation?.otherUser.isOnline)}
+            {conversation?.listingTitle ? ` · ${conversation.listingTitle}` : ''}
+          </Text>
+        </View>
         <View style={{ width: 28 }} />
       </View>
 
@@ -108,6 +126,9 @@ export default function ChatScreen() {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
+                    {isMine && (
+                      item.isRead ? ' · Okundu' : item.deliveredAt ? ' · İletildi' : ' · Gönderildi'
+                    )}
                   </Text>
                 </View>
               );
@@ -168,7 +189,8 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
+  headerTitle: { fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  headerSub: { fontSize: 11, textAlign: 'center', marginTop: 2 },
   bubble: { maxWidth: '80%', padding: 12, borderRadius: 16, marginBottom: 8 },
   myBubble: { alignSelf: 'flex-end', borderBottomRightRadius: 4 },
   theirBubble: { alignSelf: 'flex-start', borderBottomLeftRadius: 4 },

@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice, useMyListings, type ListingSummary } from '@/lib/hooks';
 
 const { width } = Dimensions.get('window');
-const LISTING_CARD_WIDTH = width * 0.42;
+const LISTING_CARD_WIDTH = width * 0.36;
 
 export default function ProfileScreen() {
   const colors = useColors();
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
   },
-  listingImageWrap: { height: 130, position: 'relative' },
+  listingImageWrap: { height: 100, position: 'relative' },
   listingImage: { width: '100%', height: '100%' },
   listingGradient: { ...StyleSheet.absoluteFillObject },
   statusPill: {

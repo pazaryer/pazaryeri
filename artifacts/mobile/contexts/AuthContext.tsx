@@ -110,6 +110,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       setProfile(await applyProfileExtras(u, p));
 
+      apiFetch('/users/me/heartbeat', { method: 'POST' }).catch(() => null);
+
       if (Platform.OS !== 'web' && Constants.appOwnership !== 'expo') {
         const { registerForPushNotifications } = await import('@/lib/notifications');
         registerForPushNotifications().catch(() => null);
@@ -151,6 +153,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     return unsub;
   }, [syncProfile]);
+
+  useEffect(() => {
+    if (!user) return;
+    const tick = () => apiFetch('/users/me/heartbeat', { method: 'POST' }).catch(() => null);
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, [user?.uid]);
 
   const signInWithEmail = async (email: string, password: string) => {
     await signInWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);

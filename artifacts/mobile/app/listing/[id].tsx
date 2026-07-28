@@ -20,6 +20,7 @@ import { FavoriteButton } from '@/components/FavoriteButton';
 import { ImageGalleryModal } from '@/components/ImageGalleryModal';
 import { OfferModal } from '@/components/OfferModal';
 import { ListingOffersSection } from '@/components/ListingOffersSection';
+import { ReviewModal } from '@/components/ReviewModal';
 import { WebListingDetailPage } from '@/components/web/WebListingDetailPage';
 import {
   useListing,
@@ -31,6 +32,7 @@ import {
   useAcceptOffer,
   useRejectOffer,
   useCounterOffer,
+  useCreateReview,
   formatPrice,
   formatTimeAgo,
 } from '@/lib/hooks';
@@ -64,12 +66,14 @@ function MobileListingDetailScreen() {
   const acceptOffer = useAcceptOffer();
   const rejectOffer = useRejectOffer();
   const counterOffer = useCounterOffer();
+  const createReview = useCreateReview();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [offerOpen, setOfferOpen] = useState(false);
   const [counterOpen, setCounterOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   if (isLoading || (isFetching && !listing)) {
     return (
@@ -258,10 +262,15 @@ function MobileListingDetailScreen() {
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={14} color="#FFB800" />
                 <Text style={[styles.ratingText, { color: colors.mutedForeground }]}>
-                  {listing.seller.rating} ({listing.seller.totalSales} değerlendirme)
+                  {listing.seller.rating > 0 ? listing.seller.rating.toFixed(1) : '—'} ({listing.seller.totalSales} yorum)
                 </Text>
               </View>
             </View>
+            {!isOwner && user && (
+              <Pressable onPress={() => setReviewOpen(true)} style={[styles.reviewBtn, { borderColor: colors.primary }]}>
+                <Text style={[styles.reviewBtnText, { color: colors.primary }]}>Değerlendir</Text>
+              </Pressable>
+            )}
           </View>
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -386,6 +395,21 @@ function MobileListingDetailScreen() {
           Alert.alert('Başarılı', 'Karşı teklif gönderildi');
         }}
       />
+
+      <ReviewModal
+        visible={reviewOpen}
+        userName={listing.seller.name}
+        onClose={() => setReviewOpen(false)}
+        onSubmit={async (rating, comment) => {
+          await createReview.mutateAsync({
+            revieweeId: listing.sellerId,
+            listingId: listing.id,
+            rating,
+            comment,
+          });
+          Alert.alert('Teşekkürler', 'Değerlendirmeniz kaydedildi');
+        }}
+      />
     </View>
   );
 }
@@ -414,6 +438,8 @@ const styles = StyleSheet.create({
   infoText: { fontSize: 13 },
   divider: { height: 1, width: '100%', marginVertical: 20 },
   sellerCard: { flexDirection: 'row', alignItems: 'center' },
+  reviewBtn: { marginTop: 10, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
+  reviewBtnText: { fontSize: 12, fontWeight: '700' },
   sellerAvatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
   sellerInfo: { flex: 1 },
   sellerNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },

@@ -1,22 +1,24 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   FlatList,
-  TextInput,
   Platform,
   Text,
   ActivityIndicator,
   RefreshControl,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { useColors } from '@/hooks/useColors';
 import { ListingCard } from '@/components/ListingCard';
 import { CategoryFilter } from '@/components/CategoryFilter';
+import { LocationFilterBar, type LocationFilterValue } from '@/components/LocationFilterBar';
 import { Logo } from '@/components/Logo';
-import { useListings } from '@/lib/hooks';
+import { useListings, useNotifications } from '@/lib/hooks';
 import { LISTING_CATEGORIES } from '@/lib/categories';
 
 export default function HomeScreen() {
@@ -27,6 +29,19 @@ export default function HomeScreen() {
   const headerTop = isWeb ? 67 : insets.top;
 
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
+  const [locationFilter, setLocationFilter] = useState<LocationFilterValue>({});
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+
+  const { data: notificationsData } = useNotifications();
+  const unreadNotifs = notificationsData?.items.filter((n) => !n.isRead).length ?? 0;
+
+  useEffect(() => {
+    if (locationFilter.radiusKm) {
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+        .then((pos) => setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
+        .catch(() => setCoords(null));
+    }
+  }, [locationFilter.radiusKm]);
 
   const {
     data,
@@ -38,11 +53,14 @@ export default function HomeScreen() {
     isFetchingNextPage,
   } = useListings({
     category: selectedCategory === 'Tümü' ? undefined : selectedCategory,
+    city: locationFilter.city,
+    district: locationFilter.district,
+    radiusKm: locationFilter.radiusKm,
+    lat: coords?.lat,
+    lon: coords?.lon,
   });
 
   const allItems = data?.pages.flatMap((p) => p.items) ?? [];
-  const col1 = allItems.filter((_, i) => i % 2 === 0);
-  const col2 = allItems.filter((_, i) => i % 2 === 1);
 
   const onEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
@@ -50,37 +68,29 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: headerTop,
-            backgroundColor: colors.background,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
+      <View style={[styles.header, { paddingTop: headerTop, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
           <View style={styles.logoRow}>
-            <Logo size={28} />
+            <Logo size={26} />
             <Text style={[styles.brandText, { color: colors.foreground }]}>Pazaryeri</Text>
           </View>
-          <Ionicons name="notifications-outline" size={24} color={colors.foreground} />
+          <Pressable onPress={() => router.push('/notifications')} hitSlop={12} style={styles.bellBtn}>
+            <Ionicons name="notifications-outline" size={22} color={colors.foreground} />
+            {unreadNotifs > 0 && (
+              <View style={[styles.bellBadge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.bellBadgeText}>{unreadNotifs > 9 ? '9+' : unreadNotifs}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
         <View style={styles.searchContainer}>
-          <View
+          <Pressable
             style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onTouchEnd={() => router.push('/(tabs)/explore')}
+            onPress={() => router.push('/(tabs)/explore')}
           >
-            <Ionicons name="search" size={20} color={colors.mutedForeground} />
-            <TextInput
-              placeholder="Telefon, araba, mobilya..."
-              placeholderTextColor={colors.mutedForeground}
-              style={[styles.searchInput, { color: colors.foreground }]}
-              editable={false}
-              pointerEvents="none"
-            />
-          </View>
+            <Ionicons name="search" size={18} color={colors.mutedForeground} />
+            <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>Telefon, araba, mobilya...</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -90,22 +100,11 @@ export default function HomeScreen() {
         </View>
       ) : (
         <FlatList
-          data={[{ id: 'grid' }]}
-          renderItem={() => (
-            <View style={styles.masonryContainer}>
-              <View style={styles.column}>
-                {col1.map((item) => (
-                  <ListingCard key={item.id} item={item} />
-                ))}
-              </View>
-              <View style={styles.column}>
-                {col2.map((item) => (
-                  <ListingCard key={item.id} item={item} />
-                ))}
-              </View>
-            </View>
-          )}
-          keyExtractor={() => 'grid'}
+          data={allItems}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          renderItem={({ item }) => <ListingCard item={item} compact />}
           ListHeaderComponent={
             <View style={styles.listHeader}>
               <CategoryFilter
@@ -113,6 +112,7 @@ export default function HomeScreen() {
                 selectedCategory={selectedCategory}
                 onSelect={setSelectedCategory}
               />
+              <LocationFilterBar value={locationFilter} onChange={setLocationFilter} />
             </View>
           }
           ListEmptyComponent={
@@ -121,17 +121,13 @@ export default function HomeScreen() {
             </View>
           }
           ListFooterComponent={
-            isFetchingNextPage ? (
-              <ActivityIndicator style={{ margin: 20 }} color={colors.primary} />
-            ) : null
+            isFetchingNextPage ? <ActivityIndicator style={{ margin: 20 }} color={colors.primary} /> : null
           }
           onEndReached={onEndReached}
           onEndReachedThreshold={0.5}
-          refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
-          }
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+          contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: insets.bottom + 100 }}
         />
       )}
     </View>
@@ -140,23 +136,35 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, zIndex: 10 },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  header: { paddingHorizontal: 14, paddingBottom: 10, borderBottomWidth: 1 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandText: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  brandText: { fontSize: 20, fontWeight: '800' },
+  bellBtn: { position: 'relative', padding: 4 },
+  bellBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  bellBadgeText: { color: '#FFF', fontSize: 9, fontWeight: '800' },
   searchContainer: { width: '100%' },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    height: 48,
-    borderRadius: 24,
+    paddingHorizontal: 14,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 1,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 16 },
-  listHeader: { paddingBottom: 8 },
-  masonryContainer: { flexDirection: 'row', paddingHorizontal: 10 },
-  column: { flex: 1, flexDirection: 'column' },
+  searchPlaceholder: { fontSize: 14 },
+  listHeader: { paddingTop: 8, paddingBottom: 4 },
+  row: { gap: 0 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
 });

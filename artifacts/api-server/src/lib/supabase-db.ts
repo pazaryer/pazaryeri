@@ -89,7 +89,14 @@ export type DbListingImage = {
   sort_order: number;
 };
 
+export function userPresence(lastActiveAt?: string | null) {
+  if (!lastActiveAt) return { lastActiveAt: null as string | null, isOnline: false };
+  const isOnline = Date.now() - new Date(lastActiveAt).getTime() < 120_000;
+  return { lastActiveAt, isOnline };
+}
+
 export function formatUser(u: DbUser) {
+  const presence = userPresence((u as DbUser & { last_active_at?: string }).last_active_at);
   return {
     id: u.id,
     email: u.email,
@@ -103,6 +110,7 @@ export function formatUser(u: DbUser) {
     totalSales: u.total_sales,
     isVerified: u.is_verified,
     createdAt: u.created_at,
+    ...presence,
   };
 }
 

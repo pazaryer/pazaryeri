@@ -84,4 +84,17 @@ router.post("/users/me/push-token", authMiddleware, async (req, res, next) => {
   }
 });
 
+router.post("/users/me/heartbeat", authMiddleware, async (req, res, next) => {
+  try {
+    const { getSupabaseAdmin } = await import("../lib/supabase-db");
+    await getSupabaseAdmin()
+      .from("users")
+      .update({ last_active_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("id", req.user!.id);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

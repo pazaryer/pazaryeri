@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,14 +15,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { useColors } from '@/hooks/useColors';
 import { useListings } from '@/lib/hooks';
 import { ListingCard } from '@/components/ListingCard';
+import { LocationFilterBar, type LocationFilterValue } from '@/components/LocationFilterBar';
 import { MOBILE_EXPLORE_CATEGORIES } from '@/lib/categories';
 
 const { width } = Dimensions.get('window');
-const CARD_GAP = 10;
-const CATEGORY_WIDTH = (width - 32 - CARD_GAP) / 2;
+const CARD_GAP = 8;
+const CATEGORY_WIDTH = (width - 32 - CARD_GAP * 2) / 3;
 
 export default function ExploreScreen() {
   const colors = useColors();
@@ -33,6 +35,16 @@ export default function ExploreScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [locationFilter, setLocationFilter] = useState<LocationFilterValue>({});
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+
+  useEffect(() => {
+    if (locationFilter.radiusKm) {
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+        .then((pos) => setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
+        .catch(() => setCoords(null));
+    }
+  }, [locationFilter.radiusKm]);
 
   const {
     data: listingsData,
@@ -42,44 +54,35 @@ export default function ExploreScreen() {
   } = useListings({
     category: selectedCategory && searchQuery.length < 2 ? selectedCategory : undefined,
     q: searchQuery.length >= 2 ? searchQuery : undefined,
+    city: locationFilter.city,
+    district: locationFilter.district,
+    radiusKm: locationFilter.radiusKm,
+    lat: coords?.lat,
+    lon: coords?.lon,
   });
 
   const allItems = listingsData?.pages.flatMap((p) => p.items) ?? [];
   const showSearch = searchQuery.length >= 2;
-  const displayItems = allItems;
 
   const trending = useMemo(() => {
-    const titles = allItems.slice(0, 8).map((item) => {
-      const words = item.title.trim().split(/\s+/).slice(0, 2).join(' ');
-      return words.length >= 3 ? words : item.title.slice(0, 24);
-    });
-    return [...new Set(titles)].slice(0, 6);
+    const titles = allItems.slice(0, 6).map((item) => item.title.split(/\s+/).slice(0, 2).join(' '));
+    return [...new Set(titles)].slice(0, 5);
   }, [allItems]);
-
-  const openCategory = (name: string) => {
-    setSearchQuery('');
-    setSelectedCategory(name);
-  };
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       keyboardShouldPersistTaps="handled"
-      refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
-      }
+      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
     >
       <LinearGradient
         colors={['#3D1A78', '#1A0A2E']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.hero, { paddingTop: paddingTop + 12 }]}
+        style={[styles.hero, { paddingTop: paddingTop + 10 }]}
       >
         <Text style={styles.heroTitle}>Keşfet</Text>
-        <Text style={styles.heroSub}>Canlı ilanlar arasında ara, kategoriye göz at</Text>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#9D8BB5" />
+          <Ionicons name="search" size={18} color="#9D8BB5" />
           <TextInput
             placeholder="Ne arıyorsunuz?"
             placeholderTextColor="#9D8BB5"
@@ -91,21 +94,19 @@ export default function ExploreScreen() {
             }}
           />
           {searchQuery.length > 0 && (
-            <Pressable
-              onPress={() => {
-                setSearchQuery('');
-                setSelectedCategory(null);
-              }}
-            >
-              <Ionicons name="close-circle" size={20} color="#C9A84C" />
+            <Pressable onPress={() => { setSearchQuery(''); setSelectedCategory(null); }}>
+              <Ionicons name="close-circle" size={18} color="#C9A84C" />
             </Pressable>
           )}
         </View>
       </LinearGradient>
 
+      <View style={styles.section}>
+        <LocationFilterBar value={locationFilter} onChange={setLocationFilter} />
+      </View>
+
       {!showSearch && !selectedCategory && trending.length > 0 && (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Güncel İlanlar</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             {trending.map((label) => (
               <Pressable
@@ -113,10 +114,7 @@ export default function ExploreScreen() {
                 style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => setSearchQuery(label)}
               >
-                <Ionicons name="flash-outline" size={14} color={colors.primary} />
-                <Text style={[styles.chipText, { color: colors.foreground }]} numberOfLines={1}>
-                  {label}
-                </Text>
+                <Text style={[styles.chipText, { color: colors.foreground }]}>{label}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -129,7 +127,7 @@ export default function ExploreScreen() {
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Kategoriler</Text>
             {selectedCategory && (
               <Pressable onPress={() => setSelectedCategory(null)}>
-                <Text style={[styles.clearFilter, { color: colors.primary }]}>Tümünü göster</Text>
+                <Text style={[styles.clearFilter, { color: colors.primary }]}>Temizle</Text>
               </Pressable>
             )}
           </View>
@@ -139,26 +137,12 @@ export default function ExploreScreen() {
               return (
                 <Pressable
                   key={cat.name}
-                  style={[
-                    styles.categoryCard,
-                    { width: CATEGORY_WIDTH },
-                    active && styles.categoryCardActive,
-                  ]}
-                  onPress={() => openCategory(cat.name)}
+                  style={[styles.categoryCard, { width: CATEGORY_WIDTH }, active && styles.categoryCardActive]}
+                  onPress={() => { setSearchQuery(''); setSelectedCategory(cat.name); }}
                 >
-                  <LinearGradient
-                    colors={cat.gradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFillObject}
-                  />
-                  <Ionicons name={cat.icon as keyof typeof Ionicons.glyphMap} size={28} color="#FFF" />
-                  <Text style={styles.categoryLabel}>{cat.name}</Text>
-                  {active && (
-                    <View style={styles.activeBadge}>
-                      <Ionicons name="checkmark" size={12} color="#3D1A78" />
-                    </View>
-                  )}
+                  <LinearGradient colors={cat.gradient} style={StyleSheet.absoluteFillObject} />
+                  <Ionicons name={cat.icon as keyof typeof Ionicons.glyphMap} size={18} color="#FFF" />
+                  <Text style={styles.categoryLabel} numberOfLines={1}>{cat.name}</Text>
                 </Pressable>
               );
             })}
@@ -168,33 +152,17 @@ export default function ExploreScreen() {
 
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          {showSearch
-            ? `"${searchQuery}" sonuçları`
-            : selectedCategory
-              ? `${selectedCategory} ilanları`
-              : 'Son eklenen ilanlar'}
+          {showSearch ? `"${searchQuery}"` : selectedCategory ? selectedCategory : 'Son eklenen'}
         </Text>
 
-        {(listingsLoading) && displayItems.length === 0 ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
-        ) : displayItems.length === 0 ? (
-          <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="search-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>İlan bulunamadı</Text>
-            <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-              Farklı bir arama deneyin veya ilk ilanı siz verin
-            </Text>
-            <Pressable
-              style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
-              onPress={() => router.push('/(tabs)/post')}
-            >
-              <Text style={styles.emptyBtnText}>İlan Ver</Text>
-            </Pressable>
-          </View>
+        {listingsLoading && allItems.length === 0 ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+        ) : allItems.length === 0 ? (
+          <Text style={{ color: colors.mutedForeground, marginTop: 12 }}>İlan bulunamadı</Text>
         ) : (
           <View style={styles.resultsGrid}>
-            {displayItems.map((item) => (
-              <ListingCard key={item.id} item={item} />
+            {allItems.map((item) => (
+              <ListingCard key={item.id} item={item} compact />
             ))}
           </View>
         )}
@@ -205,75 +173,34 @@ export default function ExploreScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  hero: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    marginBottom: 8,
-  },
-  heroTitle: { fontSize: 32, fontWeight: '800', color: '#FFF', letterSpacing: -0.5 },
-  heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.75)', marginTop: 4, marginBottom: 16 },
+  hero: { paddingHorizontal: 16, paddingBottom: 18, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 },
+  heroTitle: { fontSize: 26, fontWeight: '800', color: '#FFF', marginBottom: 10 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    height: 50,
-    gap: 10,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 16, color: '#1A0A2E' },
-  section: { paddingHorizontal: 16, marginTop: 16 },
+  searchInput: { flex: 1, fontSize: 15, color: '#1A0A2E' },
+  section: { paddingHorizontal: 14, marginTop: 12 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  clearFilter: { fontSize: 13, fontWeight: '600', marginBottom: 12 },
-  chipRow: { gap: 8, paddingRight: 8 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 6,
-    maxWidth: 180,
-  },
-  chipText: { fontSize: 13, fontWeight: '600' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 10 },
+  clearFilter: { fontSize: 12, fontWeight: '600', marginBottom: 10 },
+  chipRow: { gap: 6 },
+  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1 },
+  chipText: { fontSize: 12, fontWeight: '600' },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_GAP },
   categoryCard: {
-    height: 96,
-    borderRadius: 16,
-    padding: 14,
+    height: 64,
+    borderRadius: 12,
+    padding: 8,
     justifyContent: 'space-between',
     overflow: 'hidden',
   },
-  categoryCardActive: {
-    borderWidth: 2,
-    borderColor: '#C9A84C',
-  },
-  categoryLabel: { fontSize: 15, fontWeight: '700', color: '#FFF' },
-  activeBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#C9A84C',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  categoryCardActive: { borderWidth: 2, borderColor: '#C9A84C' },
+  categoryLabel: { fontSize: 11, fontWeight: '700', color: '#FFF' },
   resultsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  empty: {
-    alignItems: 'center',
-    padding: 32,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 8,
-  },
-  emptyTitle: { fontSize: 17, fontWeight: '700', marginTop: 8 },
-  emptySub: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  emptyBtn: { marginTop: 12, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
-  emptyBtnText: { color: '#FFF', fontWeight: '700' },
 });

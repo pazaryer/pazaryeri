@@ -5,6 +5,7 @@ import listingsRouter from "./listings";
 import favoritesRouter from "./favorites";
 import conversationsRouter from "./conversations";
 import offersRouter from "./offers";
+import reviewsRouter from "./reviews";
 import miscRouter from "./misc";
 import uploadRouter from "./upload";
 import authRouter from "./auth";
@@ -19,6 +20,7 @@ router.use(listingsRouter);
 router.use(favoritesRouter);
 router.use(conversationsRouter);
 router.use(offersRouter);
+router.use(reviewsRouter);
 router.use(miscRouter);
 
 export default router;

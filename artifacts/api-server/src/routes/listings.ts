@@ -36,6 +36,8 @@ const statusSchema = z.object({ status: z.enum(["active", "sold", "reserved", "d
 router.get("/listings", optionalAuth, async (req, res, next) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 20, 50);
+    const lat = req.query.lat ? Number(req.query.lat) : undefined;
+    const lon = req.query.lon ? Number(req.query.lon) : undefined;
     const result = await dbListListings({
       limit,
       category: req.query.category as string | undefined,
@@ -43,6 +45,13 @@ router.get("/listings", optionalAuth, async (req, res, next) => {
       cursor: req.query.cursor as string | undefined,
       sellerId: req.query.sellerId as string | undefined,
       userId: req.user?.id,
+      city: req.query.city as string | undefined,
+      district: req.query.district as string | undefined,
+      minPrice: req.query.minPrice ? Number(req.query.minPrice) : undefined,
+      maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : undefined,
+      radiusKm: req.query.radiusKm ? Number(req.query.radiusKm) : undefined,
+      lat,
+      lon,
     });
     res.json(result);
   } catch (err) {

@@ -151,6 +151,9 @@ CREATE INDEX IF NOT EXISTS offers_listing_idx ON offers(listing_id);
 CREATE INDEX IF NOT EXISTS offers_buyer_idx ON offers(buyer_id);
 CREATE INDEX IF NOT EXISTS offers_seller_idx ON offers(seller_id);
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMPTZ;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;
+
 -- ============================================================
 -- STORAGE
 -- ============================================================

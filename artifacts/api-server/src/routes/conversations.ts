@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
-import { getSupabaseAdmin, ensureUser, getListingImages } from "../lib/supabase-db";
+import { getSupabaseAdmin, ensureUser, getListingImages, userPresence } from "../lib/supabase-db";
 import { authMiddleware } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { notifyUser } from "../lib/notify";
@@ -30,7 +30,7 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
       convos.map(async (convo) => {
         const otherUserId = convo.buyer_id === userId ? convo.seller_id : convo.buyer_id;
         const [{ data: otherUser }, { data: listing }] = await Promise.all([
-          sb.from("users").select("id, name, avatar").eq("id", otherUserId).maybeSingle(),
+          sb.from("users").select("id, name, avatar, last_active_at").eq("id", otherUserId).maybeSingle(),
           sb.from("listings").select("title").eq("id", convo.listing_id).maybeSingle(),
         ]);
         let listingImage: string | null = null;
@@ -47,12 +47,18 @@ router.get("/conversations", authMiddleware, async (req, res, next) => {
           .eq("is_read", false)
           .neq("sender_id", userId);
 
+        const presence = userPresence(otherUser?.last_active_at);
         return {
           id: convo.id,
           listingId: convo.listing_id,
           listingTitle: listing?.title ?? "İlan",
           listingImage,
-          otherUser: { id: otherUser?.id ?? otherUserId, name: otherUser?.name ?? "Kullanıcı", avatar: otherUser?.avatar ?? null },
+          otherUser: {
+            id: otherUser?.id ?? otherUserId,
+            name: otherUser?.name ?? "Kullanıcı",
+            avatar: otherUser?.avatar ?? null,
+            ...presence,
+          },
           lastMessage: convo.last_message,
           lastMessageAt: convo.last_message_at,
           unreadCount: count ?? 0,
@@ -145,6 +151,14 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
     if (!convo) throw new AppError("Sohbet bulunamadı", 404);
     if (convo.buyer_id !== userId && convo.seller_id !== userId) throw new AppError("Yetkisiz", 403);
 
+    const otherUserId = convo.buyer_id === userId ? convo.seller_id : convo.buyer_id;
+    const { data: otherUser } = await sb
+      .from("users")
+      .select("id, name, avatar, last_active_at")
+      .eq("id", otherUserId)
+      .maybeSingle();
+    const { data: listing } = await sb.from("listings").select("title").eq("id", convo.listing_id).maybeSingle();
+
     const { data: messages } = await sb
       .from("messages")
       .select("*")
@@ -152,15 +166,40 @@ router.get("/conversations/:conversationId/messages", authMiddleware, async (req
       .order("created_at", { ascending: true })
       .limit(limit);
 
-    await sb.from("messages").update({ is_read: true }).eq("conversation_id", convo.id).neq("sender_id", userId);
+    const now = new Date().toISOString();
+    await sb
+      .from("messages")
+      .update({ delivered_at: now })
+      .eq("conversation_id", convo.id)
+      .neq("sender_id", userId)
+      .is("delivered_at", null);
+    await sb
+      .from("messages")
+      .update({ is_read: true })
+      .eq("conversation_id", convo.id)
+      .neq("sender_id", userId);
+
+    const presence = userPresence(otherUser?.last_active_at);
 
     res.json({
+      conversation: {
+        id: convo.id,
+        listingId: convo.listing_id,
+        listingTitle: listing?.title ?? "İlan",
+        otherUser: {
+          id: otherUser?.id ?? otherUserId,
+          name: otherUser?.name ?? "Kullanıcı",
+          avatar: otherUser?.avatar ?? null,
+          ...presence,
+        },
+      },
       items: (messages ?? []).map((m) => ({
         id: m.id,
         conversationId: m.conversation_id,
         senderId: m.sender_id,
         content: m.content,
         isRead: m.is_read,
+        deliveredAt: m.delivered_at ?? null,
         createdAt: m.created_at,
       })),
       hasMore: false,
@@ -209,6 +248,7 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
       senderId: msg.sender_id,
       content: msg.content,
       isRead: msg.is_read,
+      deliveredAt: msg.delivered_at ?? null,
       createdAt: msg.created_at,
     });
   } catch (err) {

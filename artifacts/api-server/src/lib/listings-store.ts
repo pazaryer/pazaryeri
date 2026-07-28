@@ -9,6 +9,7 @@ import {
   type DbListing,
   type DbUser,
 } from "./supabase-db";
+import { filterByRadius } from "./geo";
 import {
   isPostgresConfigured,
   pgHealthCheck,
@@ -133,6 +134,13 @@ export async function dbListListings(params: {
   sellerId?: string;
   userId?: string;
   includeNonActive?: boolean;
+  city?: string;
+  district?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  radiusKm?: number;
+  lat?: number;
+  lon?: number;
 }) {
   const backend = await resolveListingsBackend();
   if (backend === "postgres") {
@@ -145,8 +153,7 @@ export async function dbListListings(params: {
   let query = sb
     .from("listings")
     .select("*, users!listings_seller_id_fkey(*)")
-    .order("created_at", { ascending: false })
-    .limit(limit + 1);
+    .order("created_at", { ascending: false });
 
   if (!params.includeNonActive) query = query.eq("status", "active");
   else query = query.neq("status", "deleted");
@@ -155,12 +162,23 @@ export async function dbListListings(params: {
   if (params.q) query = query.ilike("title", `%${params.q}%`);
   if (params.sellerId) query = query.eq("seller_id", params.sellerId);
   if (params.cursor) query = query.lt("created_at", params.cursor);
+  if (params.city) query = query.ilike("city", `%${params.city}%`);
+  if (params.district) query = query.ilike("district", `%${params.district}%`);
+  if (params.minPrice != null) query = query.gte("price", params.minPrice);
+  if (params.maxPrice != null) query = query.lte("price", params.maxPrice);
 
+  const fetchLimit = params.radiusKm ? Math.min(limit * 4, 100) : limit + 1;
+  query = query.limit(fetchLimit);
   const { data: rows, error } = await query;
   if (error) throw new Error(error.message);
 
-  const hasMore = (rows?.length ?? 0) > limit;
-  const page = hasMore ? rows!.slice(0, limit) : rows ?? [];
+  let filtered = rows ?? [];
+  if (params.radiusKm && params.lat != null && params.lon != null) {
+    filtered = filterByRadius(filtered as DbListing[], params.lat, params.lon, params.radiusKm);
+  }
+
+  const hasMore = filtered.length > limit;
+  const page = hasMore ? filtered.slice(0, limit) : filtered;
   const listingIds = page.map((r) => r.id);
   const imageMap = await getListingImages(listingIds);
   const favSet = await getFavoriteSet(params.userId, listingIds);
