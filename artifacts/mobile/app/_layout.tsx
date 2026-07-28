@@ -66,6 +66,7 @@ function RootLayoutNav() {
     const inAuth =
       inOnboarding ||
       segName === 'login' ||
+      segName === 'auth' ||
       segName === 'email-auth' ||
       segName === 'oauth' ||
       segName === 'giris' ||
@@ -134,6 +135,7 @@ function RootLayoutNav() {
       <Stack.Screen name="hesabim" />
       <Stack.Screen name="mesajlar" />
       <Stack.Screen name="login" />
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="email-auth" />
       <Stack.Screen name="oauth/google" />
       <Stack.Screen name="oauth/app-return" options={{ headerShown: false }} />

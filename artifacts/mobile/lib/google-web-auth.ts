@@ -51,12 +51,11 @@ function openDeepLink(target: string) {
 }
 
 export function redirectToAppWithToken(returnUrl: string, idToken: string) {
-  const safeReturn = /auth\.expo\.io/i.test(returnUrl) ? 'pazaryeri://auth' : returnUrl;
+  const safeReturn = resolveNativeReturnUrl(returnUrl);
   const sep = safeReturn.includes('?') ? '&' : '?';
   const target = `${safeReturn}${sep}id_token=${encodeURIComponent(idToken)}`;
 
   if (typeof window !== 'undefined') {
-    // Custom Tab / ASWebAuthenticationSession için location.replace daha güvenilir
     window.location.replace(target);
     window.setTimeout(() => {
       window.location.href = target;
@@ -68,8 +67,16 @@ export function redirectToAppWithToken(returnUrl: string, idToken: string) {
 }
 
 export function redirectToAppWithError(returnUrl: string, error: string) {
-  const safeReturn = /auth\.expo\.io/i.test(returnUrl) ? 'pazaryeri://auth' : returnUrl;
+  const safeReturn = resolveNativeReturnUrl(returnUrl);
   const sep = safeReturn.includes('?') ? '&' : '?';
   const target = `${safeReturn}${sep}error=${encodeURIComponent(error)}`;
   openDeepLink(target);
+}
+
+function resolveNativeReturnUrl(returnUrl: string): string {
+  if (!returnUrl) return 'pazaryeri://auth';
+  if (returnUrl.startsWith('exp://')) return returnUrl;
+  if (returnUrl.startsWith('pazaryeri://')) return returnUrl;
+  if (/auth\.expo\.io/i.test(returnUrl)) return 'pazaryeri://auth';
+  return returnUrl;
 }

@@ -41,7 +41,9 @@ function isAllowedReturnUrl(url: string): boolean {
   const site = SITE_PUBLIC_URL.replace(/\/$/, "");
   if (url.startsWith(`${site}/oauth/app-return`)) return true;
   if (url.startsWith(`${site}/oauth/mobile`)) return true;
-  if (url.startsWith(`https://${FIREBASE_AUTH_DOMAIN}/oauth/app-return`)) return true;
+  const firebaseSite = `https://${FIREBASE_AUTH_DOMAIN.replace(/\/$/, "")}`;
+  if (url.startsWith(`${firebaseSite}/oauth/app-return`)) return true;
+  if (url.startsWith(`${firebaseSite}/oauth/mobile`)) return true;
   return false;
 }
 

@@ -1,5 +1,6 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { buildApiUrl, sitePath } from './config';
@@ -8,24 +9,47 @@ import { resolveGoogleWebClientId } from './google-client-id';
 
 WebBrowser.maybeCompleteAuthSession();
 
-/** Android Custom Tabs özel şemayı (pazaryeri://) güvenilir yakalamaz — HTTPS dönüş kullan. */
-const ANDROID_OAUTH_RETURN_PATH = '/oauth/app-return';
+const ANDROID_BRIDGE_PATH = '/oauth/app-return';
 
-/**
- * Expo Go ve production build için OAuth dönüş URI'si.
- */
-export function getGoogleOAuthRedirectUri(): string {
-  if (Platform.OS === 'android') {
-    return sitePath(ANDROID_OAUTH_RETURN_PATH);
-  }
+/** Expo Go / production için native OAuth dönüş URI'si (exp:// veya pazaryeri://auth). */
+export function getNativeOAuthRedirectUri(): string {
   return AuthSession.makeRedirectUri({
     scheme: 'pazaryeri',
     path: 'auth',
   });
 }
 
+/**
+ * Render API'ye verilen return URL.
+ * Android: HTTPS köprü (Custom Tab güvenilir kapanır, Gmail açılmaz).
+ * iOS: doğrudan native scheme.
+ */
+export function getApiOAuthReturnUri(): string {
+  const native = getNativeOAuthRedirectUri();
+  if (Platform.OS === 'android') {
+    const bridge = sitePath(ANDROID_BRIDGE_PATH);
+    return `${bridge}?native=${encodeURIComponent(native)}`;
+  }
+  return native;
+}
+
+/**
+ * WebBrowser.openAuthSessionAsync ikinci parametresi — yönlendirme yakalanınca oturum kapanır.
+ */
+export function getBrowserOAuthRedirectUri(): string {
+  if (Platform.OS === 'android') {
+    return sitePath(ANDROID_BRIDGE_PATH);
+  }
+  return getNativeOAuthRedirectUri();
+}
+
+/** @deprecated getNativeOAuthRedirectUri kullanın */
+export function getGoogleOAuthRedirectUri(): string {
+  return getApiOAuthReturnUri();
+}
+
 export function getAppOAuthRedirectUri(): string {
-  return getGoogleOAuthRedirectUri();
+  return getApiOAuthReturnUri();
 }
 
 export function getGoogleClientIds() {
@@ -41,7 +65,7 @@ export function isMobileOAuthReturnUrl(url: string): boolean {
   return false;
 }
 
-function parseOAuthReturnUrl(returnUrl: string): { idToken?: string; error?: string } {
+export function parseOAuthReturnUrl(returnUrl: string): { idToken?: string; error?: string } {
   try {
     const url = new URL(returnUrl);
     const error = url.searchParams.get('error');
@@ -58,22 +82,30 @@ function parseOAuthReturnUrl(returnUrl: string): { idToken?: string; error?: str
   }
 }
 
+async function completeGoogleSignIn(idToken: string): Promise<void> {
+  const credential = GoogleAuthProvider.credential(idToken);
+  await signInWithCredential(getFirebaseAuth(), credential);
+}
+
 /**
  * Mobil Google giriş — Render API OAuth köprüsü.
- * Android: HTTPS app-return ile Custom Tab oturumu kapanır.
- * iOS: pazaryeri://auth deep link.
+ * Android: API → HTTPS app-return → token yakalanır veya native deep link.
+ * iOS: pazaryeri://auth / exp:// deep link.
  */
 export async function signInWithGoogleMobile(): Promise<void> {
   if (Platform.OS === 'web') {
     throw new Error('Web için /giris kullanın');
   }
 
-  const appRedirect = getGoogleOAuthRedirectUri();
-  const startUrl = `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(appRedirect)}`;
+  const apiReturn = getApiOAuthReturnUri();
+  const browserRedirect = getBrowserOAuthRedirectUri();
+  const startUrl = `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(apiReturn)}`;
 
   if (__DEV__) {
     console.log('[Google] API OAuth start:', startUrl);
-    console.log('[Google] app redirect:', appRedirect);
+    console.log('[Google] API return:', apiReturn);
+    console.log('[Google] browser redirect:', browserRedirect);
+    console.log('[Google] app ownership:', Constants.appOwnership);
   }
 
   if (Platform.OS === 'android') {
@@ -86,9 +118,10 @@ export async function signInWithGoogleMobile(): Promise<void> {
 
   let result: WebBrowser.WebBrowserAuthSessionResult;
   try {
-    result = await WebBrowser.openAuthSessionAsync(startUrl, appRedirect, {
+    result = await WebBrowser.openAuthSessionAsync(startUrl, browserRedirect, {
       preferEphemeralSession: false,
       showInRecents: false,
+      createTask: false,
     });
   } finally {
     if (Platform.OS === 'android') {
@@ -113,11 +146,18 @@ export async function signInWithGoogleMobile(): Promise<void> {
     throw new Error(error);
   }
   if (!idToken) {
-    throw new Error('Google token alınamadı — tekrar deneyin');
+    throw new Error('Google token alınamadı — uygulamaya dönüp tekrar deneyin');
   }
 
-  const credential = GoogleAuthProvider.credential(idToken);
-  await signInWithCredential(getFirebaseAuth(), credential);
+  await completeGoogleSignIn(idToken);
+}
+
+/** Deep link /auth?id_token=... ile tamamlama */
+export async function completeGoogleSignInFromUrl(returnUrl: string): Promise<void> {
+  const { idToken, error } = parseOAuthReturnUrl(returnUrl);
+  if (error) throw new Error(error);
+  if (!idToken) throw new Error('Google token alınamadı');
+  await completeGoogleSignIn(idToken);
 }
 
 /** @deprecated signInWithGoogleMobile kullanın */
@@ -133,7 +173,7 @@ export function useNativeGoogleAuth() {
     request: null,
     response: null,
     promptAsync: signInWithGoogleMobile,
-    redirectUri: getGoogleOAuthRedirectUri(),
+    redirectUri: getApiOAuthReturnUri(),
     webClientId: resolveGoogleWebClientId(),
   };
 }
