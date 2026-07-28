@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
 import { WEB_CATEGORIES } from '@/lib/categories';
 import { WebAnnouncementBanner } from './WebAnnouncementBanner';
+import { flatStyle } from '@/lib/flat-style';
 
 const HEADER_CATEGORIES = WEB_CATEGORIES;
 const MOBILE_BREAKPOINT = 640;
@@ -73,21 +74,21 @@ export function WebShell({
               {user ? (
                 <>
                   <Pressable
-                    style={[styles.actionBtn, mobile && styles.actionBtnMobile]}
+                    style={flatStyle(styles.actionBtn, mobile && styles.actionBtnMobile)}
                     onPress={() => router.push('/ilan-ver')}
                   >
                     <Text style={styles.actionIcon}>＋</Text>
                     {!tablet && <Text style={styles.actionText}>İlan Ver</Text>}
                   </Pressable>
                   <Pressable
-                    style={[styles.actionBtn, mobile && styles.actionBtnMobile]}
+                    style={flatStyle(styles.actionBtn, mobile && styles.actionBtnMobile)}
                     onPress={() => router.push('/mesajlar')}
                   >
                     <Text style={styles.actionIcon}>💬</Text>
                     {!tablet && <Text style={styles.actionText}>Mesajlar</Text>}
                   </Pressable>
                   <Pressable
-                    style={[styles.profileBtn, mobile && styles.profileBtnMobile]}
+                    style={flatStyle(styles.profileBtn, mobile && styles.profileBtnMobile)}
                     onPress={() => router.push('/hesabim')}
                   >
                     <Text style={styles.profileBtnText} numberOfLines={1}>
@@ -98,12 +99,12 @@ export function WebShell({
               ) : (
                 <>
                   <Link href="/giris" asChild>
-                    <Pressable style={[styles.ghostBtn, mobile && styles.ghostBtnMobile]}>
+                    <Pressable style={flatStyle(styles.ghostBtn, mobile && styles.ghostBtnMobile)}>
                       <Text style={styles.ghostBtnText}>Giriş</Text>
                     </Pressable>
                   </Link>
                   <Link href="/kayit" asChild>
-                    <Pressable style={[styles.primaryBtn, mobile && styles.primaryBtnMobile]}>
+                    <Pressable style={flatStyle(styles.primaryBtn, mobile && styles.primaryBtnMobile)}>
                       <Text style={styles.primaryBtnText}>{mobile ? 'Kayıt' : 'Kayıt Ol'}</Text>
                     </Pressable>
                   </Link>
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
   },
   searchWrapMobileCompact: { marginHorizontal: 12, marginBottom: 10, height: 40, borderRadius: 20 },
   searchIcon: { fontSize: 15, flexShrink: 0 },
-  searchInput: { flex: 1, fontSize: 14, color: '#1A0A2E', outlineStyle: 'none', minWidth: 0 } as any,
+  searchInput: { flex: 1, fontSize: 14, color: '#1A0A2E', minWidth: 0 },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',

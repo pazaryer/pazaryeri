@@ -5,6 +5,7 @@ import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { ListingSummary, formatPrice, useToggleFavorite } from '@/lib/hooks';
+import { flatStyle } from '@/lib/flat-style';
 import { useCompactScreen } from '@/hooks/useCompactScreen';
 
 interface ListingCardProps {
@@ -26,7 +27,7 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
 
   return (
     <Link href={`/listing/${item.id}`} asChild>
-      <Pressable style={[styles.cardContainer, dense && styles.compactContainer]}>
+      <Pressable style={flatStyle(styles.cardContainer, dense && styles.compactContainer)}>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.imageContainer, { height: imageHeight }]}>
             <Image source={{ uri: item.image }} style={StyleSheet.absoluteFillObject} contentFit="cover" transition={150} />

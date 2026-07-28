@@ -33,6 +33,11 @@ body {
   display: none !important;
 }
 
+/* Input outline kaldır */
+input, textarea {
+  outline: none;
+}
+
 /* Duyuru bandı — kesintisiz kayan marquee */
 .pz-marquee-track {
   display: flex;
