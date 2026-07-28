@@ -133,7 +133,7 @@ export default function HomeScreen() {
           onEndReachedThreshold={0.5}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: insets.bottom + 100 }}
+          contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: insets.bottom + 100 }}
         />
       )}
     </View>
@@ -172,6 +172,6 @@ const styles = StyleSheet.create({
   searchPlaceholder: { fontSize: 14 },
   listHeader: { paddingTop: 8, paddingBottom: 4 },
   filterTitle: { fontSize: 13, fontWeight: '700', paddingHorizontal: 14, marginBottom: 6, marginTop: 4 },
-  row: { gap: 0 },
+  row: { justifyContent: 'flex-start' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
 });

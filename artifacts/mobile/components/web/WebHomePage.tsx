@@ -40,33 +40,42 @@ export function WebHomePage() {
     }
   };
 
-  const PageBody = ScrollView;
-  const bodyProps = mobileWeb
-    ? { style: styles.scroll, contentContainerStyle: styles.scrollContentMobile, showsVerticalScrollIndicator: false }
-    : { style: styles.scroll, contentContainerStyle: styles.scrollContent };
+  const body = (
+    <>
+      {!mobileWeb && <WebTrustBar />}
+      <View nativeID="pz-filter-section" style={[styles.filterSection, mobileWeb && styles.filterSectionMobile]}>
+        <Text style={styles.filterLabel}>Kategoriler</Text>
+        <CategoryFilter
+          categories={[...LISTING_CATEGORIES]}
+          selectedCategory={category}
+          onSelect={setCategory}
+        />
+        <Text style={[styles.filterLabel, styles.filterLabelSpaced]}>Konum</Text>
+        <LocationFilterBar value={locationFilter} onChange={handleLocationChange} />
+      </View>
+      <WebListingGrid
+        title="Güncel İlanlar"
+        category={category === 'Tümü' ? undefined : category}
+        location={locationFilter}
+        lat={coords.lat}
+        lon={coords.lon}
+      />
+    </>
+  );
 
   return (
     <WebShell searchQuery={search} onSearchChange={setSearch} onSearchSubmit={handleSearch}>
-      <PageBody {...bodyProps}>
-        <WebTrustBar />
-        <View nativeID="pz-filter-section" style={[styles.filterSection, mobileWeb && styles.filterSectionMobile]}>
-          <Text style={styles.filterLabel}>Kategoriler</Text>
-          <CategoryFilter
-            categories={[...LISTING_CATEGORIES]}
-            selectedCategory={category}
-            onSelect={setCategory}
-          />
-          <Text style={[styles.filterLabel, styles.filterLabelSpaced]}>Konum</Text>
-          <LocationFilterBar value={locationFilter} onChange={handleLocationChange} />
-        </View>
-        <WebListingGrid
-          title="Güncel İlanlar"
-          category={category === 'Tümü' ? undefined : category}
-          location={locationFilter}
-          lat={coords.lat}
-          lon={coords.lon}
-        />
-      </PageBody>
+      {mobileWeb ? (
+        <View style={styles.pageMobile}>{body}</View>
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {body}
+        </ScrollView>
+      )}
     </WebShell>
   );
 }
@@ -74,9 +83,9 @@ export function WebHomePage() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, width: '100%' },
   scrollContent: { paddingBottom: 24 },
-  scrollContentMobile: { paddingBottom: 32, flexGrow: 1 },
+  pageMobile: { width: '100%', paddingBottom: 24 },
   filterSection: { paddingVertical: 8, gap: 4, marginHorizontal: 16, marginTop: 8 },
-  filterSectionMobile: { marginHorizontal: 0, marginTop: 12, paddingVertical: 12 },
+  filterSectionMobile: { marginHorizontal: 12, marginTop: 10, paddingVertical: 10 },
   filterLabel: { fontSize: 13, fontWeight: '700', color: '#1A0A2E', paddingHorizontal: 14, marginBottom: 4 },
   filterLabelSpaced: { marginTop: 8 },
 });

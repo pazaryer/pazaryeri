@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { ANNOUNCEMENTS } from '@/lib/categories';
+import { WebMarquee, MarqueeSlot } from '@/components/WebMarquee';
 
 const MARQUEE_TEXT = ANNOUNCEMENTS.join('   •   ') + '   •   ';
 
@@ -17,33 +18,6 @@ type Props = {
   embedded?: boolean;
   style?: ViewStyle;
 };
-
-/** Web — CSS animasyonu (Reanimated web'de CSSStyleDeclaration hatası verir) */
-function WebMarquee() {
-  return (
-    <View style={styles.track}>
-      <View
-        // @ts-expect-error web className
-        className="pz-marquee-track"
-      >
-        <Text
-          // @ts-expect-error web className
-          className="pz-marquee-item"
-          numberOfLines={1}
-        >
-          {MARQUEE_TEXT}
-        </Text>
-        <Text
-          // @ts-expect-error web className
-          className="pz-marquee-item"
-          numberOfLines={1}
-        >
-          {MARQUEE_TEXT}
-        </Text>
-      </View>
-    </View>
-  );
-}
 
 /** Mobil — Reanimated kaydırma */
 function NativeMarquee() {
@@ -62,12 +36,12 @@ function NativeMarquee() {
   }));
 
   return (
-    <View style={styles.track}>
+    <MarqueeSlot>
       <Animated.View style={[styles.marqueeRow, animStyle]}>
         <Text style={styles.marqueeText}>{MARQUEE_TEXT}</Text>
         <Text style={styles.marqueeText}>{MARQUEE_TEXT}</Text>
       </Animated.View>
-    </View>
+    </MarqueeSlot>
   );
 }
 
@@ -87,7 +61,11 @@ export function AnnouncementBanner({ embedded, style }: Props) {
       <View style={[styles.badge, embedded && styles.badgeEmbedded]}>
         <Text style={styles.badgeText}>DUYURU</Text>
       </View>
-      {Platform.OS === 'web' ? <WebMarquee /> : <NativeMarquee />}
+      {Platform.OS === 'web' ? (
+        <WebMarquee text={MARQUEE_TEXT} />
+      ) : (
+        <NativeMarquee />
+      )}
     </View>
   );
 }
@@ -133,12 +111,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 1.5,
-  },
-  track: {
-    flex: 1,
-    overflow: 'hidden',
-    height: '100%',
-    justifyContent: 'center',
   },
   marqueeRow: {
     flexDirection: 'row',

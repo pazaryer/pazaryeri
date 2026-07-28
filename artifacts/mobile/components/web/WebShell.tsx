@@ -41,7 +41,7 @@ export function WebShell({
   const tablet = width < TABLET_BREAKPOINT;
 
   return (
-    <View style={styles.root}>
+    <View nativeID="pz-web-shell" style={[styles.root, mobile && styles.rootMobile]}>
       <View nativeID="pz-web-header" style={styles.headerSticky}>
         <WebAnnouncementBanner />
         <View style={[styles.header, mobile && styles.headerMobile]}>
@@ -128,27 +128,29 @@ export function WebShell({
             </View>
           )}
 
-          <ScrollView
-            nativeID="pz-header-nav"
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.navRow}
-            style={styles.navScroll}
-          >
-            {HEADER_CATEGORIES.map((cat) => (
-              <Link key={cat.label} href={cat.href as any} asChild>
-                <Pressable style={styles.navChip}>
-                  <Text style={styles.navChipText}>
-                    {cat.icon} {cat.label}
-                  </Text>
-                </Pressable>
-              </Link>
-            ))}
-          </ScrollView>
+          {!mobile && (
+            <ScrollView
+              nativeID="pz-header-nav"
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.navRow}
+              style={styles.navScroll}
+            >
+              {HEADER_CATEGORIES.map((cat) => (
+                <Link key={cat.label} href={cat.href as any} asChild>
+                  <Pressable style={styles.navChip}>
+                    <Text style={styles.navChipText}>
+                      {cat.icon} {cat.label}
+                    </Text>
+                  </Pressable>
+                </Link>
+              ))}
+            </ScrollView>
+          )}
         </View>
       </View>
 
-      <View style={styles.main}>{children}</View>
+      <View nativeID="pz-web-main" style={[styles.main, mobile && styles.mainMobile]}>{children}</View>
 
       {!hideFooter && (
         <View style={[styles.footer, mobile && styles.footerMobile]}>
@@ -192,7 +194,8 @@ export function WebShell({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent', minHeight: '100%', width: '100%' },
-  headerSticky: { width: '100%', zIndex: 100 },
+  rootMobile: { flexGrow: 1, flexShrink: 0 },
+  headerSticky: { width: '100%' },
   header: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
@@ -309,6 +312,7 @@ const styles = StyleSheet.create({
   },
   navChipText: { color: '#3D1A78', fontWeight: '600', fontSize: 11 },
   main: { flex: 1, width: '100%', alignSelf: 'stretch', backgroundColor: 'transparent' },
+  mainMobile: { flexGrow: 0, flexShrink: 0 },
   footer: {
     backgroundColor: '#1A0A2E',
     paddingVertical: 16,

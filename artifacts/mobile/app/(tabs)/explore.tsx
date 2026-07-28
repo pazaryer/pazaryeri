@@ -202,5 +202,5 @@ const styles = StyleSheet.create({
   },
   categoryCardActive: { borderWidth: 2, borderColor: '#C9A84C' },
   categoryLabel: { fontSize: 11, fontWeight: '700', color: '#FFF' },
-  resultsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  resultsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -2 },
 });
