@@ -10,7 +10,6 @@ export type LocationFilterValue = {
 };
 
 const RADIUS_OPTIONS = [5, 10, 20];
-
 const CITIES = ['Antalya', 'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Adana'];
 
 interface LocationFilterProps {
@@ -21,89 +20,99 @@ interface LocationFilterProps {
 export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
   const colors = useColors();
   const [expanded, setExpanded] = useState(false);
-
-  const active =
-    value.radiusKm || value.city || value.district
-      ? [value.radiusKm ? `${value.radiusKm} km` : null, value.city, value.district].filter(Boolean).join(' · ')
-      : null;
-
-  const clear = () => onChange({});
+  const hasFilter = !!(value.radiusKm || value.city);
 
   return (
     <View style={styles.wrap}>
-      <Pressable
-        style={[styles.toggle, { backgroundColor: colors.card, borderColor: active ? colors.primary : colors.border }]}
-        onPress={() => setExpanded(!expanded)}
-      >
-        <Ionicons name="location-outline" size={16} color={colors.primary} />
-        <Text style={[styles.toggleText, { color: colors.foreground }]} numberOfLines={1}>
-          {active ?? 'Konum filtresi'}
-        </Text>
-        {active ? (
-          <Pressable onPress={clear} hitSlop={8}>
-            <Ionicons name="close-circle" size={18} color={colors.mutedForeground} />
+      <View style={styles.topRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+          <Pressable
+            style={[
+              styles.chip,
+              { borderColor: colors.border, backgroundColor: colors.card },
+              !hasFilter && { borderColor: colors.primary, backgroundColor: colors.secondary },
+            ]}
+            onPress={() => onChange({})}
+          >
+            <Ionicons name="globe-outline" size={13} color={!hasFilter ? colors.primary : colors.mutedForeground} />
+            <Text style={[styles.chipText, { color: !hasFilter ? colors.primary : colors.foreground }]}>Tümü</Text>
           </Pressable>
-        ) : (
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+          {RADIUS_OPTIONS.map((km) => (
+            <Pressable
+              key={km}
+              style={[
+                styles.chip,
+                { borderColor: colors.border, backgroundColor: colors.card },
+                value.radiusKm === km && { borderColor: colors.primary, backgroundColor: colors.primary },
+              ]}
+              onPress={() => onChange({ ...value, radiusKm: value.radiusKm === km ? undefined : km, city: undefined })}
+            >
+              <Ionicons
+                name="navigate-outline"
+                size={13}
+                color={value.radiusKm === km ? '#FFF' : colors.mutedForeground}
+              />
+              <Text style={[styles.chipText, { color: value.radiusKm === km ? '#FFF' : colors.foreground }]}>
+                {km} km
+              </Text>
+            </Pressable>
+          ))}
+          <Pressable
+            style={[styles.chip, styles.moreChip, { borderColor: colors.border, backgroundColor: colors.card }]}
+            onPress={() => setExpanded(!expanded)}
+          >
+            <Ionicons name="location" size={13} color={colors.primary} />
+            <Text style={[styles.chipText, { color: colors.primary }]}>Şehir</Text>
+            <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={12} color={colors.mutedForeground} />
+          </Pressable>
+        </ScrollView>
+        {hasFilter && (
+          <Pressable onPress={() => onChange({})} hitSlop={8} style={styles.clearBtn}>
+            <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+          </Pressable>
         )}
-      </Pressable>
+      </View>
 
       {expanded && (
-        <View style={[styles.panel, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.label, { color: colors.mutedForeground }]}>Mesafe</Text>
-          <View style={styles.row}>
-            {RADIUS_OPTIONS.map((km) => (
-              <Pressable
-                key={km}
-                style={[
-                  styles.chip,
-                  { borderColor: colors.border },
-                  value.radiusKm === km && { backgroundColor: colors.primary, borderColor: colors.primary },
-                ]}
-                onPress={() => onChange({ ...value, radiusKm: value.radiusKm === km ? undefined : km })}
-              >
-                <Text style={[styles.chipText, value.radiusKm === km && { color: '#FFF' }]}>{km} km</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={[styles.label, { color: colors.mutedForeground }]}>Şehir</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-            {CITIES.map((city) => (
-              <Pressable
-                key={city}
-                style={[
-                  styles.chip,
-                  { borderColor: colors.border },
-                  value.city === city && { backgroundColor: colors.secondary, borderColor: colors.primary },
-                ]}
-                onPress={() => onChange({ ...value, city: value.city === city ? undefined : city, district: undefined })}
-              >
-                <Text style={[styles.chipText, { color: colors.foreground }]}>{city}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cityRow}>
+          {CITIES.map((city) => (
+            <Pressable
+              key={city}
+              style={[
+                styles.cityChip,
+                { borderColor: colors.border },
+                value.city === city && { backgroundColor: colors.secondary, borderColor: colors.primary },
+              ]}
+              onPress={() => onChange({ city: value.city === city ? undefined : city, radiusKm: undefined })}
+            >
+              <Text style={[styles.cityText, { color: value.city === city ? colors.primary : colors.foreground }]}>
+                {city}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 8 },
-  toggle: {
+  wrap: { marginBottom: 10, gap: 8 },
+  topRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 },
+  chipsRow: { gap: 6, paddingRight: 8 },
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 18,
     borderWidth: 1,
   },
-  toggleText: { flex: 1, fontSize: 13, fontWeight: '600' },
-  panel: { marginTop: 8, padding: 12, borderRadius: 12, borderWidth: 1, gap: 8 },
-  label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
+  moreChip: { paddingRight: 8 },
   chipText: { fontSize: 12, fontWeight: '600' },
+  clearBtn: { paddingLeft: 4 },
+  cityRow: { paddingHorizontal: 12, gap: 6 },
+  cityChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
+  cityText: { fontSize: 12, fontWeight: '600' },
 });

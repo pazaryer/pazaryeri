@@ -30,6 +30,7 @@ export interface ListingDetail extends ListingSummary {
   description: string;
   images: string[];
   acceptsOffers: boolean;
+  contactPhone?: string | null;
   sellerId: string;
   favoriteCount?: number;
   latitude?: number | null;
@@ -38,6 +39,7 @@ export interface ListingDetail extends ListingSummary {
     id: string;
     name: string;
     avatar?: string | null;
+    phone?: string | null;
     bio?: string | null;
     city?: string | null;
     rating: number;
@@ -202,6 +204,7 @@ export function useCreateListing() {
       location?: string;
       latitude?: number;
       longitude?: number;
+      contactPhone?: string;
       images: string[];
     }) =>
       apiFetch<ListingDetail>('/listings', {
@@ -316,6 +319,8 @@ export function useUpdateProfile() {
       bio?: string;
       city?: string;
       district?: string;
+      phone?: string;
+      avatar?: string;
     }) => {
       if (Platform.OS === 'web') {
         return updateWebProfile(data);

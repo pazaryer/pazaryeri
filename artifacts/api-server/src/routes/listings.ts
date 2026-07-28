@@ -5,6 +5,7 @@ import {
   dbCreateListing,
   dbEnsureUser,
   dbListListings,
+  dbUpdateUser,
 } from "../lib/listings-store";
 import { getSupabaseAdmin } from "../lib/supabase-db";
 import { trackUniqueListingView } from "../lib/views";
@@ -24,6 +25,7 @@ const createListingSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   acceptsOffers: z.boolean().default(true),
+  contactPhone: z.string().max(30).optional(),
   images: z
     .array(z.string().min(1).refine((u) => /^https?:\/\//i.test(u), "Geçersiz görsel URL"))
     .min(1)
@@ -91,8 +93,11 @@ router.post("/listings", authMiddleware, async (req, res, next) => {
     const body = createListingSchema.parse(req.body);
     await dbEnsureUser(req.user!.id, {
       email: req.user!.email,
-      phone: req.user!.phone,
+      phone: body.contactPhone ?? req.user!.phone,
     });
+    if (body.contactPhone) {
+      await dbUpdateUser(req.user!.id, { phone: body.contactPhone });
+    }
     const detail = await dbCreateListing(req.user!.id, body);
     res.status(201).json(detail);
   } catch (err) {
@@ -108,9 +113,10 @@ router.put("/listings/:listingId", authMiddleware, async (req, res, next) => {
     if (!listing) throw new AppError("İlan bulunamadı", 404);
     if (listing.seller_id !== req.user!.id) throw new AppError("Bu ilanı düzenleme yetkiniz yok", 403);
 
-    const { images, acceptsOffers, ...rest } = body;
+    const { images, acceptsOffers, contactPhone, ...rest } = body;
     const update: Record<string, unknown> = { ...rest, updated_at: new Date().toISOString() };
     if (acceptsOffers !== undefined) update.accepts_offers = acceptsOffers;
+    if (contactPhone !== undefined) update.contact_phone = contactPhone;
 
     await sb.from("listings").update(update).eq("id", listing.id);
 

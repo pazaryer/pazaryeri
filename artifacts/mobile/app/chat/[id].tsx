@@ -16,6 +16,7 @@ import { KeyboardAvoidingView, KeyboardStickyView } from 'react-native-keyboard-
 import { useColors } from '@/hooks/useColors';
 import { useMessages, useSendMessage, useHeartbeat, formatLastActive } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserAvatar } from '@/components/UserAvatar';
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -72,6 +73,14 @@ export default function ChatScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={28} color={colors.foreground} />
         </Pressable>
+        {conversation?.otherUser && (
+          <UserAvatar
+            name={conversation.otherUser.name}
+            avatar={conversation.otherUser.avatar}
+            size={36}
+            online={conversation.otherUser.isOnline}
+          />
+        )}
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={[styles.headerTitle, { color: colors.foreground }]} numberOfLines={1}>
             {conversation?.otherUser.name ?? 'Sohbet'}
@@ -105,14 +114,19 @@ export default function ChatScreen() {
             onContentSizeChange={scrollToEnd}
             renderItem={({ item }) => {
               const isMine = item.senderId === profile?.id;
+              const otherAvatar = conversation?.otherUser;
               return (
-                <View
-                  style={[
-                    styles.bubble,
-                    isMine ? styles.myBubble : styles.theirBubble,
-                    { backgroundColor: isMine ? colors.primary : colors.card },
-                  ]}
-                >
+                <View style={[styles.msgRow, isMine ? styles.msgRowMine : styles.msgRowTheir]}>
+                  {!isMine && otherAvatar && (
+                    <UserAvatar name={otherAvatar.name} avatar={otherAvatar.avatar} size={28} />
+                  )}
+                  <View
+                    style={[
+                      styles.bubble,
+                      isMine ? styles.myBubble : styles.theirBubble,
+                      { backgroundColor: isMine ? colors.primary : colors.card },
+                    ]}
+                  >
                   <Text style={{ color: isMine ? '#FFF' : colors.foreground, fontSize: 15 }}>
                     {item.content}
                   </Text>
@@ -130,6 +144,7 @@ export default function ChatScreen() {
                       item.isRead ? ' · Okundu' : item.deliveredAt ? ' · İletildi' : ' · Gönderildi'
                     )}
                   </Text>
+                </View>
                 </View>
               );
             }}
@@ -184,16 +199,19 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
   },
   headerTitle: { fontSize: 16, fontWeight: '700', textAlign: 'center' },
   headerSub: { fontSize: 11, textAlign: 'center', marginTop: 2 },
-  bubble: { maxWidth: '80%', padding: 12, borderRadius: 16, marginBottom: 8 },
-  myBubble: { alignSelf: 'flex-end', borderBottomRightRadius: 4 },
-  theirBubble: { alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
+  msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginBottom: 8, maxWidth: '88%' },
+  msgRowMine: { alignSelf: 'flex-end' },
+  msgRowTheir: { alignSelf: 'flex-start' },
+  bubble: { padding: 12, borderRadius: 16 },
+  myBubble: { borderBottomRightRadius: 4 },
+  theirBubble: { borderBottomLeftRadius: 4 },
   time: { fontSize: 10, marginTop: 4, alignSelf: 'flex-end' },
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, borderTopWidth: 1, gap: 8 },
   input: {

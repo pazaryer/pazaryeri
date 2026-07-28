@@ -1,29 +1,57 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenLayout } from '@/components/ProfileScreenLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/lib/hooks';
 import { useColors } from '@/hooks/useColors';
+import { pickImages } from '@/lib/storage';
 
 export default function SettingsScreen() {
   const colors = useColors();
   const { profile, user, patchProfile } = useAuth();
   const updateProfile = useUpdateProfile();
 
-  const display = profile ?? (user ? { name: user.displayName ?? '', email: user.email, bio: null, city: null } : null);
+  const display = profile ?? (user ? { name: user.displayName ?? '', email: user.email, bio: null, city: null, phone: null, avatar: user.photoURL } : null);
 
   const [name, setName] = useState(display?.name ?? '');
+  const [phone, setPhone] = useState(display?.phone ?? '');
   const [city, setCity] = useState(display?.city ?? '');
   const [bio, setBio] = useState(display?.bio ?? '');
+  const [avatar, setAvatar] = useState(display?.avatar ?? '');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   React.useEffect(() => {
     if (display) {
       setName(display.name ?? '');
+      setPhone(display.phone ?? '');
       setCity(display.city ?? '');
       setBio(display.bio ?? '');
+      setAvatar(display.avatar ?? '');
     }
-  }, [display?.name, display?.city, display?.bio]);
+  }, [display?.name, display?.phone, display?.city, display?.bio, display?.avatar]);
+
+  const handlePickAvatar = async () => {
+    try {
+      setUploading(true);
+      const urls = await pickImages(1);
+      if (urls[0]) setAvatar(urls[0]);
+    } catch (e: unknown) {
+      Alert.alert('Hata', e instanceof Error ? e.message : 'Fotoğraf seçilemedi');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -34,13 +62,17 @@ export default function SettingsScreen() {
     try {
       const saved = await updateProfile.mutateAsync({
         name: name.trim(),
+        phone: phone.trim() || undefined,
         city: city.trim() || undefined,
         bio: bio.trim() || undefined,
+        avatar: avatar || undefined,
       });
       patchProfile({
         name: saved.name ?? name.trim(),
-        city: saved.city?.trim() || null,
-        bio: saved.bio?.trim() || null,
+        phone: phone.trim() || null,
+        city: saved.city?.trim() || city.trim() || null,
+        bio: saved.bio?.trim() || bio.trim() || null,
+        avatar: avatar || saved.avatar || null,
       });
       Alert.alert('Başarılı', 'Profiliniz güncellendi');
     } catch (e: unknown) {
@@ -50,8 +82,24 @@ export default function SettingsScreen() {
     }
   };
 
+  const avatarUri =
+    avatar ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'K')}&background=3D1A78&color=fff`;
+
   return (
-    <ProfileScreenLayout title="Ayarlar">
+    <ProfileScreenLayout title="Profil Ayarları">
+      <Pressable style={styles.avatarSection} onPress={handlePickAvatar}>
+        <Image source={{ uri: avatarUri }} style={styles.avatar} contentFit="cover" />
+        <View style={[styles.avatarEdit, { backgroundColor: colors.primary }]}>
+          {uploading ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Ionicons name="camera" size={16} color="#FFF" />
+          )}
+        </View>
+        <Text style={[styles.avatarHint, { color: colors.mutedForeground }]}>Fotoğrafı değiştir</Text>
+      </Pressable>
+
       <Text style={[styles.label, { color: colors.foreground }]}>Ad Soyad</Text>
       <TextInput
         style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
@@ -59,6 +107,16 @@ export default function SettingsScreen() {
         onChangeText={setName}
         placeholder="Adınız"
         placeholderTextColor={colors.mutedForeground}
+      />
+
+      <Text style={[styles.label, { color: colors.foreground }]}>Telefon</Text>
+      <TextInput
+        style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
+        value={phone}
+        onChangeText={setPhone}
+        placeholder="05XX XXX XX XX"
+        placeholderTextColor={colors.mutedForeground}
+        keyboardType="phone-pad"
       />
 
       <Text style={[styles.label, { color: colors.foreground }]}>E-posta</Text>
@@ -95,22 +153,25 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 14, fontWeight: '600' },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    fontSize: 16,
+  avatarSection: { alignItems: 'center', marginBottom: 20, gap: 8 },
+  avatar: { width: 96, height: 96, borderRadius: 48 },
+  avatarEdit: {
+    position: 'absolute',
+    top: 68,
+    right: '35%',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
   },
+  avatarHint: { fontSize: 12 },
+  label: { fontSize: 14, fontWeight: '600', marginTop: 12 },
+  input: { height: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 16, marginTop: 6 },
   readonly: { opacity: 0.8 },
   bio: { height: 96, textAlignVertical: 'top', paddingTop: 12 },
-  button: {
-    height: 52,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
+  button: { height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 24 },
   buttonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
 });

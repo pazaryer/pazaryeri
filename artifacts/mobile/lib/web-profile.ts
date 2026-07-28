@@ -9,6 +9,8 @@ export type WebProfileData = {
   bio?: string;
   city?: string;
   district?: string;
+  phone?: string;
+  avatar?: string;
 };
 
 function profileStorageKey(uid: string) {
@@ -60,10 +62,18 @@ export async function updateWebProfile(data: WebProfileData): Promise<WebProfile
     bio: data.bio?.trim() ?? '',
     city: data.city?.trim() ?? '',
     district: data.district?.trim() ?? '',
+    phone: data.phone?.trim() ?? '',
+    avatar: data.avatar,
   };
 
   if (data.name?.trim()) {
-    await updateProfile(user, { displayName: data.name.trim() });
+    await updateProfile(user, {
+      displayName: data.name.trim(),
+      ...(data.avatar ? { photoURL: data.avatar } : {}),
+    });
+    await user.reload();
+  } else if (data.avatar) {
+    await updateProfile(user, { photoURL: data.avatar });
     await user.reload();
   }
 
@@ -95,6 +105,8 @@ export async function updateWebProfile(data: WebProfileData): Promise<WebProfile
         bio: saved.bio || undefined,
         city: saved.city || undefined,
         district: saved.district || undefined,
+        phone: data.phone?.trim() || undefined,
+        avatar: data.avatar || undefined,
       }),
     });
   } catch {

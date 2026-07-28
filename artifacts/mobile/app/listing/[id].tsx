@@ -18,24 +18,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { ImageGalleryModal } from '@/components/ImageGalleryModal';
-import { OfferModal } from '@/components/OfferModal';
-import { ListingOffersSection } from '@/components/ListingOffersSection';
+import { ContactActions } from '@/components/ContactActions';
 import { ReviewModal } from '@/components/ReviewModal';
+import { UserAvatar } from '@/components/UserAvatar';
 import { WebListingDetailPage } from '@/components/web/WebListingDetailPage';
 import {
   useListing,
   useToggleFavorite,
   useStartConversation,
   useCreateReport,
-  useCreateOffer,
-  useMyOffers,
-  useAcceptOffer,
-  useRejectOffer,
-  useCounterOffer,
   useCreateReview,
   formatPrice,
   formatTimeAgo,
 } from '@/lib/hooks';
+import { getListingContactPhone } from '@/lib/contact';
 import { useAuth } from '@/contexts/AuthContext';
 import { sitePath } from '@/lib/config';
 import { ListingOwnerActions } from '@/components/ListingOwnerActions';
@@ -61,18 +57,11 @@ function MobileListingDetailScreen() {
   const toggleFavorite = useToggleFavorite();
   const startConversation = useStartConversation();
   const createReport = useCreateReport();
-  const createOffer = useCreateOffer();
-  const { data: myOffersData } = useMyOffers();
-  const acceptOffer = useAcceptOffer();
-  const rejectOffer = useRejectOffer();
-  const counterOffer = useCounterOffer();
   const createReview = useCreateReview();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [offerOpen, setOfferOpen] = useState(false);
-  const [counterOpen, setCounterOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
 
   if (isLoading || (isFetching && !listing)) {
@@ -105,9 +94,7 @@ function MobileListingDetailScreen() {
 
   const images = listing.images.length > 0 ? listing.images : [listing.image];
   const isOwner = profile?.id === listing.sellerId;
-  const myActiveOffer = myOffersData?.items.find(
-    (o) => o.listingId === listing.id && ['pending', 'countered'].includes(o.status),
-  );
+  const contactPhone = getListingContactPhone(listing);
 
   const openGallery = (idx: number) => {
     setGalleryIndex(idx);
@@ -122,13 +109,17 @@ function MobileListingDetailScreen() {
     toggleFavorite.mutate({ listingId: listing.id, isFavorite: listing.isFavorite });
   };
 
-  const handleOffer = async (amount: number, message?: string) => {
+  const handleChat = async () => {
     if (!user) {
-      Alert.alert('Giriş gerekli', 'Teklif vermek için giriş yapın');
+      Alert.alert('Giriş gerekli', 'Mesaj göndermek için giriş yapın');
       return;
     }
-    await createOffer.mutateAsync({ listingId: listing.id, amount, message });
-    Alert.alert('Başarılı', 'Teklifiniz gönderildi. Satıcı bilgilendirildi.');
+    try {
+      const convo = await startConversation.mutateAsync({ listingId: listing.id });
+      router.push(`/chat/${convo.id}`);
+    } catch (e: any) {
+      Alert.alert('Hata', e.message ?? 'Sohbet başlatılamadı');
+    }
   };
 
   const handleShare = async () => {
@@ -137,15 +128,6 @@ function MobileListingDetailScreen() {
         message: `${listing.title} - ${formatPrice(listing.price)}\n${sitePath(`/listing/${listing.id}`)}`,
       });
     } catch {}
-  };
-
-  const handleChat = async () => {
-    try {
-      const convo = await startConversation.mutateAsync({ listingId: listing.id });
-      router.push(`/chat/${convo.id}`);
-    } catch (e: any) {
-      Alert.alert('Hata', e.message ?? 'Sohbet başlatılamadı');
-    }
   };
 
   const handleReport = () => {
@@ -208,11 +190,6 @@ function MobileListingDetailScreen() {
         <View style={styles.content}>
           <View style={styles.priceRow}>
             <Text style={[styles.price, { color: colors.primary }]}>{formatPrice(listing.price)}</Text>
-            {listing.acceptsOffers && listing.status === 'active' && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>Teklif Kabul</Text>
-              </View>
-            )}
             {listing.status === 'sold' && (
               <View style={[styles.badge, { backgroundColor: '#FFEBEE' }]}>
                 <Text style={[styles.badgeText, { color: '#C62828' }]}>Satıldı</Text>
@@ -250,11 +227,8 @@ function MobileListingDetailScreen() {
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <View style={styles.sellerCard}>
-            <Image
-              source={{ uri: listing.seller.avatar ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(listing.seller.name)}` }}
-              style={styles.sellerAvatar}
-            />
-            <View style={styles.sellerInfo}>
+            <UserAvatar name={listing.seller.name} avatar={listing.seller.avatar} size={48} />
+            <View style={[styles.sellerInfo, { marginLeft: 12 }]}>
               <View style={styles.sellerNameRow}>
                 <Text style={[styles.sellerName, { color: colors.foreground }]}>{listing.seller.name}</Text>
                 {listing.seller.isVerified && <Ionicons name="checkmark-circle" size={16} color={colors.primary} />}
@@ -288,48 +262,6 @@ function MobileListingDetailScreen() {
           </View>
 
           {isOwner && (
-            <ListingOffersSection
-              listingId={listing.id}
-              listingTitle={listing.title}
-              listingPrice={listing.price}
-              isOwner={isOwner}
-              currentUserId={profile?.id}
-            />
-          )}
-
-          {!isOwner && myActiveOffer && (
-            <View style={[styles.offerCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Teklifiniz</Text>
-              <Text style={[styles.offerAmount, { color: colors.primary }]}>{formatPrice(myActiveOffer.amount)}</Text>
-              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>
-                Durum: {myActiveOffer.status === 'countered' ? 'Karşı teklif geldi' : 'Beklemede'}
-              </Text>
-              {myActiveOffer.offeredBy !== profile?.id && (
-                <View style={styles.offerActions}>
-                  <Pressable
-                    style={[styles.miniBtn, { backgroundColor: colors.primary }]}
-                    onPress={() => acceptOffer.mutateAsync({ offerId: myActiveOffer.id }).then(() => Alert.alert('Kabul edildi'))}
-                  >
-                    <Text style={styles.miniBtnText}>Kabul Et</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.miniBtn, { borderColor: colors.primary, borderWidth: 1 }]}
-                    onPress={() => setCounterOpen(true)}
-                  >
-                    <Text style={[styles.miniBtnText, { color: colors.primary }]}>Karşı Teklif</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.miniBtn, { backgroundColor: '#FFEBEE' }]}
-                    onPress={() => rejectOffer.mutateAsync({ offerId: myActiveOffer.id })}
-                  >
-                    <Text style={[styles.miniBtnText, { color: '#C62828' }]}>Reddet</Text>
-                  </Pressable>
-                </View>
-              )}
-            </View>
-          )}
-
-          {isOwner && (
             <ListingOwnerActions
               listingId={listing.id}
               status={listing.status}
@@ -341,30 +273,12 @@ function MobileListingDetailScreen() {
 
       {!isOwner && listing.status === 'active' && (
         <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <Pressable
-            style={[styles.offerButton, { borderColor: colors.primary }]}
-            onPress={() => {
-              if (!user) Alert.alert('Giriş gerekli', 'Teklif vermek için giriş yapın');
-              else if (myActiveOffer) Alert.alert('Bilgi', 'Bu ilana zaten aktif teklifiniz var');
-              else setOfferOpen(true);
-            }}
-          >
-            <Text style={[styles.offerButtonText, { color: colors.primary }]}>Teklif Ver</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.chatButton, { backgroundColor: colors.primary }]}
-            onPress={handleChat}
-            disabled={startConversation.isPending}
-          >
-            {startConversation.isPending ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Ionicons name="chatbubble" size={20} color="#FFF" />
-                <Text style={styles.chatButtonText}>Sohbet Başlat</Text>
-              </>
-            )}
-          </Pressable>
+          <ContactActions
+            phone={contactPhone}
+            listingTitle={listing.title}
+            onMessage={handleChat}
+            messageLoading={startConversation.isPending}
+          />
         </View>
       )}
 
@@ -373,27 +287,6 @@ function MobileListingDetailScreen() {
         initialIndex={galleryIndex}
         visible={galleryOpen}
         onClose={() => setGalleryOpen(false)}
-      />
-
-      <OfferModal
-        visible={offerOpen}
-        listingTitle={listing.title}
-        listingPrice={listing.price}
-        onClose={() => setOfferOpen(false)}
-        onSubmit={handleOffer}
-      />
-
-      <OfferModal
-        visible={counterOpen}
-        listingTitle={listing.title}
-        listingPrice={listing.price}
-        title="Karşı Teklif Ver"
-        onClose={() => setCounterOpen(false)}
-        onSubmit={async (amount, message) => {
-          if (!myActiveOffer) return;
-          await counterOffer.mutateAsync({ offerId: myActiveOffer.id, amount, message });
-          Alert.alert('Başarılı', 'Karşı teklif gönderildi');
-        }}
       />
 
       <ReviewModal
@@ -450,14 +343,5 @@ const styles = StyleSheet.create({
   description: { fontSize: 15, lineHeight: 24 },
   safetyBox: { flexDirection: 'row', padding: 16, borderRadius: 12, marginTop: 24, alignItems: 'center', gap: 12 },
   safetyText: { flex: 1, fontSize: 14, fontWeight: '500', lineHeight: 20 },
-  footer: { position: 'absolute', bottom: 0, width: '100%', flexDirection: 'row', paddingTop: 16, paddingHorizontal: 16, borderTopWidth: 1, gap: 12 },
-  offerButton: { flex: 1, height: 52, borderWidth: 2, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  offerButtonText: { fontSize: 16, fontWeight: '700' },
-  chatButton: { flex: 1.5, height: 52, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
-  chatButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  offerCard: { marginTop: 20, padding: 16, borderRadius: 14, borderWidth: 1, gap: 8 },
-  offerAmount: { fontSize: 24, fontWeight: '800' },
-  offerActions: { flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' },
-  miniBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
-  miniBtnText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
+  footer: { position: 'absolute', bottom: 0, width: '100%', paddingTop: 12, paddingHorizontal: 16, borderTopWidth: 1 },
 });

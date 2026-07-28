@@ -107,11 +107,13 @@ export default function HomeScreen() {
           renderItem={({ item }) => <ListingCard item={item} compact />}
           ListHeaderComponent={
             <View style={styles.listHeader}>
+              <Text style={[styles.filterTitle, { color: colors.foreground }]}>Kategoriler</Text>
               <CategoryFilter
                 categories={[...LISTING_CATEGORIES]}
                 selectedCategory={selectedCategory}
                 onSelect={setSelectedCategory}
               />
+              <Text style={[styles.filterTitle, { color: colors.foreground, marginTop: 8 }]}>Konum</Text>
               <LocationFilterBar value={locationFilter} onChange={setLocationFilter} />
             </View>
           }
@@ -165,6 +167,7 @@ const styles = StyleSheet.create({
   },
   searchPlaceholder: { fontSize: 14 },
   listHeader: { paddingTop: 8, paddingBottom: 4 },
+  filterTitle: { fontSize: 13, fontWeight: '700', paddingHorizontal: 14, marginBottom: 6 },
   row: { gap: 0 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
 });

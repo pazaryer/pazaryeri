@@ -22,6 +22,9 @@ import {
 } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { ListingOwnerActions } from '@/components/ListingOwnerActions';
+import { ContactActions } from '@/components/ContactActions';
+import { UserAvatar } from '@/components/UserAvatar';
+import { getListingContactPhone } from '@/lib/contact';
 
 export function WebListingDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -63,6 +66,7 @@ export function WebListingDetailPage() {
   const images = listing.images.length > 0 ? listing.images : [listing.image];
   const isOwner = profile?.id === listing.sellerId;
   const isWide = width >= 900;
+  const contactPhone = getListingContactPhone(listing);
 
   const handleChat = async () => {
     if (!user) {
@@ -124,12 +128,7 @@ export function WebListingDetailPage() {
             </View>
 
             <View style={styles.seller}>
-              <Image
-                source={{
-                  uri: listing.seller.avatar ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(listing.seller.name)}`,
-                }}
-                style={styles.sellerAvatar}
-              />
+              <UserAvatar name={listing.seller.name} avatar={listing.seller.avatar} size={48} />
               <View>
                 <Text style={styles.sellerName}>{listing.seller.name}</Text>
                 <Text style={styles.sellerMeta}>
@@ -143,18 +142,12 @@ export function WebListingDetailPage() {
 
             {!isOwner && listing.status === 'active' && (
               <View style={styles.actions}>
-                <Pressable style={styles.chatBtn} onPress={handleChat} disabled={startConversation.isPending}>
-                  {startConversation.isPending ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <Text style={styles.chatIcon}>💬</Text>
-                      <Text style={styles.chatBtnText}>
-                        {user ? 'Satıcıyla Sohbet Et' : 'Sohbet için Giriş Yap'}
-                      </Text>
-                    </>
-                  )}
-                </Pressable>
+                <ContactActions
+                  phone={contactPhone}
+                  listingTitle={listing.title}
+                  onMessage={handleChat}
+                  messageLoading={startConversation.isPending}
+                />
                 {user && (
                   <Pressable
                     style={styles.favBtn}

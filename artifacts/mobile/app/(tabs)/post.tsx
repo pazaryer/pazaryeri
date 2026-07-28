@@ -17,10 +17,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { useColors } from '@/hooks/useColors';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCreateListing } from '@/lib/hooks';
 import { pickImages, takePhoto } from '@/lib/storage';
+import { LISTING_CATEGORIES } from '@/lib/categories';
 
-const CATEGORIES = ['Elektronik', 'Araç', 'Mobilya', 'Moda', 'Spor', 'Ev', 'Hobi', 'Diğer'];
+const CATEGORIES = LISTING_CATEGORIES.filter((c) => c !== 'Tümü');
 
 export default function PostScreen() {
   const colors = useColors();
@@ -30,12 +32,14 @@ export default function PostScreen() {
   const paddingTop = isWeb ? 67 : insets.top + 20;
 
   const createListing = useCreateListing();
+  const { profile } = useAuth();
 
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   const [desc, setDesc] = useState('');
   const [location, setLocation] = useState('');
+  const [phone, setPhone] = useState(profile?.phone ?? '');
   const [images, setImages] = useState<string[]>([]);
   const [showCategories, setShowCategories] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -77,6 +81,7 @@ export default function PostScreen() {
     if (!title.trim()) return Alert.alert('Hata', 'Başlık gerekli');
     if (!price.trim()) return Alert.alert('Hata', 'Fiyat gerekli');
     if (!category) return Alert.alert('Hata', 'Kategori seçin');
+    if (!phone.trim()) return Alert.alert('Hata', 'İletişim telefonu gerekli');
     if (images.length === 0) return Alert.alert('Hata', 'En az 1 fotoğraf ekleyin');
 
     setLoading(true);
@@ -90,6 +95,7 @@ export default function PostScreen() {
         city: parts[1] ?? parts[0],
         district: parts[0],
         location,
+        contactPhone: phone.trim(),
         images,
       });
       Alert.alert('Başarılı', 'İlanınız yayınlandı!', [
@@ -101,6 +107,7 @@ export default function PostScreen() {
       setCategory('');
       setDesc('');
       setLocation('');
+      setPhone(profile?.phone ?? '');
       setImages([]);
     } catch (e: any) {
       Alert.alert('Hata', e.message ?? 'İlan oluşturulamadı');
@@ -195,6 +202,19 @@ export default function PostScreen() {
           textAlignVertical="top"
         />
 
+        <Text style={[styles.label, { color: colors.foreground }]}>İletişim Telefonu</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+          placeholder="05XX XXX XX XX"
+          placeholderTextColor={colors.mutedForeground}
+          keyboardType="phone-pad"
+          value={phone}
+          onChangeText={setPhone}
+        />
+        <Text style={[styles.hint, { color: colors.mutedForeground }]}>
+          Alıcılar sizi arayabilir veya WhatsApp ile ulaşabilir
+        </Text>
+
         <Text style={[styles.label, { color: colors.foreground }]}>Konum</Text>
         <Pressable
           style={[styles.input, styles.picker, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -247,6 +267,7 @@ const styles = StyleSheet.create({
   categoryList: { borderWidth: 1, borderRadius: 12, marginTop: 4, overflow: 'hidden' },
   categoryItem: { padding: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   textArea: { height: 100, paddingTop: 16 },
+  hint: { fontSize: 12, marginTop: -4, marginBottom: 4 },
   submitButton: { height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginTop: 32 },
   submitButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
 });

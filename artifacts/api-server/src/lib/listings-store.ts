@@ -87,6 +87,7 @@ export async function dbCreateListing(
     latitude?: number;
     longitude?: number;
     acceptsOffers: boolean;
+    contactPhone?: string;
     images: string[];
   },
 ) {
@@ -112,6 +113,7 @@ export async function dbCreateListing(
       latitude: body.latitude,
       longitude: body.longitude,
       accepts_offers: body.acceptsOffers,
+      contact_phone: body.contactPhone ?? null,
     })
     .select()
     .single();
@@ -259,6 +261,7 @@ export async function dbBuildListingDetail(listingId: string, userId?: string) {
     description: listing.description,
     images,
     acceptsOffers: listing.accepts_offers,
+    contactPhone: listing.contact_phone,
     sellerId: listing.seller_id,
     latitude: listing.latitude,
     longitude: listing.longitude,
@@ -309,6 +312,7 @@ export async function dbUpdateUser(
   body: {
     name?: string;
     avatar?: string;
+    phone?: string;
     bio?: string;
     city?: string;
     district?: string;

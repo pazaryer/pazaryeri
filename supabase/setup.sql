@@ -167,6 +167,8 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE INDEX IF NOT EXISTS reviews_reviewee_idx ON reviews(reviewee_id);
 CREATE INDEX IF NOT EXISTS reviews_listing_idx ON reviews(listing_id);
 
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS contact_phone TEXT;
+
 -- ============================================================
 -- STORAGE
 -- ============================================================
