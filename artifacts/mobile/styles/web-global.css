@@ -75,18 +75,22 @@ body {
   gap: 12px !important;
   width: 100% !important;
 }
+#pz-profile-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+#pz-profile-grid a,
 #pz-listing-grid a {
   display: block !important;
   width: 100% !important;
   text-decoration: none !important;
   transition: transform 0.15s ease;
 }
-#pz-listing-grid a:hover {
-  transform: translateY(-3px);
-}
-
-#pz-category-grid {
-  display: none !important;
+#pz-listing-grid a:hover,
+#pz-profile-grid > *:hover {
+  transform: translateY(-2px);
 }
 
 @media (max-width: 768px) {

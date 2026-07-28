@@ -17,8 +17,9 @@ import { useColors } from '@/hooks/useColors';
 import { useMessages, useSendMessage, useHeartbeat, formatLastActive } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserAvatar } from '@/components/UserAvatar';
+import { WebShell } from '@/components/web/WebShell';
 
-export default function ChatScreen() {
+function ChatContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const conversationId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
@@ -67,7 +68,11 @@ export default function ChatScreen() {
       <View
         style={[
           styles.header,
-          { paddingTop: insets.top + 8, backgroundColor: colors.card, borderBottomColor: colors.border },
+          {
+            paddingTop: Platform.OS === 'web' ? 12 : insets.top + 8,
+            backgroundColor: colors.card,
+            borderBottomColor: colors.border,
+          },
         ]}
       >
         <Pressable onPress={() => router.back()} hitSlop={12}>
@@ -225,4 +230,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   sendButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  webWrap: { flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center' as const },
 });
+
+export default function ChatScreen() {
+  if (Platform.OS === 'web') {
+    return (
+      <WebShell hideFooter>
+        <View style={styles.webWrap}>
+          <ChatContent />
+        </View>
+      </WebShell>
+    );
+  }
+  return <ChatContent />;
+}

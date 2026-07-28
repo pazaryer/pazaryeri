@@ -140,7 +140,11 @@ router.patch("/listings/:listingId/status", authMiddleware, async (req, res, nex
     const { data: listing } = await sb.from("listings").select("seller_id").eq("id", req.params.listingId).single();
     if (!listing) throw new AppError("İlan bulunamadı", 404);
     if (listing.seller_id !== req.user!.id) throw new AppError("Yetkisiz", 403);
-    await sb.from("listings").update({ status, updated_at: new Date().toISOString() }).eq("id", req.params.listingId);
+    const now = new Date().toISOString();
+    const patch: Record<string, unknown> = { status, updated_at: now };
+    if (status === "sold") patch.sold_at = now;
+    else if (status === "active") patch.sold_at = null;
+    await sb.from("listings").update(patch).eq("id", req.params.listingId);
     res.json(await dbBuildListingDetail(req.params.listingId, req.user!.id));
   } catch (err) {
     next(err);

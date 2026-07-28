@@ -15,8 +15,10 @@ import { WebPage } from './WebPage';
 import { useCreateListing, useUpdateListing, useListing } from '@/lib/hooks';
 import { pickImages } from '@/lib/storage';
 import { showAlert } from '@/lib/web-alert';
+import { useAuth } from '@/contexts/AuthContext';
+import { LISTING_CATEGORIES } from '@/lib/categories';
 
-const CATEGORIES = ['Elektronik', 'Araç', 'Mobilya', 'Moda', 'Spor', 'Ev', 'Hobi', 'Diğer'];
+const CATEGORIES = LISTING_CATEGORIES.filter((c) => c !== 'Tümü');
 
 interface WebPostPageProps {
   editId?: string;
@@ -26,6 +28,7 @@ export function WebPostPage({ editId }: WebPostPageProps) {
   const router = useRouter();
   const createListing = useCreateListing();
   const updateListing = useUpdateListing();
+  const { profile } = useAuth();
   const { data: existing, isLoading: loadingExisting } = useListing(editId ?? '');
   const isEdit = Boolean(editId);
 
@@ -34,6 +37,7 @@ export function WebPostPage({ editId }: WebPostPageProps) {
   const [category, setCategory] = useState('');
   const [desc, setDesc] = useState('');
   const [location, setLocation] = useState('');
+  const [phone, setPhone] = useState(profile?.phone ?? '');
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -68,6 +72,7 @@ export function WebPostPage({ editId }: WebPostPageProps) {
     if (!title.trim()) return showAlert('Hata', 'Başlık gerekli');
     if (!price.trim()) return showAlert('Hata', 'Fiyat gerekli');
     if (!category) return showAlert('Hata', 'Kategori seçin');
+    if (!phone.trim()) return showAlert('Hata', 'İletişim telefonu gerekli');
     if (images.length === 0) return showAlert('Hata', 'En az 1 fotoğraf ekleyin');
 
     setLoading(true);
@@ -81,6 +86,7 @@ export function WebPostPage({ editId }: WebPostPageProps) {
         city: parts[1] ?? parts[0] ?? 'Türkiye',
         district: parts[0] ?? undefined,
         location: location.trim() || 'Türkiye',
+        contactPhone: phone.trim(),
         images,
       };
 
@@ -195,6 +201,17 @@ export function WebPostPage({ editId }: WebPostPageProps) {
               textAlignVertical="top"
             />
 
+            <Text style={styles.label}>İletişim Telefonu</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="05XX XXX XX XX"
+              placeholderTextColor="#7A6B8A"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
+            <Text style={styles.hint}>Alıcılar sizi arayabilir veya WhatsApp ile ulaşabilir</Text>
+
             <Text style={styles.label}>Konum</Text>
             <TextInput
               style={styles.input}
@@ -289,6 +306,7 @@ const styles = StyleSheet.create({
   categoryChipActive: { backgroundColor: '#3D1A78', borderColor: '#3D1A78' },
   categoryChipText: { fontSize: 14, fontWeight: '600', color: '#3D1A78' },
   categoryChipTextActive: { color: '#FFFFFF' },
+  hint: { fontSize: 12, color: '#7A6B8A', marginTop: -4, marginBottom: 4 },
   submit: {
     height: 56,
     borderRadius: 14,

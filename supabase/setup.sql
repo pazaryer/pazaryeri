@@ -168,6 +168,8 @@ CREATE INDEX IF NOT EXISTS reviews_reviewee_idx ON reviews(reviewee_id);
 CREATE INDEX IF NOT EXISTS reviews_listing_idx ON reviews(listing_id);
 
 ALTER TABLE listings ADD COLUMN IF NOT EXISTS contact_phone TEXT;
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS sold_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS listings_sold_at_idx ON listings(sold_at) WHERE status = 'sold';
 
 -- ============================================================
 -- STORAGE

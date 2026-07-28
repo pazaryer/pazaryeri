@@ -37,6 +37,8 @@ export function WebGoogleLoginButton({
 
   return (
     <View
+      // @ts-expect-error web className
+      className="google-signin-host"
       nativeID={containerId}
       style={[styles.wrap, style]}
       accessibilityRole="button"

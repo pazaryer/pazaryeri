@@ -334,7 +334,7 @@ export function useConversations() {
   return useQuery({
     queryKey: ['conversations'],
     queryFn: () => apiFetch<{ items: ConversationSummary[] }>('/conversations'),
-    refetchInterval: Platform.OS === 'web' ? false : 5_000,
+    refetchInterval: Platform.OS === 'web' ? 10_000 : 5_000,
     refetchOnWindowFocus: Platform.OS !== 'web',
   });
 }
@@ -347,7 +347,7 @@ export function useMessages(conversationId: string) {
         `/conversations/${conversationId}/messages`,
       ),
     enabled: !!conversationId,
-    refetchInterval: Platform.OS === 'web' ? false : 3_000,
+    refetchInterval: Platform.OS === 'web' ? 10_000 : 3_000,
     refetchOnWindowFocus: Platform.OS !== 'web',
   });
 }

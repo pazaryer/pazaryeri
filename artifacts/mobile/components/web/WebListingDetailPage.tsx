@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Alert,
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -25,6 +24,7 @@ import { ListingOwnerActions } from '@/components/ListingOwnerActions';
 import { ContactActions } from '@/components/ContactActions';
 import { UserAvatar } from '@/components/UserAvatar';
 import { getListingContactPhone } from '@/lib/contact';
+import { showAlert } from '@/lib/web-alert';
 
 export function WebListingDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -77,7 +77,13 @@ export function WebListingDetailPage() {
       const convo = await startConversation.mutateAsync({ listingId: listing.id });
       router.push(`/chat/${convo.id}`);
     } catch (e: any) {
-      Alert.alert('Hata', e.message ?? 'Sohbet başlatılamadı');
+      showAlert('Hata', e.message ?? 'Sohbet başlatılamadı');
+    }
+  };
+
+  const openImageFullscreen = () => {
+    if (typeof window !== 'undefined') {
+      window.open(images[activeImage], '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -92,7 +98,9 @@ export function WebListingDetailPage() {
 
         <View style={[styles.layout, isWide && styles.layoutWide]}>
           <View style={[styles.gallery, isWide && styles.galleryWide]}>
-            <Image source={{ uri: images[activeImage] }} style={styles.mainImage} contentFit="cover" />
+            <Pressable onPress={openImageFullscreen}>
+              <Image source={{ uri: images[activeImage] }} style={styles.mainImage} contentFit="cover" />
+            </Pressable>
             {images.length > 1 && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbs}>
                 {images.map((img, i) => (
@@ -139,6 +147,13 @@ export function WebListingDetailPage() {
 
             <Text style={styles.sectionTitle}>Açıklama</Text>
             <Text style={styles.description}>{listing.description || 'Açıklama eklenmemiş.'}</Text>
+
+            <View style={styles.safetyBox}>
+              <Text style={styles.safetyIcon}>🛡️</Text>
+              <Text style={styles.safetyText}>
+                Güvenliğiniz için ödeme ve teslimatı yüz yüze yapmayı tercih edin.
+              </Text>
+            </View>
 
             {!isOwner && listing.status === 'active' && (
               <View style={styles.actions}>
@@ -216,25 +231,24 @@ const styles = StyleSheet.create({
     borderColor: '#E2D9F0',
     marginTop: 8,
   },
-  sellerAvatar: { width: 48, height: 48, borderRadius: 24 },
   sellerName: { fontSize: 16, fontWeight: '700', color: '#1A0A2E' },
   sellerMeta: { fontSize: 13, color: '#7A6B8A', marginTop: 2 },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1A0A2E', marginTop: 12 },
   description: { fontSize: 15, color: '#7A6B8A', lineHeight: 24 },
-  actions: { flexDirection: 'row', gap: 12, marginTop: 20 },
-  chatBtn: {
-    flex: 1,
+  safetyBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#3D1A78',
-    paddingVertical: 14,
+    gap: 10,
+    padding: 14,
+    backgroundColor: '#F4F1FA',
     borderRadius: 12,
-    minHeight: 50,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E8E0F4',
   },
-  chatBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
-  chatIcon: { fontSize: 16 },
+  safetyIcon: { fontSize: 20 },
+  safetyText: { flex: 1, fontSize: 13, color: '#1A0A2E', lineHeight: 20 },
+  actions: { flexDirection: 'row', gap: 12, marginTop: 20, alignItems: 'center' },
   favBtn: {
     width: 50,
     height: 50,

@@ -15,6 +15,7 @@ import { WebPage } from './WebPage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyListings, useUpdateProfile, formatPrice } from '@/lib/hooks';
 import { showAlert, showConfirm } from '@/lib/web-alert';
+import { pickImages } from '@/lib/storage';
 
 export function WebProfilePage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export function WebProfilePage() {
   const [editCity, setEditCity] = useState('');
   const [editBio, setEditBio] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   React.useEffect(() => {
     if (user && !profile) refreshProfile();
@@ -94,6 +96,21 @@ export function WebProfilePage() {
     }
   };
 
+  const handleAvatarUpload = async () => {
+    try {
+      setUploadingAvatar(true);
+      const urls = await pickImages(1);
+      if (!urls[0]) return;
+      await updateProfile.mutateAsync({ avatar: urls[0] });
+      patchProfile({ avatar: urls[0] });
+      showAlert('Başarılı', 'Profil fotoğrafınız güncellendi');
+    } catch (e: unknown) {
+      showAlert('Hata', e instanceof Error ? e.message : 'Yüklenemedi');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleLogout = () => {
     showConfirm('Çıkış Yap', 'Hesabınızdan çıkmak istediğinize emin misiniz?', async () => {
       await signOut();
@@ -120,14 +137,23 @@ export function WebProfilePage() {
           <View style={styles.layout}>
             <View style={styles.sidebar}>
               <View style={styles.profileCard}>
-                <Image
-                  source={{
-                    uri:
-                      displayProfile.avatar ??
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(displayProfile.name)}&background=3D1A78&color=fff`,
-                  }}
-                  style={styles.avatar}
-                />
+                <Pressable onPress={handleAvatarUpload} style={styles.avatarBtn}>
+                  <Image
+                    source={{
+                      uri:
+                        displayProfile.avatar ??
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(displayProfile.name)}&background=3D1A78&color=fff`,
+                    }}
+                    style={styles.avatar}
+                  />
+                  <View style={styles.avatarEdit}>
+                    {uploadingAvatar ? (
+                      <ActivityIndicator size="small" color="#1A0A2E" />
+                    ) : (
+                      <Text style={styles.avatarEditIcon}>📷</Text>
+                    )}
+                  </View>
+                </Pressable>
                 {editing ? (
                   <View style={styles.editForm}>
                     <Text style={styles.editLabel}>Ad Soyad</Text>
@@ -198,6 +224,14 @@ export function WebProfilePage() {
                 <Pressable style={styles.menuItem} onPress={() => router.push('/mesajlar')}>
                   <Text style={styles.menuIcon}>💬</Text>
                   <Text style={styles.menuText}>Mesajlarım</Text>
+                </Pressable>
+                <Pressable style={styles.menuItem} onPress={() => router.push('/notifications')}>
+                  <Text style={styles.menuIcon}>🔔</Text>
+                  <Text style={styles.menuText}>Bildirimler</Text>
+                </Pressable>
+                <Pressable style={styles.menuItem} onPress={() => router.push('/help')}>
+                  <Text style={styles.menuIcon}>❓</Text>
+                  <Text style={styles.menuText}>Yardım</Text>
                 </Pressable>
                 <Pressable style={[styles.menuItem, styles.menuDanger]} onPress={handleLogout}>
                   <Text style={styles.menuIcon}>🚪</Text>
@@ -281,6 +315,21 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   avatar: { width: 88, height: 88, borderRadius: 44, borderWidth: 3, borderColor: '#C9A84C' },
+  avatarBtn: { position: 'relative' },
+  avatarEdit: {
+    position: 'absolute',
+    bottom: 0,
+    right: -4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#C9A84C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  avatarEditIcon: { fontSize: 12 },
   name: { fontSize: 22, fontWeight: '800', color: '#1A0A2E', marginTop: 8 },
   email: { fontSize: 14, color: '#7A6B8A' },
   city: { fontSize: 13, color: '#7A6B8A' },

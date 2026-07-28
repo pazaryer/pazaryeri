@@ -95,6 +95,10 @@ export function ListingOwnerActions({ listingId, status, onDeleted }: ListingOwn
         </Pressable>
       )}
 
+      {status === 'sold' && (
+        <Text style={styles.soldNote}>Satıldı ilanlar 2 gün sonra otomatik kaldırılır.</Text>
+      )}
+
       <Pressable style={[styles.btn, styles.btnDanger]} onPress={confirmDelete} disabled={busy}>
         <Text style={styles.btnDangerText}>🗑️ İlanı Sil</Text>
       </Pressable>
@@ -105,6 +109,7 @@ export function ListingOwnerActions({ listingId, status, onDeleted }: ListingOwn
 const styles = StyleSheet.create({
   wrap: { gap: 10, marginTop: 16 },
   title: { fontSize: 16, fontWeight: '700', color: '#1A0A2E', marginBottom: 4 },
+  soldNote: { fontSize: 12, color: '#7A6B8A', textAlign: 'center', marginTop: -4 },
   btn: {
     paddingVertical: 14,
     paddingHorizontal: 16,

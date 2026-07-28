@@ -78,6 +78,7 @@ export type DbListing = {
   longitude: number | null;
   accepts_offers: boolean;
   contact_phone: string | null;
+  sold_at: string | null;
   views: number;
   created_at: string;
   updated_at: string;

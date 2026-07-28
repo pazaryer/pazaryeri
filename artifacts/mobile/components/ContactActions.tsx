@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { openPhoneCall, openWhatsApp } from '@/lib/contact';
+import { showAlert } from '@/lib/web-alert';
 
 interface ContactActionsProps {
   phone?: string | null;
@@ -21,9 +22,14 @@ export function ContactActions({
 }: ContactActionsProps) {
   const colors = useColors();
 
+  const notify = (title: string, msg: string) => {
+    if (Platform.OS === 'web') showAlert(title, msg);
+    else Alert.alert(title, msg);
+  };
+
   const handleCall = () => {
     if (!phone) {
-      Alert.alert('Telefon yok', 'Satıcı telefon numarası eklememiş.');
+      notify('Telefon yok', 'Satıcı telefon numarası eklememiş.');
       return;
     }
     void openPhoneCall(phone);
@@ -31,7 +37,7 @@ export function ContactActions({
 
   const handleWhatsApp = () => {
     if (!phone) {
-      Alert.alert('Telefon yok', 'Satıcı telefon numarası eklememiş.');
+      notify('Telefon yok', 'Satıcı telefon numarası eklememiş.');
       return;
     }
     const msg = listingTitle
