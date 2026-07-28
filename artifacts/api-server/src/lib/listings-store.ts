@@ -10,6 +10,7 @@ import {
   type DbUser,
 } from "./supabase-db";
 import { filterByRadius } from "./geo";
+import { buildGeocodeQuery, geocodeText } from "./geocode";
 import {
   isPostgresConfigured,
   pgHealthCheck,
@@ -65,6 +66,19 @@ export async function resolveListingsBackend(): Promise<ListingsBackend> {
   throw new AppError(`Veritabanı bağlantısı yok. ${hints.join(". ")}`, 503);
 }
 
+export async function withResolvedListingCoords<T extends {
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  district?: string;
+  location?: string;
+}>(body: T): Promise<T> {
+  if (body.latitude != null && body.longitude != null) return body;
+  const coords = await geocodeText(buildGeocodeQuery(body));
+  if (!coords) return body;
+  return { ...body, latitude: coords.latitude, longitude: coords.longitude };
+}
+
 export async function dbEnsureUser(
   id: string,
   data?: { name?: string; email?: string; phone?: string; avatar?: string },
@@ -92,8 +106,9 @@ export async function dbCreateListing(
   },
 ) {
   const backend = await resolveListingsBackend();
+  const resolved = await withResolvedListingCoords(body);
   if (backend === "postgres") {
-    const id = await pgCreateListing(sellerId, body);
+    const id = await pgCreateListing(sellerId, resolved);
     return dbBuildListingDetail(id, sellerId);
   }
 
@@ -103,15 +118,15 @@ export async function dbCreateListing(
     .from("listings")
     .insert({
       seller_id: sellerId,
-      title: body.title,
-      price: body.price,
-      category: body.category,
-      description: body.description,
-      city: body.city,
-      district: body.district,
-      location: body.location,
-      latitude: body.latitude,
-      longitude: body.longitude,
+      title: resolved.title,
+      price: resolved.price,
+      category: resolved.category,
+      description: resolved.description,
+      city: resolved.city,
+      district: resolved.district,
+      location: resolved.location,
+      latitude: resolved.latitude,
+      longitude: resolved.longitude,
       accepts_offers: body.acceptsOffers,
       contact_phone: body.contactPhone ?? null,
     })

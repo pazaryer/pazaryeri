@@ -18,6 +18,7 @@ import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
 import { useListing, useUpdateListing } from '@/lib/hooks';
 import { pickImages } from '@/lib/storage';
+import { parseLocationParts, resolveListingCoords } from '@/lib/listing-location';
 
 const CATEGORIES = ['Elektronik', 'Araç', 'Mobilya', 'Moda', 'Spor', 'Ev', 'Hobi', 'Diğer'];
 
@@ -59,6 +60,7 @@ export default function EditListingMobileScreen({ listingId }: { listingId: stri
   };
 
   const handleSubmit = async () => {
+    if (!listing) return;
     if (!title.trim()) return Alert.alert('Hata', 'Başlık gerekli');
     if (!price.trim()) return Alert.alert('Hata', 'Fiyat gerekli');
     if (!category) return Alert.alert('Hata', 'Kategori seçin');
@@ -66,16 +68,22 @@ export default function EditListingMobileScreen({ listingId }: { listingId: stri
 
     setLoading(true);
     try {
-      const parts = location.split(',').map((s) => s.trim());
+      const resolved = await resolveListingCoords(location, {
+        latitude: listing.latitude ?? undefined,
+        longitude: listing.longitude ?? undefined,
+      });
+      const parts = parseLocationParts(location);
       await updateListing.mutateAsync({
         id: listingId,
         title: title.trim(),
         price: parseInt(price.replace(/\D/g, ''), 10),
         category,
         description: desc.trim(),
-        city: parts[1] ?? parts[0],
-        district: parts[0],
+        city: parts.city,
+        district: parts.district,
         location,
+        latitude: resolved.latitude,
+        longitude: resolved.longitude,
         images,
       });
       Alert.alert('Başarılı', 'İlan güncellendi', [

@@ -6,6 +6,7 @@ import {
   dbEnsureUser,
   dbListListings,
   dbUpdateUser,
+  withResolvedListingCoords,
 } from "../lib/listings-store";
 import { getSupabaseAdmin } from "../lib/supabase-db";
 import { trackUniqueListingView } from "../lib/views";
@@ -116,6 +117,16 @@ router.put("/listings/:listingId", authMiddleware, async (req, res, next) => {
 
     const { images, acceptsOffers, contactPhone, ...rest } = body;
     const update: Record<string, unknown> = { ...rest, updated_at: new Date().toISOString() };
+
+    const resolved = await withResolvedListingCoords({
+      latitude: rest.latitude ?? listing.latitude ?? undefined,
+      longitude: rest.longitude ?? listing.longitude ?? undefined,
+      city: rest.city ?? listing.city ?? undefined,
+      district: rest.district ?? listing.district ?? undefined,
+      location: rest.location ?? listing.location ?? undefined,
+    });
+    if (resolved.latitude != null) update.latitude = resolved.latitude;
+    if (resolved.longitude != null) update.longitude = resolved.longitude;
     if (acceptsOffers !== undefined) update.accepts_offers = acceptsOffers;
     if (contactPhone !== undefined) update.contact_phone = contactPhone;
 

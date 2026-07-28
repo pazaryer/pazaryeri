@@ -81,17 +81,20 @@ export function formatLastActive(lastActiveAt?: string | null, isOnline?: boolea
   return `${Math.floor(diff / 86_400_000)} gün önce aktif`;
 }
 
-export function useListings(params?: {
-  category?: string;
-  q?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  city?: string;
-  district?: string;
-  radiusKm?: number;
-  lat?: number;
-  lon?: number;
-}) {
+export function useListings(
+  params?: {
+    category?: string;
+    q?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    city?: string;
+    district?: string;
+    radiusKm?: number;
+    lat?: number;
+    lon?: number;
+  },
+  options?: { enabled?: boolean },
+) {
   return useInfiniteQuery({
     queryKey: ['listings', params],
     queryFn: async ({ pageParam }) => {
@@ -111,6 +114,7 @@ export function useListings(params?: {
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
+    enabled: options?.enabled ?? true,
     refetchInterval: Platform.OS === 'web' ? 300_000 : false,
     refetchOnWindowFocus: false,
   });

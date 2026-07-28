@@ -24,8 +24,11 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
-  const { filter, coords, label, openPicker, ready } = useMobileLocation();
+  const { filter, coords, label, openPicker, ready, locationReady } = useMobileLocation();
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
+
+  const listingsEnabled =
+    ready && (!filter.radiusKm || (locationReady && coords.lat != null && coords.lon != null));
 
   const { data: notificationsData } = useNotifications(!!user);
   const unreadNotifs = notificationsData?.items.filter((n) => !n.isRead).length ?? 0;
@@ -38,14 +41,17 @@ export default function HomeScreen() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useListings({
-    category: selectedCategory === 'Tümü' ? undefined : selectedCategory,
-    city: filter.city,
-    district: filter.district,
-    radiusKm: filter.radiusKm,
-    lat: coords.lat,
-    lon: coords.lon,
-  });
+  } = useListings(
+    {
+      category: selectedCategory === 'Tümü' ? undefined : selectedCategory,
+      city: filter.city,
+      district: filter.district,
+      radiusKm: filter.radiusKm,
+      lat: coords.lat,
+      lon: coords.lon,
+    },
+    { enabled: listingsEnabled },
+  );
 
   const allItems = data?.pages.flatMap((p) => p.items) ?? [];
 

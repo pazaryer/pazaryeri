@@ -1,31 +1,30 @@
 import { useCallback } from 'react';
 import * as AuthSession from 'expo-auth-session';
+import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { buildApiUrl, sitePath } from './config';
+import { buildApiUrl } from './config';
 import { getFirebaseAuth } from './firebase';
 import { resolveGoogleWebClientId } from './google-client-id';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const HTTPS_RETURN_URL = sitePath('/oauth/app-return');
 const webClientId = resolveGoogleWebClientId();
-
 let oauthInFlight: Promise<void> | null = null;
 
 export function getNativeOAuthRedirectUri(): string {
+  // Android: özel scheme (intent filter) — exp:// boş sayfada takılı kalabiliyor
+  if (Platform.OS === 'android') {
+    return Linking.createURL('auth');
+  }
   return AuthSession.makeRedirectUri({
     scheme: 'pazaryeri',
     path: 'auth',
   });
 }
 
-/** Android: HTTPS (tab kapanır). iOS: exp:// (doğrudan uygulama). */
 export function getOAuthReturnUrl(): string {
-  if (Platform.OS === 'android') {
-    return HTTPS_RETURN_URL;
-  }
   return getNativeOAuthRedirectUri();
 }
 
@@ -83,30 +82,63 @@ async function completeGoogleSignIn(idToken: string): Promise<void> {
   await signInWithCredential(getFirebaseAuth(), credential);
 }
 
-/** API'den Google hesap seçici URL'si — auth.expo.io yok */
+function waitForSignedInUser(timeoutMs = 10000): Promise<boolean> {
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      unsub();
+      resolve(!!auth.currentUser);
+    }, timeoutMs);
+    const unsub = auth.onAuthStateChanged((user) => {
+      if (user) {
+        clearTimeout(timer);
+        unsub();
+        resolve(true);
+      }
+    });
+  });
+}
+
 async function fetchGoogleAuthUrl(returnUrl: string): Promise<string> {
   const endpoint = `${buildApiUrl('/auth/google/url')}?return=${encodeURIComponent(returnUrl)}`;
-  try {
-    const res = await fetch(endpoint);
-    const data = (await res.json()) as { url?: string; error?: string };
-    if (res.ok && data.url) return data.url;
-    if (data.error) throw new Error(data.error);
-  } catch (e) {
-    if (e instanceof Error && e.message !== 'Network request failed') throw e;
+  const res = await fetch(endpoint);
+  const data = (await res.json()) as { url?: string; error?: string };
+  if (!res.ok || !data.url) {
+    throw new Error(data.error ?? 'Google giriş URL alınamadı');
   }
-  // Eski API (url endpoint henüz deploy edilmediyse)
-  return `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(returnUrl)}`;
+  return data.url;
 }
 
 async function runGoogleOAuth(): Promise<void> {
-  const returnUrl = getOAuthReturnUrl();
+  const returnUrl = getNativeOAuthRedirectUri();
   const googleUrl = await fetchGoogleAuthUrl(returnUrl);
 
   if (__DEV__) {
     console.log('[Google] platform:', Platform.OS);
     console.log('[Google] return:', returnUrl);
-    console.log('[Google] googleUrl:', googleUrl.slice(0, 80));
   }
+
+  let capturedToken: string | null = null;
+  let capturedError: string | null = null;
+
+  const processReturnUrl = (url: string) => {
+    if (!url || !isMobileOAuthReturnUrl(url)) return;
+    const { idToken, error } = parseOAuthReturnUrl(url);
+    if (error) capturedError = error;
+    if (idToken) capturedToken = idToken;
+  };
+
+  const onUrl = ({ url }: { url: string }) => {
+    processReturnUrl(url);
+    if (capturedToken || capturedError) {
+      void WebBrowser.dismissBrowser().catch(() => {});
+    }
+  };
+
+  const linkSub = Linking.addEventListener('url', onUrl);
+  const initialUrl = await Linking.getInitialURL();
+  if (initialUrl) processReturnUrl(initialUrl);
 
   if (Platform.OS === 'android') {
     try {
@@ -121,7 +153,7 @@ async function runGoogleOAuth(): Promise<void> {
     result = await WebBrowser.openAuthSessionAsync(googleUrl, returnUrl, {
       preferEphemeralSession: Platform.OS === 'ios',
       showInRecents: false,
-      createTask: false,
+      createTask: Platform.OS === 'android',
     });
   } finally {
     if (Platform.OS === 'android') {
@@ -134,27 +166,55 @@ async function runGoogleOAuth(): Promise<void> {
   }
 
   if (__DEV__) {
-    console.log('[Google] result:', result.type);
+    console.log('[Google] result:', result.type, result.type === 'success' ? result.url?.slice(0, 80) : '');
   }
+
+  // Android bazen deep link'i session kapandıktan sonra iletir
+  if (Platform.OS === 'android' && !capturedToken && !capturedError) {
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+
+  linkSub.remove();
+
+  try {
+    await WebBrowser.dismissBrowser();
+  } catch {
+    /* ignore */
+  }
+
+  if (capturedError) {
+    throw new Error(capturedError);
+  }
+
+  let idToken: string | undefined;
+
+  if (result.type === 'success') {
+    const parsed = parseOAuthReturnUrl(result.url);
+    if (parsed.error) throw new Error(parsed.error);
+    idToken = parsed.idToken;
+  }
+
+  if (!idToken && capturedToken) {
+    idToken = capturedToken;
+  }
+
+  if (idToken) {
+    await completeGoogleSignIn(idToken);
+    return;
+  }
+
+  if (await waitForSignedInUser(8000)) return;
 
   if (result.type === 'cancel' || result.type === 'dismiss') {
     throw new Error('Google girişi iptal edildi');
   }
-  if (result.type !== 'success') {
-    throw new Error('Google girişi başarısız');
-  }
 
-  const { idToken, error } = parseOAuthReturnUrl(result.url);
-  if (error) throw new Error(error);
-  if (!idToken) throw new Error('Google token alınamadı');
-
-  await completeGoogleSignIn(idToken);
+  throw new Error('Google girişi tamamlanamadı — tekrar deneyin');
 }
 
 export function useGoogleSignIn() {
   const signIn = useCallback(async () => {
     if (oauthInFlight) return oauthInFlight;
-
     oauthInFlight = runGoogleOAuth();
     try {
       await oauthInFlight;
@@ -197,5 +257,3 @@ export function useNativeGoogleAuth() {
     webClientId,
   };
 }
-
-export { HTTPS_RETURN_URL as OAUTH_HTTPS_RETURN_URL };

@@ -33,25 +33,31 @@ export default function ExploreScreen() {
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
   const paddingTop = isWeb ? 67 : insets.top;
-  const { filter, coords, label, openPicker, ready } = useMobileLocation();
+  const { filter, coords, label, openPicker, ready, locationReady } = useMobileLocation();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const listingsEnabled =
+    ready && (!filter.radiusKm || (locationReady && coords.lat != null && coords.lon != null));
 
   const {
     data: listingsData,
     isLoading: listingsLoading,
     refetch,
     isRefetching,
-  } = useListings({
-    category: selectedCategory && searchQuery.length < 2 ? selectedCategory : undefined,
-    q: searchQuery.length >= 2 ? searchQuery : undefined,
-    city: filter.city,
-    district: filter.district,
-    radiusKm: filter.radiusKm,
-    lat: coords.lat,
-    lon: coords.lon,
-  });
+  } = useListings(
+    {
+      category: selectedCategory && searchQuery.length < 2 ? selectedCategory : undefined,
+      q: searchQuery.length >= 2 ? searchQuery : undefined,
+      city: filter.city,
+      district: filter.district,
+      radiusKm: filter.radiusKm,
+      lat: coords.lat,
+      lon: coords.lon,
+    },
+    { enabled: listingsEnabled },
+  );
 
   const allItems = listingsData?.pages.flatMap((p) => p.items) ?? [];
   const showSearch = searchQuery.length >= 2;

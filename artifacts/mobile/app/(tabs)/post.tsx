@@ -23,6 +23,11 @@ import { useCreateListing } from '@/lib/hooks';
 import { pickImages, takePhoto } from '@/lib/storage';
 import { LISTING_CATEGORIES, getCategoryIcon } from '@/lib/categories';
 import { BRAND } from '@/constants/brand';
+import {
+  parseLocationParts,
+  resolveListingCoords,
+  type ListingCoords,
+} from '@/lib/listing-location';
 
 const CATEGORIES = LISTING_CATEGORIES.filter((c) => c !== 'Tümü');
 
@@ -41,6 +46,7 @@ export default function PostScreen() {
   const [category, setCategory] = useState('');
   const [desc, setDesc] = useState('');
   const [location, setLocation] = useState('');
+  const [coords, setCoords] = useState<ListingCoords>({});
   const [phone, setPhone] = useState(profile?.phone ?? '');
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,6 +85,10 @@ export default function PostScreen() {
     });
     const locStr = [geo?.district, geo?.city].filter(Boolean).join(', ');
     setLocation(locStr || `${loc.coords.latitude.toFixed(4)}, ${loc.coords.longitude.toFixed(4)}`);
+    setCoords({
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+    });
   };
 
   const handleSubmit = async () => {
@@ -90,15 +100,18 @@ export default function PostScreen() {
 
     setLoading(true);
     try {
-      const parts = location.split(',').map((s) => s.trim());
+      const resolved = await resolveListingCoords(location, coords);
+      const parts = parseLocationParts(location);
       const created = await createListing.mutateAsync({
         title: title.trim(),
         price: parseInt(price.replace(/\D/g, ''), 10),
         category,
         description: desc.trim(),
-        city: parts[1] ?? parts[0],
-        district: parts[0],
+        city: parts.city,
+        district: parts.district,
         location,
+        latitude: resolved.latitude,
+        longitude: resolved.longitude,
         contactPhone: phone.trim(),
         images,
       });
@@ -111,6 +124,7 @@ export default function PostScreen() {
       setCategory('');
       setDesc('');
       setLocation('');
+      setCoords({});
       setPhone(profile?.phone ?? '');
       setImages([]);
     } catch (e: any) {
