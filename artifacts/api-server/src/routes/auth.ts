@@ -159,25 +159,7 @@ router.get("/auth/google/setup", (_req, res) => {
   });
 });
 
-/**
- * Expo Go / mobil — tek seferlik Google OAuth (redirect döngüsü yok).
- * GET /api/auth/google/start?return=https://auth.expo.io/@owner/slug
- */
-router.get("/auth/google/start", (req, res) => {
-  const returnUrl = String(req.query.return ?? "");
-  if (!isAllowedReturnUrl(returnUrl)) {
-    res.status(400).send("Geçersiz return URL");
-    return;
-  }
-
-  if (!process.env.GOOGLE_CLIENT_SECRET?.trim()) {
-    res.status(500).json({
-      error:
-        "GOOGLE_CLIENT_SECRET eksik — Render Dashboard > Environment Variables bölümüne Firebase web client secret ekleyin.",
-    });
-    return;
-  }
-
+function buildGoogleAuthUrl(returnUrl: string): string {
   const { verifier, challenge } = generatePkce();
   const state = encodeOAuthState(returnUrl, verifier);
   const clientId = resolveGoogleClientId();
@@ -192,9 +174,51 @@ router.get("/auth/google/start", (req, res) => {
     code_challenge: challenge,
     code_challenge_method: "S256",
     access_type: "online",
+    prompt: "select_account",
   });
 
-  res.redirect(302, `https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+}
+
+function ensureGoogleOAuthReady(res: import("express").Response): boolean {
+  if (!process.env.GOOGLE_CLIENT_SECRET?.trim()) {
+    res.status(500).json({
+      error:
+        "GOOGLE_CLIENT_SECRET eksik — Render Dashboard > Environment Variables bölümüne Firebase web client secret ekleyin.",
+    });
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Mobil — Google hesap seçici URL'si (JSON).
+ * Tarayıcıda Render sayfası açılmaz; doğrudan accounts.google.com.
+ */
+router.get("/auth/google/url", (req, res) => {
+  const returnUrl = String(req.query.return ?? "");
+  if (!isAllowedReturnUrl(returnUrl)) {
+    res.status(400).json({ error: "Geçersiz return URL" });
+    return;
+  }
+  if (!ensureGoogleOAuthReady(res)) return;
+  res.json({ url: buildGoogleAuthUrl(returnUrl) });
+});
+
+/**
+ * Expo Go / mobil — tek seferlik Google OAuth (redirect döngüsü yok).
+ * GET /api/auth/google/start?return=https://auth.expo.io/@owner/slug
+ */
+router.get("/auth/google/start", (req, res) => {
+  const returnUrl = String(req.query.return ?? "");
+  if (!isAllowedReturnUrl(returnUrl)) {
+    res.status(400).send("Geçersiz return URL");
+    return;
+  }
+
+  if (!ensureGoogleOAuthReady(res)) return;
+
+  res.redirect(302, buildGoogleAuthUrl(returnUrl));
 });
 
 /** Google OAuth callback — id_token ile uygulamaya döner */

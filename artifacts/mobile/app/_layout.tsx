@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
-import { Platform, View, ActivityIndicator } from 'react-native';
+import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import '@/styles/web-global.css';
+if (Platform.OS === 'web') {
+  require('@/styles/web-global.css');
+}
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -16,8 +18,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { MobileLocationProvider } from '@/contexts/MobileLocationContext';
-import { BRAND } from '@/constants/brand';
-import { AppIcon } from '@/components/AppIcon';
+import { BootScreen } from '@/components/BootScreen';
 import { initApi } from '@/lib/api';
 import { initFirebase } from '@/lib/firebase';
 import { isOnboardingComplete, isOnboardingDoneSync, subscribeOnboarding } from '@/lib/onboarding';
@@ -48,7 +49,7 @@ function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
-  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(Platform.OS === 'web' ? true : null);
+  const [onboardingDone, setOnboardingDone] = useState(true);
   const lastNavTarget = useRef<string | null>(null);
 
   useEffect(() => {
@@ -58,7 +59,7 @@ function RootLayoutNav() {
   }, []);
 
   useEffect(() => {
-    if (isLoading || onboardingDone === null) return;
+    if (isLoading) return;
 
     const isWeb = Platform.OS === 'web';
     const segName = segments[0] as string | undefined;
@@ -71,8 +72,7 @@ function RootLayoutNav() {
       segName === 'email-auth' ||
       segName === 'oauth' ||
       segName === 'giris' ||
-      segName === 'kayit' ||
-      segName === 'index';
+      segName === 'kayit';
     const inLegal = segName === 'privacy' || segName === 'terms';
     const isPublicWeb =
       isWeb &&
@@ -114,15 +114,6 @@ function RootLayoutNav() {
     lastNavTarget.current = target;
     router.replace(target as never);
   }, [user, isLoading, onboardingDone, segments, router]);
-
-  if (Platform.OS !== 'web' && onboardingDone === null) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: BRAND.primary, gap: 20 }}>
-        <AppIcon size="hero" variant="splash" />
-        <ActivityIndicator size="large" color="#FFFFFF" />
-      </View>
-    );
-  }
 
   return (
     <>
@@ -169,7 +160,7 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
-  const [fontTimeout, setFontTimeout] = useState(Platform.OS === 'web');
+  const [fontTimeout, setFontTimeout] = useState(Platform.OS !== 'web');
   const splashHidden = useRef(false);
 
   const hideSplash = useCallback(() => {
@@ -201,7 +192,7 @@ export default function RootLayout() {
   }, []);
 
   const ready = fontsLoaded || fontError || fontTimeout;
-  if (!ready) return null;
+  if (!ready) return <BootScreen />;
 
   return (
     <SafeAreaProvider>

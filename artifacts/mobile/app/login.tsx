@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BRAND } from '@/constants/brand';
 import { AppBrandMark } from '@/components/AppBrandMark';
-import { signInWithGoogleMobile } from '@/lib/google-native-auth';
+import { useGoogleSignIn } from '@/lib/google-native-auth';
 
 export default function LoginScreen() {
   if (Platform.OS === 'web') {
@@ -25,25 +25,20 @@ export default function LoginScreen() {
 function MobileLoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { signIn, ready } = useGoogleSignIn();
   const [googleLoading, setGoogleLoading] = useState(false);
   const busyRef = useRef(false);
 
   const handleGoogleLogin = async () => {
-    if (busyRef.current || googleLoading) return;
+    if (busyRef.current || googleLoading || !ready) return;
     busyRef.current = true;
     setGoogleLoading(true);
     try {
-      await signInWithGoogleMobile();
+      await signIn();
       router.replace('/(tabs)');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
       if (msg.includes('iptal') || msg.includes('cancel')) return;
-      // Oturum açılmış olabilir (deep link gecikmesi)
-      const { getFirebaseAuth } = await import('@/lib/firebase');
-      if (getFirebaseAuth().currentUser) {
-        router.replace('/(tabs)');
-        return;
-      }
       Alert.alert('Giriş Hatası', msg);
     } finally {
       setGoogleLoading(false);
@@ -59,9 +54,9 @@ function MobileLoginScreen() {
 
       <View style={styles.actions}>
         <Pressable
-          style={[styles.btn, styles.googleBtn, googleLoading && styles.disabled]}
+          style={[styles.btn, styles.googleBtn, (googleLoading || !ready) && styles.disabled]}
           onPress={handleGoogleLogin}
-          disabled={googleLoading}
+          disabled={googleLoading || !ready}
         >
           {googleLoading ? (
             <ActivityIndicator color="#2C2C2C" />

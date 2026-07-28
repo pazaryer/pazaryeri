@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, type UserCredential } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, signInWithPopup, getRedirectResult, type UserCredential } from 'firebase/auth';
 import { getFirebaseAuth } from './firebase';
 
 const RETURN_KEY = 'pazaryeri_oauth_return';
@@ -27,6 +27,14 @@ export async function startGoogleRedirect(returnUrl?: string) {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
   await signInWithRedirect(auth, provider);
+}
+
+/** Mobil köprü — Firebase popup ile doğrudan Google hesap seçici */
+export async function signInWithGooglePopup(): Promise<UserCredential> {
+  const auth = getFirebaseAuth();
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  return signInWithPopup(auth, provider);
 }
 
 export async function completeGoogleRedirect(): Promise<UserCredential | null> {

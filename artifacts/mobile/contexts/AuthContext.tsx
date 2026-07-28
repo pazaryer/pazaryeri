@@ -132,6 +132,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const auth = getFirebaseAuth();
+    let settled = false;
+
+    const finishLoading = () => {
+      if (settled) return;
+      settled = true;
+      setIsLoading(false);
+    };
+
+    const timeout = setTimeout(finishLoading, 4000);
 
     if (Platform.OS === 'web') {
       getRedirectResult(auth)
@@ -142,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const unsub = onAuthStateChanged(auth, (u) => {
+      clearTimeout(timeout);
       setUser(u);
       if (u) {
         syncProfile(u);
@@ -149,9 +159,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(null);
         syncingRef.current = null;
       }
-      setIsLoading(false);
+      finishLoading();
     });
-    return unsub;
+
+    return () => {
+      clearTimeout(timeout);
+      unsub();
+    };
   }, [syncProfile]);
 
   useEffect(() => {

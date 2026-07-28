@@ -6,7 +6,7 @@ import {
   extractGoogleIdTokenFromRedirect,
   redirectToAppWithError,
   redirectToAppWithToken,
-  saveOAuthReturnUrl,
+  signInWithGooglePopup,
   startGoogleRedirect,
   peekOAuthReturnUrl,
 } from '@/lib/google-web-auth';
@@ -15,8 +15,8 @@ import { isMobileOAuthReturnUrl } from '@/lib/google-native-auth';
 const STARTED_KEY = 'pz_google_oauth_started';
 
 /**
- * Web Google giriş — Firebase redirect (yalnızca web tarayıcısı).
- * Mobil Expo Go bu sayfayı kullanmaz; doğrudan Google OAuth açılır.
+ * Web Google giriş.
+ * Mobil: ?return= ile gelir → Firebase popup (hesap seçici) → app-return?id_token
  */
 export default function GoogleOAuthScreen() {
   const { return: returnParam } = useLocalSearchParams<{ return?: string }>();
@@ -30,25 +30,37 @@ export default function GoogleOAuthScreen() {
       return;
     }
 
-    // Mobil istekleri bu sayfaya yönlendirme — uygulama doğrudan Google açar
-    if (
-      typeof returnParam === 'string' &&
-      isMobileOAuthReturnUrl(returnParam)
-    ) {
-      setError('Lütfen uygulamadan Google ile giriş yapın.');
-      return;
-    }
-
     if (startedRef.current) return;
     startedRef.current = true;
 
+    const appReturn = typeof returnParam === 'string' ? returnParam : '';
+    const isMobileBridge = appReturn && isMobileOAuthReturnUrl(appReturn);
+
     let cancelled = false;
 
-    async function run() {
+    async function runMobileBridge() {
+      try {
+        const result = await signInWithGooglePopup();
+        if (cancelled) return;
+        const idToken = extractGoogleIdTokenFromRedirect(result);
+        if (!idToken) throw new Error('Google token alınamadı');
+        redirectToAppWithToken(appReturn, idToken);
+      } catch (e: unknown) {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : 'Google girişi başarısız';
+        const code = (e as { code?: string })?.code ?? '';
+        if (code === 'auth/popup-closed-by-user' || msg.toLowerCase().includes('cancel')) {
+          redirectToAppWithError(appReturn, 'Google girişi iptal edildi');
+        } else {
+          redirectToAppWithError(appReturn, msg);
+        }
+      }
+    }
+
+    async function runWebRedirect() {
       try {
         const storedReturn = peekOAuthReturnUrl();
-        const appReturn = storedReturn;
-        const isNativeBridge = isMobileOAuthReturnUrl(appReturn);
+        const isNativeBridge = isMobileOAuthReturnUrl(storedReturn);
 
         const result = await completeGoogleRedirect();
 
@@ -58,10 +70,8 @@ export default function GoogleOAuthScreen() {
           }
           if (isNativeBridge) {
             const googleIdToken = extractGoogleIdTokenFromRedirect(result);
-            if (!googleIdToken) {
-              throw new Error('Google token alınamadı');
-            }
-            redirectToAppWithToken(appReturn, googleIdToken);
+            if (!googleIdToken) throw new Error('Google token alınamadı');
+            redirectToAppWithToken(storedReturn, googleIdToken);
             return;
           }
           router.replace('/');
@@ -70,7 +80,6 @@ export default function GoogleOAuthScreen() {
 
         if (cancelled) return;
 
-        // Döngüyü önle: daha önce redirect başlatıldıysa tekrar başlatma
         if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(STARTED_KEY)) {
           setError('Google girişi tamamlanamadı. Lütfen tekrar deneyin.');
           sessionStorage.removeItem(STARTED_KEY);
@@ -81,16 +90,21 @@ export default function GoogleOAuthScreen() {
           sessionStorage.setItem(STARTED_KEY, '1');
         }
         await startGoogleRedirect();
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (cancelled) return;
         if (typeof sessionStorage !== 'undefined') {
           sessionStorage.removeItem(STARTED_KEY);
         }
-        setError(e?.message ?? 'Google girişi başarısız');
+        setError(e instanceof Error ? e.message : 'Google girişi başarısız');
       }
     }
 
-    run();
+    if (isMobileBridge) {
+      runMobileBridge();
+    } else {
+      runWebRedirect();
+    }
+
     return () => {
       cancelled = true;
     };
@@ -106,7 +120,7 @@ export default function GoogleOAuthScreen() {
       ) : (
         <>
           <ActivityIndicator size="large" color="#C9A84C" />
-          <Text style={styles.text}>Google hesabınıza yönlendiriliyorsunuz...</Text>
+          <Text style={styles.text}>Google hesap seçici açılıyor…</Text>
         </>
       )}
     </View>
