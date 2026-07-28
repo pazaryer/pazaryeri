@@ -3,15 +3,16 @@ import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { buildApiUrl } from './config';
+import { buildApiUrl, sitePath } from './config';
 import { getFirebaseAuth } from './firebase';
 import { resolveGoogleWebClientId } from './google-client-id';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const HTTPS_RETURN_PATH = '/oauth/app-return';
 let oauthInFlight: Promise<void> | null = null;
 
-/** Expo Go (exp://) veya production (pazaryeri://auth) dönüş adresi. */
+/** Expo Go (exp://) veya production (pazaryeri://auth) */
 export function getNativeOAuthRedirectUri(): string {
   return AuthSession.makeRedirectUri({
     scheme: 'pazaryeri',
@@ -19,21 +20,28 @@ export function getNativeOAuthRedirectUri(): string {
   });
 }
 
-/** API ve tarayıcı oturumu aynı native URI kullanır — döngü önlenir. */
+/**
+ * Android Custom Tab exp:// yükleyemez → boş beyaz sayfa.
+ * Android: HTTPS köprü (token URL'de yakalanır).
+ * iOS: native deep link (sorunsuz çalışır).
+ */
 export function getApiOAuthReturnUri(): string {
+  if (Platform.OS === 'android') {
+    return sitePath(HTTPS_RETURN_PATH);
+  }
   return getNativeOAuthRedirectUri();
 }
 
 export function getBrowserOAuthRedirectUri(): string {
-  return getNativeOAuthRedirectUri();
+  return getApiOAuthReturnUri();
 }
 
 export function getGoogleOAuthRedirectUri(): string {
-  return getNativeOAuthRedirectUri();
+  return getApiOAuthReturnUri();
 }
 
 export function getAppOAuthRedirectUri(): string {
-  return getNativeOAuthRedirectUri();
+  return getApiOAuthReturnUri();
 }
 
 export function isOAuthInFlight(): boolean {
@@ -75,10 +83,24 @@ async function completeGoogleSignIn(idToken: string): Promise<void> {
   await signInWithCredential(getFirebaseAuth(), credential);
 }
 
-/**
- * Mobil Google giriş — Render API OAuth.
- * Native deep link (exp:// veya pazaryeri://auth) ile tek adımda döner.
- */
+function waitForSignedInUser(timeoutMs = 10000): Promise<boolean> {
+  if (getFirebaseAuth().currentUser) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const auth = getFirebaseAuth();
+    const timer = setTimeout(() => {
+      unsub();
+      resolve(!!auth.currentUser);
+    }, timeoutMs);
+    const unsub = auth.onAuthStateChanged((user) => {
+      if (user) {
+        clearTimeout(timer);
+        unsub();
+        resolve(true);
+      }
+    });
+  });
+}
+
 export async function signInWithGoogleMobile(): Promise<void> {
   if (Platform.OS === 'web') {
     throw new Error('Web için /giris kullanın');
@@ -94,13 +116,15 @@ export async function signInWithGoogleMobile(): Promise<void> {
 }
 
 async function runGoogleOAuth(): Promise<void> {
-  const redirectUri = getNativeOAuthRedirectUri();
-  const startUrl = `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(redirectUri)}`;
+  const apiReturn = getApiOAuthReturnUri();
+  const browserRedirect = getBrowserOAuthRedirectUri();
+  const startUrl = `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(apiReturn)}`;
 
   if (__DEV__) {
-    console.log('[Google] API OAuth start:', startUrl);
-    console.log('[Google] redirect:', redirectUri);
-    console.log('[Google] ownership:', Constants.appOwnership);
+    console.log('[Google] start:', startUrl);
+    console.log('[Google] apiReturn:', apiReturn);
+    console.log('[Google] browserRedirect:', browserRedirect);
+    console.log('[Google] native:', getNativeOAuthRedirectUri());
   }
 
   if (Platform.OS === 'android') {
@@ -113,7 +137,7 @@ async function runGoogleOAuth(): Promise<void> {
 
   let result: WebBrowser.WebBrowserAuthSessionResult;
   try {
-    result = await WebBrowser.openAuthSessionAsync(startUrl, redirectUri, {
+    result = await WebBrowser.openAuthSessionAsync(startUrl, browserRedirect, {
       preferEphemeralSession: false,
       showInRecents: false,
       createTask: false,
@@ -128,6 +152,10 @@ async function runGoogleOAuth(): Promise<void> {
     }
   }
 
+  if (__DEV__) {
+    console.log('[Google] session result:', result.type, result.type === 'success' ? result.url?.slice(0, 80) : '');
+  }
+
   if (result.type === 'success') {
     const { idToken, error } = parseOAuthReturnUrl(result.url);
     if (error) throw new Error(error);
@@ -137,18 +165,16 @@ async function runGoogleOAuth(): Promise<void> {
     }
   }
 
-  // Custom Tab kapandıysa deep link /auth ekranı işlemiş olabilir
-  const user = getFirebaseAuth().currentUser;
-  if (user) return;
+  // iOS deep link veya gecikmeli oturum
+  if (await waitForSignedInUser(8000)) return;
 
   if (result.type === 'cancel' || result.type === 'dismiss') {
     throw new Error('Google girişi iptal edildi');
   }
 
-  throw new Error('Google girişi başarısız — tekrar deneyin');
+  throw new Error('Google girişi tamamlanamadı — tekrar deneyin');
 }
 
-/** Deep link /auth?id_token=... ile tamamlama (yedek) */
 export async function completeGoogleSignInFromUrl(returnUrl: string): Promise<void> {
   if (getFirebaseAuth().currentUser) return;
   const { idToken, error } = parseOAuthReturnUrl(returnUrl);
@@ -169,7 +195,7 @@ export function useNativeGoogleAuth() {
     request: null,
     response: null,
     promptAsync: signInWithGoogleMobile,
-    redirectUri: getNativeOAuthRedirectUri(),
+    redirectUri: getApiOAuthReturnUri(),
     webClientId: resolveGoogleWebClientId(),
   };
 }

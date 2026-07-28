@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import { Platform, View, ActivityIndicator } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import '@/styles/web-global.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -19,7 +20,7 @@ import { BRAND } from '@/constants/brand';
 import { AppIcon } from '@/components/AppIcon';
 import { initApi } from '@/lib/api';
 import { initFirebase } from '@/lib/firebase';
-import { isOnboardingComplete, subscribeOnboarding } from '@/lib/onboarding';
+import { isOnboardingComplete, isOnboardingDoneSync, subscribeOnboarding } from '@/lib/onboarding';
 
 try {
   initApi();
@@ -91,7 +92,7 @@ function RootLayoutNav() {
       target = '/kesfet';
     } else if (isWeb && segName === 'login') {
       target = '/giris';
-    } else if (!isWeb && !onboardingDone && !inOnboarding) {
+    } else if (!isWeb && !onboardingDone && !isOnboardingDoneSync() && !inOnboarding) {
       target = '/onboarding';
     } else if (!user && !inAuth && !inLegal && !isPublicWeb) {
       target = isWeb ? '/giris' : '/login';
@@ -124,7 +125,9 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+    <>
+      {Platform.OS !== 'web' ? <StatusBar style="dark" /> : null}
+      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="index" />
       <Stack.Screen name="giris" />
@@ -150,6 +153,7 @@ function RootLayoutNav() {
       <Stack.Screen name="addresses" />
       <Stack.Screen name="help" />
     </Stack>
+    </>
   );
 }
 

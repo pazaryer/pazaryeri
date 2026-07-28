@@ -2,13 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BRAND } from '@/constants/brand';
-import { completeGoogleSignInFromUrl, isOAuthInFlight } from '@/lib/google-native-auth';
+import { completeGoogleSignInFromUrl } from '@/lib/google-native-auth';
 import { getFirebaseAuth } from '@/lib/firebase';
 
-/**
- * OAuth deep link: pazaryeri://auth?id_token=... veya exp://.../--/auth?id_token=...
- * openAuthSessionAsync tamamlayamazsa yedek tamamlama.
- */
+/** iOS deep link yedek: pazaryeri://auth?id_token=... */
 export default function AuthCallbackScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id_token?: string | string[]; error?: string | string[] }>();
@@ -20,19 +17,10 @@ export default function AuthCallbackScreen() {
     if (handled.current) return;
     handled.current = true;
 
-    if (getFirebaseAuth().currentUser) {
+    const auth = getFirebaseAuth();
+    if (auth.currentUser) {
       router.replace('/(tabs)');
       return;
-    }
-
-    if (isOAuthInFlight()) {
-      const unsub = getFirebaseAuth().onAuthStateChanged((u) => {
-        if (u) {
-          unsub();
-          router.replace('/(tabs)');
-        }
-      });
-      return () => unsub();
     }
 
     const idToken = pickParam(params.id_token);
@@ -45,9 +33,25 @@ export default function AuthCallbackScreen() {
     }
 
     if (!idToken) {
-      setError('Google oturum bilgisi bulunamadı');
-      setLoading(false);
-      return;
+      const timer = setTimeout(() => {
+        if (auth.currentUser) {
+          router.replace('/(tabs)');
+          return;
+        }
+        setError('Google oturum bilgisi bulunamadı');
+        setLoading(false);
+      }, 6000);
+      const unsub = auth.onAuthStateChanged((u) => {
+        if (u) {
+          clearTimeout(timer);
+          unsub();
+          router.replace('/(tabs)');
+        }
+      });
+      return () => {
+        clearTimeout(timer);
+        unsub();
+      };
     }
 
     void (async () => {

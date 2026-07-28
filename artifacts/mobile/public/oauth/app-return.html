@@ -17,59 +17,34 @@
       text-align: center;
       padding: 24px;
     }
+    .ok { color: #3d1a78; font-weight: 700; font-size: 18px; }
+    .sub { color: #7a6b8a; margin-top: 8px; font-size: 14px; }
+    .err { color: #b42318; font-weight: 600; }
   </style>
 </head>
 <body>
-  <div>
-    <p id="msg">Giriş tamamlanıyor…</p>
-    <button id="retry" type="button" hidden style="margin-top:16px;padding:12px 24px;border:0;border-radius:24px;background:#3d1a78;color:#fff;font-weight:700;">
-      Uygulamaya dön
-    </button>
+  <div id="box">
+    <p class="ok">Giriş tamamlanıyor…</p>
+    <p class="sub">Bu pencere otomatik kapanacak.</p>
   </div>
   <script>
     (function () {
       var params = new URLSearchParams(location.search);
-      var native = params.get('native');
       var idToken = params.get('id_token');
       var err = params.get('error');
-      var retry = document.getElementById('retry');
-      var msg = document.getElementById('msg');
-
-      function openApp() {
-        if (!native) return;
-        var sep = native.indexOf('?') >= 0 ? '&' : '?';
-        var target;
-        if (idToken) {
-          target = native + sep + 'id_token=' + encodeURIComponent(idToken);
-        } else if (err) {
-          target = native + sep + 'error=' + encodeURIComponent(err);
-        } else {
-          return;
-        }
-        location.replace(target);
-        setTimeout(function () { location.href = target; }, 400);
-      }
-
-      if (!native) {
-        msg.textContent = 'Giriş tamamlandı. Uygulamaya dönün.';
-        return;
-      }
+      var box = document.getElementById('box');
 
       if (err) {
-        msg.textContent = 'Giriş tamamlanamadı: ' + err;
-        retry.hidden = false;
-        retry.onclick = openApp;
+        box.innerHTML = '<p class="err">Giriş tamamlanamadı</p><p class="sub">' + err + '</p>';
         return;
       }
 
       if (idToken) {
-        openApp();
-        setTimeout(function () {
-          msg.textContent = 'Giriş başarılı. Uygulamaya dönülüyor…';
-          retry.hidden = false;
-          retry.onclick = openApp;
-        }, 2000);
+        box.innerHTML = '<p class="ok">Giriş başarılı</p><p class="sub">Uygulamaya dönülüyor…</p>';
+        return;
       }
+
+      box.innerHTML = '<p class="sub">Oturum bilgisi alınamadı. Uygulamaya dönüp tekrar deneyin.</p>';
     })();
   </script>
 </body>

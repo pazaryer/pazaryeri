@@ -38,6 +38,12 @@ function MobileLoginScreen() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
       if (msg.includes('iptal') || msg.includes('cancel')) return;
+      // Oturum açılmış olabilir (deep link gecikmesi)
+      const { getFirebaseAuth } = await import('@/lib/firebase');
+      if (getFirebaseAuth().currentUser) {
+        router.replace('/(tabs)');
+        return;
+      }
       Alert.alert('Giriş Hatası', msg);
     } finally {
       setGoogleLoading(false);

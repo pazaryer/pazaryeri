@@ -161,6 +161,7 @@ export default function ExploreScreen() {
 
   return (
     <FlatList
+      style={{ backgroundColor: BRAND.background }}
       data={allItems}
       keyExtractor={(item) => item.id}
       numColumns={LISTING_GRID_COLS}

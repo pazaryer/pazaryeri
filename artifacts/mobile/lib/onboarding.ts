@@ -9,6 +9,11 @@ function notify(done: boolean) {
   listeners.forEach((listener) => listener(done));
 }
 
+/** Senkron kontrol — navigasyon yarışını önler */
+export function isOnboardingDoneSync(): boolean {
+  return memoryDone === true;
+}
+
 export function subscribeOnboarding(listener: (done: boolean) => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
@@ -26,7 +31,11 @@ export async function isOnboardingComplete(): Promise<boolean> {
 }
 
 export async function setOnboardingComplete(): Promise<void> {
-  await AsyncStorage.setItem(ONBOARDING_KEY, '1');
   memoryDone = true;
   notify(true);
+  try {
+    await AsyncStorage.setItem(ONBOARDING_KEY, '1');
+  } catch {
+    /* bellek bayrağı yeterli — bu oturumda tekrar gösterme */
+  }
 }
