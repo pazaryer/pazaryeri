@@ -105,11 +105,6 @@ export async function ensureUser(
   id: string,
   data?: { name?: string; email?: string; phone?: string; avatar?: string },
 ): Promise<DbUser> {
-    if (await isPostgresAvailable()) {
-      const { pgEnsureUser } = await import("./postgres-db");
-      return pgEnsureUser(id, data);
-    }
-
   const sb = getSupabaseAdmin();
   const { data: existing } = await sb.from("users").select("*").eq("id", id).single();
 

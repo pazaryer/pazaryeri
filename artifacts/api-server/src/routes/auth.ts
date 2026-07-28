@@ -1,6 +1,11 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
 import { z } from "zod/v4";
+import {
+  GOOGLE_WEB_CLIENT_ID,
+  GOOGLE_OAUTH_URIS,
+  resolveGoogleWebClientId,
+} from "../lib/google-oauth-config";
 import { AppError } from "../middleware/errorHandler";
 
 const router: IRouter = Router();
@@ -11,8 +16,9 @@ const SITE_PUBLIC_URL =
 const API_PUBLIC_URL =
   process.env.API_PUBLIC_URL ?? "https://pazaryerim.onrender.com";
 
-const DEFAULT_WEB_CLIENT_ID =
-  "637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com";
+function resolveGoogleClientId(): string {
+  return resolveGoogleWebClientId();
+}
 
 function siteUrl(path: string): string {
   const base = SITE_PUBLIC_URL.replace(/\/$/, "");
@@ -27,9 +33,8 @@ function apiCallbackUrl(): string {
 
 function isAllowedReturnUrl(url: string): boolean {
   if (url.startsWith("pazaryeri://")) return true;
+  if (url.startsWith("exp://")) return true;
   if (url.startsWith("https://auth.expo.io/")) return true;
-  // Expo Go deep link (auth.expo.io proxy yerine)
-  if (url.startsWith("exp://") && /auth/i.test(url)) return true;
   return false;
 }
 
@@ -70,21 +75,24 @@ async function exchangeGoogleCode(
   redirectUri: string,
   codeVerifier?: string,
 ): Promise<string> {
-  const clientId =
-    process.env.GOOGLE_WEB_CLIENT_ID ??
-    process.env.GOOGLE_CLIENT_ID ??
-    DEFAULT_WEB_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientId = resolveGoogleClientId();
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+
+  if (!clientSecret) {
+    throw new AppError(
+      "GOOGLE_CLIENT_SECRET eksik — Render ortam değişkenlerine Firebase (pazaryeri0) web client secret ekleyin.",
+      500,
+    );
+  }
 
   const params: Record<string, string> = {
     code,
     client_id: clientId,
+    client_secret: clientSecret,
     redirect_uri: redirectUri,
     grant_type: "authorization_code",
   };
   if (codeVerifier) params.code_verifier = codeVerifier;
-  // PKCE ile client_secret gönderilirse Google 401 invalid_client döner
-  if (clientSecret && !codeVerifier) params.client_secret = clientSecret;
 
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -120,6 +128,28 @@ function redirectWithError(returnUrl: string, error: string) {
   return `${returnUrl}${sep}error=${encodeURIComponent(error)}`;
 }
 
+/** Google OAuth kurulum kontrol listesi */
+router.get("/auth/google/setup", (_req, res) => {
+  res.json({
+    project: "pazaryeri0",
+    clientId: resolveGoogleClientId(),
+    expectedClientId: GOOGLE_WEB_CLIENT_ID,
+    clientIdOk: resolveGoogleClientId() === GOOGLE_WEB_CLIENT_ID,
+    apiCallback: apiCallbackUrl(),
+    secretConfigured: Boolean(process.env.GOOGLE_CLIENT_SECRET?.trim()),
+    googleConsole: {
+      credentialsUrl:
+        "https://console.cloud.google.com/apis/credentials?project=pazaryeri0",
+      authorizedJavaScriptOrigins: GOOGLE_OAUTH_URIS.javascriptOrigins,
+      authorizedRedirectUris: GOOGLE_OAUTH_URIS.redirectUris,
+    },
+    mobileFlow: "api-oauth",
+    mobileBridge: `https://pazaryeri0.firebaseapp.com/oauth/mobile`,
+    webFlow: "firebase-popup",
+    webLogin: `${SITE_PUBLIC_URL.replace(/\/$/, "")}/giris`,
+  });
+});
+
 /**
  * Expo Go / mobil — tek seferlik Google OAuth (redirect döngüsü yok).
  * GET /api/auth/google/start?return=https://auth.expo.io/@owner/slug
@@ -131,12 +161,17 @@ router.get("/auth/google/start", (req, res) => {
     return;
   }
 
+  if (!process.env.GOOGLE_CLIENT_SECRET?.trim()) {
+    res.status(500).json({
+      error:
+        "GOOGLE_CLIENT_SECRET eksik — Render Dashboard > Environment Variables bölümüne Firebase web client secret ekleyin.",
+    });
+    return;
+  }
+
   const { verifier, challenge } = generatePkce();
   const state = encodeOAuthState(returnUrl, verifier);
-  const clientId =
-    process.env.GOOGLE_WEB_CLIENT_ID ??
-    process.env.GOOGLE_CLIENT_ID ??
-    DEFAULT_WEB_CLIENT_ID;
+  const clientId = resolveGoogleClientId();
   const redirectUri = apiCallbackUrl();
 
   const params = new URLSearchParams({

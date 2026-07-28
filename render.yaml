@@ -30,7 +30,7 @@ services:
       - key: FIREBASE_PROJECT_ID
         value: pazaryeri0
       - key: GOOGLE_CLIENT_ID
-        sync: false
+        value: 637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: API_PUBLIC_URL
