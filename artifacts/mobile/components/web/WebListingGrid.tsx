@@ -4,6 +4,8 @@ import { useListings } from '@/lib/hooks';
 import { WebListingCard } from './WebListingCard';
 import type { LocationFilterValue } from '@/components/LocationFilterBar';
 import { useIsMobileWeb } from '@/hooks/useIsMobileWeb';
+import { WEB_THEME } from '@/lib/web-theme';
+import { flatStyle } from '@/lib/flat-style';
 
 interface WebListingGridProps {
   category?: string;
@@ -40,33 +42,29 @@ export function WebListingGrid({ category, query, title, location, lat, lon }: W
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const handleRefresh = useCallback(() => {
-    void refetch();
-  }, [refetch]);
-
   return (
     <View style={[styles.wrap, mobileWeb && styles.wrapMobile]}>
       {title && (
-        <View style={[styles.header, mobileWeb && styles.headerMobile]}>
+        <View style={styles.header}>
           <Text style={[styles.title, mobileWeb && styles.titleMobile]}>{title}</Text>
-          <Pressable style={styles.refreshBtn} onPress={handleRefresh} disabled={isRefetching}>
+          <Pressable style={styles.seeAllBtn} onPress={() => void refetch()} disabled={isRefetching}>
             {isRefetching ? (
-              <ActivityIndicator size="small" color="#3D1A78" />
+              <ActivityIndicator size="small" color={WEB_THEME.brand} />
             ) : (
-              <Text style={styles.refreshText}>↻</Text>
+              <Text style={styles.seeAllText}>Yenile</Text>
             )}
           </Pressable>
         </View>
       )}
 
       {isLoading ? (
-        <View style={[styles.center, mobileWeb && styles.centerMobile]}>
-          <ActivityIndicator size="large" color="#3D1A78" />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={WEB_THEME.brand} />
         </View>
       ) : items.length === 0 ? (
-        <View style={[styles.center, mobileWeb && styles.centerMobile]}>
+        <View style={styles.center}>
           <Text style={styles.empty}>Henüz ilan bulunamadı</Text>
-          <Text style={styles.emptyHint}>İlk ilanı siz verin!</Text>
+          <Text style={styles.emptyHint}>İlk ilanı siz verin — ücretsiz!</Text>
         </View>
       ) : (
         <>
@@ -76,11 +74,15 @@ export function WebListingGrid({ category, query, title, location, lat, lon }: W
             ))}
           </View>
           {hasNextPage && (
-            <Pressable style={[styles.moreBtn, mobileWeb && styles.moreBtnMobile]} onPress={loadMore} disabled={isFetchingNextPage}>
+            <Pressable
+              style={flatStyle(styles.moreBtn, mobileWeb && styles.moreBtnMobile)}
+              onPress={loadMore}
+              disabled={isFetchingNextPage}
+            >
               {isFetchingNextPage ? (
-                <ActivityIndicator color="#3D1A78" />
+                <ActivityIndicator color={WEB_THEME.brand} />
               ) : (
-                <Text style={styles.moreBtnText}>Daha Fazla Yükle</Text>
+                <Text style={styles.moreBtnText}>Daha Fazla İlan Göster</Text>
               )}
             </Pressable>
           )}
@@ -91,50 +93,42 @@ export function WebListingGrid({ category, query, title, location, lat, lon }: W
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    width: '100%',
-    maxWidth: 1400,
-    alignSelf: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
+  wrap: { width: '100%', paddingHorizontal: 16, paddingVertical: 16 },
   wrapMobile: { paddingHorizontal: 12, paddingVertical: 12 },
   header: {
-    marginBottom: 16,
+    marginBottom: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
   },
-  headerMobile: { marginBottom: 12 },
-  title: { fontSize: 20, fontWeight: '800', color: '#1A0A2E', letterSpacing: -0.5, flex: 1 },
+  title: { fontSize: 20, fontWeight: '800', color: WEB_THEME.text, letterSpacing: -0.3, flex: 1 },
   titleMobile: { fontSize: 17 },
-  refreshBtn: {
-    paddingHorizontal: 12,
+  seeAllBtn: {
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: WEB_THEME.radiusPill,
+    backgroundColor: WEB_THEME.surface,
     borderWidth: 1,
-    borderColor: '#E8E0F4',
-    backgroundColor: '#FFFFFF',
-    minWidth: 40,
+    borderColor: WEB_THEME.border,
+    minWidth: 72,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  refreshText: { color: '#3D1A78', fontWeight: '700', fontSize: 16 },
+  seeAllText: { color: WEB_THEME.brand, fontWeight: '700', fontSize: 13 },
   grid: { width: '100%' },
-  center: { padding: 60, alignItems: 'center', gap: 8 },
-  centerMobile: { padding: 40 },
-  empty: { color: '#1A0A2E', fontSize: 18, fontWeight: '600' },
-  emptyHint: { color: '#7A6B8A', fontSize: 14 },
+  center: { padding: 48, alignItems: 'center', gap: 8 },
+  empty: { color: WEB_THEME.text, fontSize: 17, fontWeight: '700' },
+  emptyHint: { color: WEB_THEME.textMuted, fontSize: 14 },
   moreBtn: {
     alignSelf: 'center',
-    marginTop: 24,
+    marginTop: 20,
     paddingHorizontal: 28,
     paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#3D1A78',
+    borderRadius: WEB_THEME.radiusPill,
+    backgroundColor: WEB_THEME.surface,
+    borderWidth: 1.5,
+    borderColor: WEB_THEME.brand,
   },
-  moreBtnMobile: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, width: '100%' },
-  moreBtnText: { color: '#3D1A78', fontWeight: '700', fontSize: 15, textAlign: 'center' },
+  moreBtnMobile: { marginTop: 14, width: '100%' },
+  moreBtnText: { color: WEB_THEME.brand, fontWeight: '700', fontSize: 14, textAlign: 'center' },
 });

@@ -44,21 +44,12 @@ export default function KesfetScreen() {
     }
   };
 
-  const PageBody = ScrollView;
-  const bodyProps = mobileWeb
-    ? { style: styles.scroll, contentContainerStyle: styles.scrollContentMobile, showsVerticalScrollIndicator: false }
-    : { style: styles.scroll, contentContainerStyle: styles.scrollContent };
-
-  return (
-    <WebShell
-      searchQuery={search}
-      onSearchChange={setSearch}
-      onSearchSubmit={handleSearch}
-    >
-      <PageBody {...bodyProps}>
-        <View nativeID="pz-filter-section" style={styles.filterWrap}>
-          <LocationFilterBar value={locationFilter} onChange={handleLocationChange} />
-        </View>
+  const body = (
+    <>
+      <View nativeID="pz-filter-section" style={styles.filterWrap}>
+        <LocationFilterBar value={locationFilter} onChange={handleLocationChange} />
+      </View>
+      <View style={styles.listingsSection}>
         <WebListingGrid
           category={category}
           query={query}
@@ -73,7 +64,23 @@ export default function KesfetScreen() {
                 : 'Tüm İlanlar'
           }
         />
-      </PageBody>
+      </View>
+    </>
+  );
+
+  return (
+    <WebShell searchQuery={search} onSearchChange={setSearch} onSearchSubmit={handleSearch}>
+      {mobileWeb ? (
+        <View style={styles.pageMobile}>{body}</View>
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {body}
+        </ScrollView>
+      )}
     </WebShell>
   );
 }
@@ -81,6 +88,24 @@ export default function KesfetScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, width: '100%' },
   scrollContent: { paddingBottom: 24 },
-  scrollContentMobile: { paddingBottom: 32 },
-  filterWrap: { paddingTop: 8 },
+  pageMobile: { width: '100%', paddingBottom: 24 },
+  filterWrap: {
+    maxWidth: 1400,
+    width: '100%',
+    alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingVertical: 10,
+  },
+  listingsSection: {
+    maxWidth: 1400,
+    width: '100%',
+    alignSelf: 'center',
+    marginHorizontal: 16,
+    marginTop: 12,
+  },
 });

@@ -1,4 +1,4 @@
-/* Pazaryeri — global web stilleri (production build) */
+/* Pazaryeri — letgo-esinli global web stilleri */
 
 html, body, #root {
   height: 100%;
@@ -8,17 +8,12 @@ html, body, #root {
 
 body {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #EDE8F5;
-  background-image:
-    radial-gradient(circle at 20% 20%, rgba(61, 26, 120, 0.07) 0%, transparent 45%),
-    radial-gradient(circle at 80% 0%, rgba(201, 168, 76, 0.1) 0%, transparent 40%),
-    linear-gradient(160deg, #F4F1FA 0%, #EDE8F5 50%, #E8E0F4 100%);
-  color: #1A0A2E;
+  background-color: #F4F4F4;
+  color: #2C2C2C;
   -webkit-font-smoothing: antialiased;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: none;
 }
 
 #root {
@@ -33,16 +28,15 @@ body {
   display: none !important;
 }
 
-/* Input outline kaldır */
 input, textarea {
   outline: none;
 }
 
-/* Duyuru bandı — kesintisiz kayan marquee */
+/* Duyuru bandı */
 .pz-marquee-outer {
   flex: 1;
   overflow: hidden;
-  height: 38px;
+  height: 34px;
   display: flex;
   align-items: center;
 }
@@ -58,10 +52,10 @@ input, textarea {
   white-space: nowrap;
   padding-right: 3rem;
   color: rgba(255, 255, 255, 0.95);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   font-family: 'Inter', system-ui, sans-serif;
-  line-height: 38px;
+  line-height: 34px;
 }
 @keyframes pz-marquee-scroll {
   from { transform: translateX(0); }
@@ -84,29 +78,36 @@ input, textarea {
   justify-content: center;
 }
 
-/* İlan grid */
+/* İlan grid — letgo tarzı */
 #pz-listing-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
-  gap: 12px !important;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+  gap: 16px !important;
   width: 100% !important;
 }
 #pz-profile-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
-  gap: 14px !important;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+  gap: 16px !important;
   width: 100% !important;
 }
-#pz-profile-grid a,
-#pz-listing-grid a {
+#pz-listing-grid a,
+#pz-profile-grid a {
   display: block !important;
   width: 100% !important;
   text-decoration: none !important;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
-#pz-listing-grid a:hover,
-#pz-profile-grid > *:hover {
-  transform: translateY(-2px);
+#pz-listing-grid a:hover {
+  transform: translateY(-3px);
+  opacity: 0.95;
+}
+
+/* Kategori grid */
+#pz-category-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+  gap: 10px !important;
 }
 
 /* İlan detay — geniş ekranda bilgi paneli sabit */
@@ -123,12 +124,7 @@ input, textarea {
 
 /* Filtre bölümü */
 #pz-filter-section {
-  background: #FFFFFF;
-  border-radius: 14px;
-  border: 1px solid #E8E0F4;
-  margin: 12px 16px 4px;
-  padding: 12px 0 8px;
-  box-shadow: 0 2px 8px rgba(61, 26, 120, 0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 /* ─── Mobil web (< 640px) ─── */
@@ -138,7 +134,6 @@ input, textarea {
     padding-right: env(safe-area-inset-right);
   }
 
-  /* Sayfa akışı — tek scroll, iç içe scroll yok */
   #pz-web-shell {
     display: block !important;
     min-height: 100vh;
@@ -152,78 +147,53 @@ input, textarea {
     z-index: 1 !important;
   }
 
-  /* Yapışkan header — kaydırırken üstte kalır */
   #pz-web-header {
     position: sticky !important;
     top: 0 !important;
-    z-index: 40 !important;
+    z-index: 50 !important;
     padding-top: env(safe-area-inset-top);
     background: #FFFFFF;
-    box-shadow: 0 2px 8px rgba(61, 26, 120, 0.06);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
   }
 
-  /* Duyuru bandı mobilde daha kompakt */
-  .pz-marquee-outer {
-    height: 34px;
-  }
-  .pz-marquee-item {
-    font-size: 12px;
-    line-height: 34px;
-  }
-
-  /* İlan grid — 2 sütun */
   #pz-listing-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
+    gap: 12px !important;
   }
 
-  /* Filtre kartı */
   #pz-filter-section {
-    margin: 12px 12px 4px !important;
-    border-radius: 12px !important;
-    padding: 10px 0 8px !important;
+    margin-left: 12px !important;
+    margin-right: 12px !important;
   }
 
-  /* İlan detay mobil */
   #pz-listing-detail {
     flex-direction: column !important;
     gap: 16px !important;
   }
 
-  /* Kategori nav — mobilde gizle (filtre bölümünde var) */
-  #pz-header-nav {
-    display: none !important;
-  }
-
-  /* Güven bandı — mobilde gizle */
-  #pz-trust-bar {
-    display: none !important;
-  }
-
-  /* Yatay taşmayı engelle */
   html, body, #root {
     overflow-x: hidden !important;
   }
 
-  /* Dokunma hedefleri */
   button, a, [role="button"] {
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* İç scroll alanları — mobilde akıcı kaydırma */
-  div[style*="overflow"] {
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Input zoom engelle (iOS) */
   input, textarea, select {
     font-size: 16px !important;
   }
 }
 
-@media (max-width: 768px) {
+@media (min-width: 641px) and (max-width: 900px) {
   #pz-listing-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
-    gap: 10px !important;
+    gap: 14px !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  #pz-listing-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: 18px !important;
   }
 }

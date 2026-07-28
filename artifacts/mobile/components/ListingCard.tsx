@@ -15,7 +15,8 @@ interface ListingCardProps {
 export function ListingCard({ item, compact = false }: ListingCardProps) {
   const colors = useColors();
   const toggleFavorite = useToggleFavorite();
-  const imageHeight = compact ? 140 : 160;
+  const imageHeight = compact ? undefined : 160;
+  const imageSquare = compact;
 
   const handleFavorite = (e?: { preventDefault?: () => void }) => {
     e?.preventDefault?.();
@@ -25,8 +26,8 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
   return (
     <Link href={`/listing/${item.id}`} asChild>
       <Pressable style={flatStyle(styles.cardContainer, compact && styles.compactContainer)}>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.imageContainer, { height: imageHeight }]}>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={[styles.imageContainer, imageSquare ? styles.imageSquare : { height: imageHeight }]}>
             <Image source={{ uri: item.image }} style={StyleSheet.absoluteFillObject} contentFit="cover" transition={150} />
             {item.status === 'sold' && (
               <View style={styles.soldOverlay}>
@@ -76,8 +77,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingBottom: 10,
   },
-  card: { borderRadius: 12, overflow: 'hidden', borderWidth: 1 },
-  imageContainer: { width: '100%', position: 'relative', backgroundColor: '#E8E4F0' },
+  card: { borderRadius: 10, overflow: 'hidden', borderWidth: 0, backgroundColor: 'transparent' },
+  imageContainer: { width: '100%', position: 'relative', backgroundColor: '#F0F0F0' },
+  imageSquare: { aspectRatio: 1 },
   favoriteButton: {
     position: 'absolute',
     top: 8,
@@ -93,10 +95,10 @@ const styles = StyleSheet.create({
   soldText: { color: '#FFF', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   details: { padding: 10, gap: 3 },
   compactDetails: { padding: 8, gap: 2 },
-  price: { fontSize: 16, fontWeight: '800' },
+  price: { fontSize: 15, fontWeight: '800' },
   compactPrice: { fontSize: 14 },
-  title: { fontSize: 13, fontWeight: '600', lineHeight: 17 },
-  compactTitle: { fontSize: 12, lineHeight: 16 },
+  title: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
+  compactTitle: { fontSize: 11, lineHeight: 15 },
   locationContainer: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
   distance: { fontSize: 11, flex: 1 },
 });

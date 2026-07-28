@@ -12,12 +12,11 @@ import { Link, useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
 import { WEB_CATEGORIES } from '@/lib/categories';
-import { WebAnnouncementBanner } from './WebAnnouncementBanner';
+import { WEB_THEME } from '@/lib/web-theme';
 import { flatStyle } from '@/lib/flat-style';
 
-const HEADER_CATEGORIES = WEB_CATEGORIES;
+const NAV_CATEGORIES = WEB_CATEGORIES.filter((c) => c.label !== 'Tüm İlanlar');
 const MOBILE_BREAKPOINT = 640;
-const TABLET_BREAKPOINT = 1024;
 
 interface WebShellProps {
   children: React.ReactNode;
@@ -36,128 +35,128 @@ export function WebShell({
 }: WebShellProps) {
   const { width } = useWindowDimensions();
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const mobile = width < MOBILE_BREAKPOINT;
-  const tablet = width < TABLET_BREAKPOINT;
+
+  const sellPath = user ? '/ilan-ver' : '/kayit';
 
   return (
     <View nativeID="pz-web-shell" style={[styles.root, mobile && styles.rootMobile]}>
-      <View nativeID="pz-web-header" style={styles.headerSticky}>
-        <WebAnnouncementBanner />
-        <View style={[styles.header, mobile && styles.headerMobile]}>
-          <View style={[styles.headerTop, mobile && styles.headerTopMobile]}>
-            <Link href="/" asChild>
-              <Pressable style={styles.brand}>
-                <Logo size={mobile ? 28 : 36} />
-                <Text style={[styles.brandText, mobile && styles.brandTextMobile]}>
-                  Pazaryeri
-                </Text>
-              </Pressable>
-            </Link>
+      <View nativeID="pz-web-header" style={styles.header}>
+        {/* Üst satır: logo + arama + aksiyonlar */}
+        <View style={[styles.topBar, mobile && styles.topBarMobile]}>
+          <Link href="/" asChild>
+            <Pressable style={styles.brand}>
+              <Logo size={mobile ? 30 : 34} />
+              {!mobile && <Text style={styles.brandText}>Pazaryeri</Text>}
+            </Pressable>
+          </Link>
 
-            {!mobile && (
-              <View style={styles.searchWrap}>
-                <Text style={styles.searchIcon}>🔍</Text>
-                <TextInput
-                  value={searchQuery}
-                  onChangeText={onSearchChange}
-                  onSubmitEditing={onSearchSubmit}
-                  placeholder={tablet ? 'Ara...' : 'Ne aramıştınız? Telefon, araba, mobilya...'}
-                  placeholderTextColor="#9D8BB5"
-                  style={styles.searchInput}
-                  returnKeyType="search"
-                />
-              </View>
-            )}
-
-            <View style={[styles.headerActions, mobile && styles.headerActionsMobile]}>
-              {user ? (
-                <>
-                  <Pressable
-                    style={flatStyle(styles.actionBtn, mobile && styles.actionBtnMobile)}
-                    onPress={() => router.push('/ilan-ver')}
-                  >
-                    <Text style={styles.actionIcon}>＋</Text>
-                    {!tablet && <Text style={styles.actionText}>İlan Ver</Text>}
-                  </Pressable>
-                  <Pressable
-                    style={flatStyle(styles.actionBtn, mobile && styles.actionBtnMobile)}
-                    onPress={() => router.push('/mesajlar')}
-                  >
-                    <Text style={styles.actionIcon}>💬</Text>
-                    {!tablet && <Text style={styles.actionText}>Mesajlar</Text>}
-                  </Pressable>
-                  <Pressable
-                    style={flatStyle(styles.profileBtn, mobile && styles.profileBtnMobile)}
-                    onPress={() => router.push('/hesabim')}
-                  >
-                    <Text style={styles.profileBtnText} numberOfLines={1}>
-                      {mobile ? '👤' : (profile?.name?.split(' ')[0] ?? 'Hesabım')}
-                    </Text>
-                  </Pressable>
-                </>
-              ) : (
-                <>
-                  <Link href="/giris" asChild>
-                    <Pressable style={flatStyle(styles.ghostBtn, mobile && styles.ghostBtnMobile)}>
-                      <Text style={styles.ghostBtnText}>Giriş</Text>
-                    </Pressable>
-                  </Link>
-                  <Link href="/kayit" asChild>
-                    <Pressable style={flatStyle(styles.primaryBtn, mobile && styles.primaryBtnMobile)}>
-                      <Text style={styles.primaryBtnText}>{mobile ? 'Kayıt' : 'Kayıt Ol'}</Text>
-                    </Pressable>
-                  </Link>
-                </>
-              )}
-            </View>
-          </View>
-
-          {mobile && (
-            <View style={[styles.searchWrapMobile, styles.searchWrapMobileCompact]}>
+          {mobile ? (
+            <Pressable style={styles.locationPillMobile} onPress={() => router.push('/kesfet')}>
+              <Text style={styles.locationIcon}>📍</Text>
+              <Text style={styles.locationTextMobile} numberOfLines={1}>
+                Türkiye
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.searchWrap}>
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 value={searchQuery}
                 onChangeText={onSearchChange}
                 onSubmitEditing={onSearchSubmit}
-                placeholder="Ne aramıştınız?"
-                placeholderTextColor="#9D8BB5"
+                placeholder="İlan, marka, kategori ara..."
+                placeholderTextColor={WEB_THEME.textLight}
                 style={styles.searchInput}
                 returnKeyType="search"
               />
             </View>
           )}
 
-          {!mobile && (
-            <ScrollView
-              nativeID="pz-header-nav"
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.navRow}
-              style={styles.navScroll}
-            >
-              {HEADER_CATEGORIES.map((cat) => (
-                <Link key={cat.label} href={cat.href as any} asChild>
-                  <Pressable style={styles.navChip}>
-                    <Text style={styles.navChipText}>
-                      {cat.icon} {cat.label}
-                    </Text>
-                  </Pressable>
-                </Link>
-              ))}
-            </ScrollView>
-          )}
+          <View style={styles.actions}>
+            {!mobile && (
+              <Pressable style={styles.locationPill} onPress={() => router.push('/kesfet')}>
+                <Text style={styles.locationIcon}>📍</Text>
+                <Text style={styles.locationText}>Türkiye</Text>
+              </Pressable>
+            )}
+
+            {user ? (
+              <>
+                <Pressable style={styles.iconBtn} onPress={() => router.push('/mesajlar')}>
+                  <Text style={styles.iconBtnText}>💬</Text>
+                </Pressable>
+                <Pressable style={styles.iconBtn} onPress={() => router.push('/hesabim')}>
+                  <Text style={styles.iconBtnText}>👤</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Link href="/giris" asChild>
+                <Pressable style={styles.loginBtn}>
+                  <Text style={styles.loginText}>Giriş</Text>
+                </Pressable>
+              </Link>
+            )}
+
+            <Pressable style={styles.sellBtn} onPress={() => router.push(sellPath)}>
+              <Text style={styles.sellIcon}>📷</Text>
+              <Text style={styles.sellText}>Sat</Text>
+            </Pressable>
+          </View>
         </View>
+
+        {/* Mobil arama */}
+        {mobile && (
+          <View style={styles.searchWrapMobile}>
+            <Text style={styles.searchIcon}>🔍</Text>
+            <TextInput
+              value={searchQuery}
+              onChangeText={onSearchChange}
+              onSubmitEditing={onSearchSubmit}
+              placeholder="İlan, marka, kategori ara..."
+              placeholderTextColor={WEB_THEME.textLight}
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
+          </View>
+        )}
+
+        {/* Kategori navigasyonu — letgo tarzı metin linkler */}
+        <ScrollView
+          nativeID="pz-header-nav"
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.navRow}
+          style={styles.navScroll}
+        >
+          <Link href="/kesfet" asChild>
+            <Pressable style={styles.navAllBtn}>
+              <Text style={styles.navAllIcon}>☰</Text>
+              <Text style={styles.navAllText}>Tüm Kategoriler</Text>
+            </Pressable>
+          </Link>
+          {NAV_CATEGORIES.slice(0, mobile ? 8 : 14).map((cat) => (
+            <Link key={cat.label} href={cat.href as any} asChild>
+              <Pressable style={styles.navLink}>
+                <Text style={styles.navLinkText}>{cat.label}</Text>
+              </Pressable>
+            </Link>
+          ))}
+        </ScrollView>
       </View>
 
-      <View nativeID="pz-web-main" style={[styles.main, mobile && styles.mainMobile]}>{children}</View>
+      <View nativeID="pz-web-main" style={[styles.main, mobile && styles.mainMobile]}>
+        {children}
+      </View>
 
       {!hideFooter && (
         <View style={[styles.footer, mobile && styles.footerMobile]}>
           <View style={[styles.footerInner, mobile && styles.footerInnerMobile]}>
-            <View style={styles.footerLeft}>
-              <Logo size={22} />
+            <View style={styles.footerBrand}>
+              <Logo size={24} />
               <Text style={styles.footerTitle}>Pazaryeri</Text>
+              <Text style={styles.footerTagline}>Türkiye'nin ikinci el pazarı</Text>
             </View>
             <View style={[styles.footerLinks, mobile && styles.footerLinksMobile]}>
               <Link href="/kesfet" asChild>
@@ -184,7 +183,9 @@ export function WebShell({
                 <Pressable><Text style={styles.footerLink}>Gizlilik</Text></Pressable>
               </Link>
             </View>
-            <Text style={styles.footerCopy}>© {new Date().getFullYear()} Pazaryeri</Text>
+            <Text style={styles.footerCopy}>
+              © {new Date().getFullYear()} Pazaryeri — İkinci el al & sat
+            </Text>
           </View>
         </View>
       )}
@@ -193,153 +194,155 @@ export function WebShell({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: 'transparent', minHeight: '100%', width: '100%' },
+  root: { flex: 1, backgroundColor: WEB_THEME.bg, minHeight: '100%', width: '100%' },
   rootMobile: { flexGrow: 1, flexShrink: 0 },
-  headerSticky: { width: '100%' },
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: WEB_THEME.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E0F4',
+    borderBottomColor: WEB_THEME.border,
     width: '100%',
-    shadowColor: '#3D1A78',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
   },
-  headerMobile: { shadowOpacity: 0.04, shadowRadius: 8 },
-  headerTop: {
+  topBar: {
+    maxWidth: WEB_THEME.maxWidth,
     width: '100%',
-    maxWidth: 1400,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 10,
     gap: 12,
   },
-  headerTopMobile: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6, gap: 8 },
+  topBarMobile: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 8, gap: 8 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
-  brandText: { fontSize: 22, fontWeight: '800', color: '#1A0A2E', letterSpacing: -0.8 },
-  brandTextMobile: { fontSize: 17, letterSpacing: -0.5 },
+  brandText: { fontSize: 24, fontWeight: '900', color: WEB_THEME.brand, letterSpacing: -0.5 },
   searchWrap: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F4F1FA',
+    backgroundColor: WEB_THEME.surface,
     borderWidth: 1.5,
-    borderColor: '#E8E0F4',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    height: 44,
+    borderColor: WEB_THEME.border,
+    borderRadius: WEB_THEME.radiusPill,
+    paddingHorizontal: 16,
+    height: 46,
     gap: 8,
     minWidth: 0,
   },
   searchWrapMobile: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F4F1FA',
+    backgroundColor: WEB_THEME.surface,
     borderWidth: 1.5,
-    borderColor: '#E8E0F4',
-    borderRadius: 12,
+    borderColor: WEB_THEME.border,
+    borderRadius: WEB_THEME.radiusPill,
     paddingHorizontal: 14,
     height: 44,
     gap: 8,
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginBottom: 8,
   },
-  searchWrapMobileCompact: { marginHorizontal: 12, marginBottom: 10, height: 40, borderRadius: 20 },
-  searchIcon: { fontSize: 15, flexShrink: 0 },
-  searchInput: { flex: 1, fontSize: 14, color: '#1A0A2E', minWidth: 0 },
-  headerActions: {
+  searchIcon: { fontSize: 16, flexShrink: 0 },
+  searchInput: { flex: 1, fontSize: 14, color: WEB_THEME.text, minWidth: 0 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  locationPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    flexShrink: 0,
-    marginLeft: 'auto',
-  },
-  headerActionsMobile: { gap: 6 },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: '#F4F1FA',
-  },
-  actionBtnMobile: { paddingHorizontal: 8, paddingVertical: 7, borderRadius: 8 },
-  actionIcon: { fontSize: 15 },
-  actionText: { color: '#3D1A78', fontWeight: '700', fontSize: 13 },
-  ghostBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
-  ghostBtnMobile: { paddingHorizontal: 10, paddingVertical: 7 },
-  ghostBtnText: { color: '#3D1A78', fontWeight: '700', fontSize: 13 },
-  primaryBtn: {
-    backgroundColor: '#3D1A78',
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 10,
-  },
-  primaryBtnMobile: { paddingHorizontal: 12, paddingVertical: 8 },
-  primaryBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
-  profileBtn: {
-    backgroundColor: '#3D1A78',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
-    maxWidth: 100,
-  },
-  profileBtnMobile: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, maxWidth: 36 },
-  profileBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
-  navScroll: { width: '100%' },
-  navRow: {
-    maxWidth: 1400,
-    alignSelf: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    gap: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  navChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#F8F6FC',
+    borderRadius: WEB_THEME.radiusPill,
     borderWidth: 1,
-    borderColor: '#E8E0F4',
+    borderColor: WEB_THEME.border,
+    backgroundColor: WEB_THEME.surface,
   },
-  navChipText: { color: '#3D1A78', fontWeight: '600', fontSize: 11 },
-  main: { flex: 1, width: '100%', alignSelf: 'stretch', backgroundColor: 'transparent' },
+  locationPillMobile: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: WEB_THEME.radiusPill,
+    borderWidth: 1,
+    borderColor: WEB_THEME.border,
+    minWidth: 0,
+  },
+  locationIcon: { fontSize: 13 },
+  locationText: { fontSize: 13, fontWeight: '600', color: WEB_THEME.text },
+  locationTextMobile: { fontSize: 12, fontWeight: '600', color: WEB_THEME.text, flex: 1 },
+  loginBtn: { paddingHorizontal: 12, paddingVertical: 8 },
+  loginText: { fontSize: 14, fontWeight: '700', color: WEB_THEME.text },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: WEB_THEME.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBtnText: { fontSize: 16 },
+  sellBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: WEB_THEME.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: WEB_THEME.radiusPill,
+  },
+  sellText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14 },
+  sellIcon: { fontSize: 14 },
+  navScroll: { width: '100%', borderTopWidth: 1, borderTopColor: WEB_THEME.borderLight },
+  navRow: {
+    maxWidth: WEB_THEME.maxWidth,
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  navAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: WEB_THEME.border,
+    marginRight: 4,
+    backgroundColor: WEB_THEME.surface,
+  },
+  navAllIcon: { fontSize: 12, color: WEB_THEME.text },
+  navAllText: { fontSize: 13, fontWeight: '700', color: WEB_THEME.text },
+  navLink: { paddingHorizontal: 10, paddingVertical: 7 },
+  navLinkText: { fontSize: 13, fontWeight: '500', color: WEB_THEME.textMuted },
+  main: { flex: 1, width: '100%', backgroundColor: WEB_THEME.bg },
   mainMobile: { flexGrow: 0, flexShrink: 0 },
   footer: {
-    backgroundColor: '#1A0A2E',
-    paddingVertical: 16,
+    backgroundColor: WEB_THEME.surface,
+    borderTopWidth: 1,
+    borderTopColor: WEB_THEME.border,
+    paddingVertical: 28,
     width: '100%',
     marginTop: 'auto',
   },
-  footerMobile: { paddingVertical: 20 },
+  footerMobile: { paddingVertical: 24 },
   footerInner: {
+    maxWidth: WEB_THEME.maxWidth,
     width: '100%',
-    maxWidth: 1400,
     alignSelf: 'center',
     paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 12,
+    gap: 20,
   },
-  footerInnerMobile: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 14,
-  },
-  footerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  footerTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
-  footerLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  footerLinksMobile: { justifyContent: 'center', gap: 12 },
-  footerLink: { color: '#C9A84C', fontSize: 13, fontWeight: '600' },
-  footerCopy: { color: 'rgba(255,255,255,0.35)', fontSize: 11 },
+  footerInnerMobile: { alignItems: 'center' },
+  footerBrand: { gap: 4 },
+  footerTitle: { fontSize: 18, fontWeight: '900', color: WEB_THEME.brand },
+  footerTagline: { fontSize: 13, color: WEB_THEME.textMuted },
+  footerLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 20 },
+  footerLinksMobile: { justifyContent: 'center', gap: 16 },
+  footerLink: { fontSize: 13, fontWeight: '600', color: WEB_THEME.text },
+  footerCopy: { fontSize: 12, color: WEB_THEME.textLight },
 });

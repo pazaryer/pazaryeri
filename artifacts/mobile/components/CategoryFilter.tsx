@@ -53,7 +53,9 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Categ
             style={[
               styles.chip,
               mobileWeb && styles.chipMobile,
-              {
+              useEmoji && !selected && styles.chipWeb,
+              useEmoji && selected && styles.chipWebSelected,
+              !useEmoji && {
                 backgroundColor: selected ? colors.primary : colors.card,
                 borderColor: selected ? colors.primary : colors.border,
               },
@@ -68,7 +70,21 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Categ
                 color={selected ? '#FFF' : colors.mutedForeground}
               />
             )}
-            <Text style={[styles.chipText, mobileWeb && styles.chipTextMobile, { color: selected ? '#FFF' : colors.foreground }]}>
+            <Text
+              style={[
+                styles.chipText,
+                mobileWeb && styles.chipTextMobile,
+                {
+                  color: useEmoji
+                    ? selected
+                      ? '#FFF'
+                      : '#2C2C2C'
+                    : selected
+                      ? '#FFF'
+                      : colors.foreground,
+                },
+              ]}
+            >
               {category}
             </Text>
           </Pressable>
@@ -91,6 +107,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   chipMobile: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 18 },
+  chipWeb: {
+    backgroundColor: '#F0F0F0',
+    borderColor: '#F0F0F0',
+  },
+  chipWebSelected: {
+    backgroundColor: '#3D1A78',
+    borderColor: '#3D1A78',
+  },
   emoji: { fontSize: 13 },
   emojiMobile: { fontSize: 12 },
   chipText: { fontSize: 12, fontWeight: '600' },
