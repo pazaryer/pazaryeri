@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { getSupabaseAdmin, ensureUser, getListingImages } from "../lib/supabase-db";
 import { authMiddleware } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
-import { sendPushNotification } from "../lib/push";
+import { notifyUser } from "../lib/notify";
 
 const router: IRouter = Router();
 
@@ -108,15 +108,13 @@ router.post("/conversations", authMiddleware, async (req, res, next) => {
         updated_at: new Date().toISOString(),
       }).eq("id", convo.id);
 
-      await sb.from("notifications").insert({
-        user_id: listing.seller_id,
+      await notifyUser({
+        userId: listing.seller_id,
         type: "message",
         title: "Yeni Mesaj",
         body: body.message.slice(0, 100),
-        data: JSON.stringify({ conversationId: convo.id }),
+        data: { conversationId: convo.id, listingId: body.listingId },
       });
-
-      sendPushNotification(listing.seller_id, "Yeni Mesaj", body.message.slice(0, 100));
     }
 
     const { data: seller } = await sb.from("users").select("id, name, avatar").eq("id", listing.seller_id).single();
@@ -197,14 +195,13 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
     }).eq("id", convo.id);
 
     const recipientId = convo.buyer_id === userId ? convo.seller_id : convo.buyer_id;
-    await sb.from("notifications").insert({
-      user_id: recipientId,
+    await notifyUser({
+      userId: recipientId,
       type: "message",
       title: "Yeni Mesaj",
       body: content.slice(0, 100),
-      data: JSON.stringify({ conversationId: convo.id }),
+      data: { conversationId: convo.id, listingId: convo.listing_id },
     });
-    sendPushNotification(recipientId, "Yeni Mesaj", content.slice(0, 100));
 
     res.status(201).json({
       id: msg.id,

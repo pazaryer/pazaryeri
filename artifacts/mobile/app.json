@@ -25,6 +25,7 @@
     },
     "android": {
       "package": "com.pazaryerim",
+      "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",

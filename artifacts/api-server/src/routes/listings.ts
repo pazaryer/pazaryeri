@@ -5,10 +5,9 @@ import {
   dbCreateListing,
   dbEnsureUser,
   dbListListings,
-  resolveListingsBackend,
 } from "../lib/listings-store";
 import { getSupabaseAdmin } from "../lib/supabase-db";
-import { pgIncrementViews } from "../lib/postgres-db";
+import { trackUniqueListingView } from "../lib/views";
 import { authMiddleware, optionalAuth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 
@@ -69,19 +68,8 @@ router.get("/listings/me", authMiddleware, async (req, res, next) => {
 router.get("/listings/:listingId", optionalAuth, async (req, res, next) => {
   try {
     const listingId = req.params.listingId;
-    const backend = await resolveListingsBackend();
-    if (backend === "postgres") {
-      await pgIncrementViews(listingId);
-    } else {
-      const sb = getSupabaseAdmin();
-      const { error: rpcError } = await sb.rpc("increment_views", { listing_id: listingId });
-      if (rpcError) {
-        const { data } = await sb.from("listings").select("views").eq("id", listingId).single();
-        if (data) {
-          await sb.from("listings").update({ views: data.views + 1 }).eq("id", listingId);
-        }
-      }
-    }
+    const deviceId = req.headers["x-device-id"] as string | undefined;
+    await trackUniqueListingView(listingId, deviceId);
     const detail = await dbBuildListingDetail(listingId, req.user?.id);
     res.json(detail);
   } catch (err) {

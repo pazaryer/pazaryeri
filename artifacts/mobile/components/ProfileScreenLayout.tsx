@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, type ScrollViewProps } f
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useColors } from '@/hooks/useColors';
 
 type Props = {
@@ -29,23 +30,32 @@ export function ProfileScreenLayout({ title, children, scroll = true, contentCon
 
   if (!scroll) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        behavior="padding"
+        keyboardVerticalOffset={insets.top + 56}
+      >
         {header}
         {children}
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior="padding"
+      keyboardVerticalOffset={insets.top + 56}
+    >
       {header}
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }, contentContainerStyle]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         {children}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

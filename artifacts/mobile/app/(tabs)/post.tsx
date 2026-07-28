@@ -7,11 +7,11 @@ import {
   TextInput,
   Pressable,
   Platform,
-  KeyboardAvoidingView,
   ActivityIndicator,
   Alert,
   Image,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -112,7 +112,8 @@ export default function PostScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
+      keyboardVerticalOffset={paddingTop}
     >
       <View style={[styles.header, { paddingTop, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>İlan Ver</Text>

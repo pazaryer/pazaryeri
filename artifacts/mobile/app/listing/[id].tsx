@@ -17,12 +17,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { FavoriteButton } from '@/components/FavoriteButton';
+import { ImageGalleryModal } from '@/components/ImageGalleryModal';
+import { OfferModal } from '@/components/OfferModal';
+import { ListingOffersSection } from '@/components/ListingOffersSection';
 import { WebListingDetailPage } from '@/components/web/WebListingDetailPage';
 import {
   useListing,
   useToggleFavorite,
   useStartConversation,
   useCreateReport,
+  useCreateOffer,
+  useMyOffers,
+  useAcceptOffer,
+  useRejectOffer,
+  useCounterOffer,
   formatPrice,
   formatTimeAgo,
 } from '@/lib/hooks';
@@ -44,15 +52,24 @@ function MobileListingDetailScreen() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   const listingId = Array.isArray(id) ? id[0] : id;
   const { data: listing, isLoading, isError, error, refetch, isFetching } = useListing(listingId ?? '');
   const toggleFavorite = useToggleFavorite();
   const startConversation = useStartConversation();
   const createReport = useCreateReport();
+  const createOffer = useCreateOffer();
+  const { data: myOffersData } = useMyOffers();
+  const acceptOffer = useAcceptOffer();
+  const rejectOffer = useRejectOffer();
+  const counterOffer = useCounterOffer();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [offerOpen, setOfferOpen] = useState(false);
+  const [counterOpen, setCounterOpen] = useState(false);
 
   if (isLoading || (isFetching && !listing)) {
     return (
@@ -84,6 +101,31 @@ function MobileListingDetailScreen() {
 
   const images = listing.images.length > 0 ? listing.images : [listing.image];
   const isOwner = profile?.id === listing.sellerId;
+  const myActiveOffer = myOffersData?.items.find(
+    (o) => o.listingId === listing.id && ['pending', 'countered'].includes(o.status),
+  );
+
+  const openGallery = (idx: number) => {
+    setGalleryIndex(idx);
+    setGalleryOpen(true);
+  };
+
+  const handleFavorite = () => {
+    if (!user) {
+      Alert.alert('Giriş gerekli', 'Favorilere eklemek için giriş yapın');
+      return;
+    }
+    toggleFavorite.mutate({ listingId: listing.id, isFavorite: listing.isFavorite });
+  };
+
+  const handleOffer = async (amount: number, message?: string) => {
+    if (!user) {
+      Alert.alert('Giriş gerekli', 'Teklif vermek için giriş yapın');
+      return;
+    }
+    await createOffer.mutateAsync({ listingId: listing.id, amount, message });
+    Alert.alert('Başarılı', 'Teklifiniz gönderildi. Satıcı bilgilendirildi.');
+  };
 
   const handleShare = async () => {
     try {
@@ -126,7 +168,9 @@ function MobileListingDetailScreen() {
             scrollEventThrottle={16}
           >
             {images.map((img, idx) => (
-              <Image key={idx} source={{ uri: img }} style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 0.45 }} contentFit="cover" />
+              <Pressable key={idx} onPress={() => openGallery(idx)}>
+                <Image source={{ uri: img }} style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 0.45 }} contentFit="cover" />
+              </Pressable>
             ))}
           </ScrollView>
 
@@ -143,7 +187,7 @@ function MobileListingDetailScreen() {
               </Pressable>
               <FavoriteButton
                 isFavorite={listing.isFavorite}
-                onPress={() => toggleFavorite.mutate({ listingId: listing.id, isFavorite: listing.isFavorite })}
+                onPress={handleFavorite}
               />
             </View>
           </View>
@@ -189,8 +233,14 @@ function MobileListingDetailScreen() {
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="eye-outline" size={16} color={colors.mutedForeground} />
-              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>{listing.views}</Text>
+              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>{listing.views} görüntülenme</Text>
             </View>
+            {isOwner && listing.favoriteCount !== undefined && (
+              <View style={styles.infoItem}>
+                <Ionicons name="heart" size={16} color={colors.mutedForeground} />
+                <Text style={[styles.infoText, { color: colors.mutedForeground }]}>{listing.favoriteCount} favori</Text>
+              </View>
+            )}
           </View>
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -229,6 +279,48 @@ function MobileListingDetailScreen() {
           </View>
 
           {isOwner && (
+            <ListingOffersSection
+              listingId={listing.id}
+              listingTitle={listing.title}
+              listingPrice={listing.price}
+              isOwner={isOwner}
+              currentUserId={profile?.id}
+            />
+          )}
+
+          {!isOwner && myActiveOffer && (
+            <View style={[styles.offerCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Teklifiniz</Text>
+              <Text style={[styles.offerAmount, { color: colors.primary }]}>{formatPrice(myActiveOffer.amount)}</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>
+                Durum: {myActiveOffer.status === 'countered' ? 'Karşı teklif geldi' : 'Beklemede'}
+              </Text>
+              {myActiveOffer.offeredBy !== profile?.id && (
+                <View style={styles.offerActions}>
+                  <Pressable
+                    style={[styles.miniBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => acceptOffer.mutateAsync({ offerId: myActiveOffer.id }).then(() => Alert.alert('Kabul edildi'))}
+                  >
+                    <Text style={styles.miniBtnText}>Kabul Et</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.miniBtn, { borderColor: colors.primary, borderWidth: 1 }]}
+                    onPress={() => setCounterOpen(true)}
+                  >
+                    <Text style={[styles.miniBtnText, { color: colors.primary }]}>Karşı Teklif</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.miniBtn, { backgroundColor: '#FFEBEE' }]}
+                    onPress={() => rejectOffer.mutateAsync({ offerId: myActiveOffer.id })}
+                  >
+                    <Text style={[styles.miniBtnText, { color: '#C62828' }]}>Reddet</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          )}
+
+          {isOwner && (
             <ListingOwnerActions
               listingId={listing.id}
               status={listing.status}
@@ -240,7 +332,14 @@ function MobileListingDetailScreen() {
 
       {!isOwner && listing.status === 'active' && (
         <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <Pressable style={[styles.offerButton, { borderColor: colors.primary }]}>
+          <Pressable
+            style={[styles.offerButton, { borderColor: colors.primary }]}
+            onPress={() => {
+              if (!user) Alert.alert('Giriş gerekli', 'Teklif vermek için giriş yapın');
+              else if (myActiveOffer) Alert.alert('Bilgi', 'Bu ilana zaten aktif teklifiniz var');
+              else setOfferOpen(true);
+            }}
+          >
             <Text style={[styles.offerButtonText, { color: colors.primary }]}>Teklif Ver</Text>
           </Pressable>
           <Pressable
@@ -259,6 +358,34 @@ function MobileListingDetailScreen() {
           </Pressable>
         </View>
       )}
+
+      <ImageGalleryModal
+        images={images}
+        initialIndex={galleryIndex}
+        visible={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+      />
+
+      <OfferModal
+        visible={offerOpen}
+        listingTitle={listing.title}
+        listingPrice={listing.price}
+        onClose={() => setOfferOpen(false)}
+        onSubmit={handleOffer}
+      />
+
+      <OfferModal
+        visible={counterOpen}
+        listingTitle={listing.title}
+        listingPrice={listing.price}
+        title="Karşı Teklif Ver"
+        onClose={() => setCounterOpen(false)}
+        onSubmit={async (amount, message) => {
+          if (!myActiveOffer) return;
+          await counterOffer.mutateAsync({ offerId: myActiveOffer.id, amount, message });
+          Alert.alert('Başarılı', 'Karşı teklif gönderildi');
+        }}
+      />
     </View>
   );
 }
@@ -302,4 +429,9 @@ const styles = StyleSheet.create({
   offerButtonText: { fontSize: 16, fontWeight: '700' },
   chatButton: { flex: 1.5, height: 52, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
   chatButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  offerCard: { marginTop: 20, padding: 16, borderRadius: 14, borderWidth: 1, gap: 8 },
+  offerAmount: { fontSize: 24, fontWeight: '800' },
+  offerActions: { flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' },
+  miniBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  miniBtnText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
 });

@@ -227,6 +227,15 @@ export async function dbBuildListingDetail(listingId: string, userId?: string) {
     userLon,
   );
 
+  let favoriteCount: number | undefined;
+  if (userId && userId === listing.seller_id) {
+    const { count } = await sb
+      .from("favorites")
+      .select("id", { count: "exact", head: true })
+      .eq("listing_id", listing.id);
+    favoriteCount = count ?? 0;
+  }
+
   return {
     ...summary,
     description: listing.description,
@@ -236,6 +245,7 @@ export async function dbBuildListingDetail(listingId: string, userId?: string) {
     latitude: listing.latitude,
     longitude: listing.longitude,
     seller: formatUser(seller as DbUser),
+    favoriteCount,
   };
 }
 

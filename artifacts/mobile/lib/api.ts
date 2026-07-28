@@ -1,6 +1,8 @@
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
 import { API_BASE_URL, buildApiUrl } from './config';
 import { getFirebaseAuth } from './firebase';
+import { getDeviceId } from './device-id';
+import { Platform } from 'react-native';
 
 let initialized = false;
 
@@ -29,6 +31,14 @@ export async function apiFetch<T>(
     ...(options.headers as Record<string, string>),
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  if (Platform.OS !== 'web' || typeof localStorage !== 'undefined') {
+    try {
+      headers['X-Device-Id'] = await getDeviceId();
+    } catch {
+      /* ignore */
+    }
+  }
 
   const url = buildApiUrl(path);
   const res = await fetch(url, {

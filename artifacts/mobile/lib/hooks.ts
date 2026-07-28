@@ -31,6 +31,7 @@ export interface ListingDetail extends ListingSummary {
   images: string[];
   acceptsOffers: boolean;
   sellerId: string;
+  favoriteCount?: number;
   latitude?: number | null;
   longitude?: number | null;
   seller: {
@@ -143,10 +144,29 @@ export function useToggleFavorite() {
         await apiFetch(`/favorites/${listingId}`, { method: 'POST' });
       }
     },
+    onMutate: async ({ listingId, isFavorite }) => {
+      await qc.cancelQueries({ queryKey: ['listing', listingId] });
+      const prev = qc.getQueryData<ListingDetail>(['listing', listingId]);
+      if (prev) {
+        qc.setQueryData(['listing', listingId], {
+          ...prev,
+          isFavorite: !isFavorite,
+          favoriteCount:
+            prev.favoriteCount !== undefined
+              ? Math.max(0, prev.favoriteCount + (isFavorite ? -1 : 1))
+              : prev.favoriteCount,
+        });
+      }
+      return { prev };
+    },
+    onError: (_err, { listingId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['listing', listingId], ctx.prev);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['listings'] });
       qc.invalidateQueries({ queryKey: ['favorites'] });
       qc.invalidateQueries({ queryKey: ['listing'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 }
@@ -336,5 +356,109 @@ export function useCreateReport() {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+  });
+}
+
+export interface OfferSummary {
+  id: string;
+  listingId: string;
+  buyerId: string;
+  sellerId: string;
+  amount: number;
+  offeredBy: string;
+  status: string;
+  message?: string | null;
+  parentOfferId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  listingTitle?: string;
+  buyer?: { id: string; name: string; avatar?: string | null };
+  seller?: { id: string; name: string; avatar?: string | null };
+}
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  data?: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export function useListingOffers(listingId: string) {
+  return useQuery({
+    queryKey: ['offers', 'listing', listingId],
+    queryFn: () =>
+      apiFetch<{ items: OfferSummary[]; listingTitle: string }>(`/offers/listing/${listingId}`),
+    enabled: !!listingId,
+    refetchInterval: Platform.OS === 'web' ? false : 30_000,
+  });
+}
+
+export function useMyOffers() {
+  return useQuery({
+    queryKey: ['offers', 'my'],
+    queryFn: () => apiFetch<{ items: OfferSummary[] }>('/offers/my'),
+    refetchInterval: Platform.OS === 'web' ? false : 30_000,
+  });
+}
+
+export function useCreateOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { listingId: string; amount: number; message?: string }) =>
+      apiFetch<OfferSummary>('/offers', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['offers'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export function useCounterOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ offerId, amount, message }: { offerId: string; amount: number; message?: string }) =>
+      apiFetch<OfferSummary>(`/offers/${offerId}/counter`, {
+        method: 'POST',
+        body: JSON.stringify({ amount, message }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['offers'] }),
+  });
+}
+
+export function useAcceptOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ offerId }: { offerId: string }) =>
+      apiFetch(`/offers/${offerId}/accept`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['offers'] }),
+  });
+}
+
+export function useRejectOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ offerId }: { offerId: string }) =>
+      apiFetch(`/offers/${offerId}/reject`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['offers'] }),
+  });
+}
+
+export function useNotifications() {
+  return useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => apiFetch<{ items: AppNotification[] }>('/notifications'),
+    refetchInterval: Platform.OS === 'web' ? false : 30_000,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (notificationId: string) =>
+      apiFetch(`/notifications/${notificationId}/read`, { method: 'PATCH' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 }
