@@ -27,7 +27,14 @@ export function buildGeocodeQuery(parts: {
   city?: string | null;
   location?: string | null;
 }): string {
-  return [parts.district, parts.city, parts.location, 'Türkiye']
+  const location = parts.location?.trim();
+  if (location) {
+    if (/türkiye|turkey/i.test(location)) return location;
+    return `${location}, Türkiye`;
+  }
+  const bits = [parts.district, parts.city]
     .filter((s) => s && String(s).trim())
-    .join(', ');
+    .map((s) => String(s).trim());
+  const unique = [...new Set(bits)];
+  return [...unique, "Türkiye"].join(", ");
 }

@@ -5,6 +5,8 @@ import {
   formatListingSummary,
   formatUser,
 } from "./supabase-db";
+import { filterByRadius } from "./geo";
+import { buildGeocodeQuery, geocodeText } from "./geocode";
 import { AppError } from "../middleware/errorHandler";
 
 const { Pool } = pg;
@@ -223,6 +225,18 @@ async function pgGetFavoriteSet(userId: string | undefined, listingIds: string[]
   return set;
 }
 
+export async function pgUpdateListingCoords(
+  listingId: string,
+  latitude: number,
+  longitude: number,
+): Promise<void> {
+  const db = getPgPool();
+  await db.query(
+    "UPDATE listings SET latitude = $1, longitude = $2, updated_at = NOW() WHERE id = $3",
+    [latitude, longitude, listingId],
+  );
+}
+
 export async function pgListListings(params: {
   limit: number;
   category?: string;
@@ -231,6 +245,13 @@ export async function pgListListings(params: {
   sellerId?: string;
   userId?: string;
   includeNonActive?: boolean;
+  city?: string;
+  district?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  radiusKm?: number;
+  lat?: number;
+  lon?: number;
 }) {
   const db = getPgPool();
   const limit = params.limit;
@@ -256,8 +277,25 @@ export async function pgListListings(params: {
     values.push(params.cursor);
     where.push(`l.created_at < $${values.length}`);
   }
+  if (params.city) {
+    values.push(`%${params.city}%`);
+    where.push(`l.city ILIKE $${values.length}`);
+  }
+  if (params.district) {
+    values.push(`%${params.district}%`);
+    where.push(`l.district ILIKE $${values.length}`);
+  }
+  if (params.minPrice != null) {
+    values.push(params.minPrice);
+    where.push(`l.price >= $${values.length}`);
+  }
+  if (params.maxPrice != null) {
+    values.push(params.maxPrice);
+    where.push(`l.price <= $${values.length}`);
+  }
 
-  values.push(limit + 1);
+  const fetchLimit = params.radiusKm ? Math.min(limit * 20, 500) : limit + 1;
+  values.push(fetchLimit);
   const sql = `
     SELECT l.*, row_to_json(u.*) AS seller
     FROM listings l
@@ -268,8 +306,22 @@ export async function pgListListings(params: {
   `;
 
   const { rows } = await db.query<DbListing & { seller: DbUser }>(sql, values);
-  const hasMore = rows.length > limit;
-  const page = hasMore ? rows.slice(0, limit) : rows;
+  let page = rows;
+
+  if (params.radiusKm && params.lat != null && params.lon != null) {
+    for (const row of page) {
+      if (row.latitude != null && row.longitude != null) continue;
+      const coords = await geocodeText(buildGeocodeQuery(row));
+      if (!coords) continue;
+      row.latitude = coords.latitude;
+      row.longitude = coords.longitude;
+      await pgUpdateListingCoords(row.id, coords.latitude, coords.longitude);
+    }
+    page = filterByRadius(page, params.lat, params.lon, params.radiusKm);
+  }
+
+  const hasMore = page.length > limit;
+  page = hasMore ? page.slice(0, limit) : page;
   const listingIds = page.map((r) => r.id);
   const imageMap = await pgGetListingImages(listingIds);
   const favSet = await pgGetFavoriteSet(params.userId, listingIds);

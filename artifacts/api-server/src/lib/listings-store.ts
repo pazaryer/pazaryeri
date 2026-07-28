@@ -21,6 +21,7 @@ import {
   pgGetUser,
   pgUpdateUser,
   pgUpdatePushToken,
+  pgUpdateListingCoords,
 } from "./postgres-db";
 import { AppError } from "../middleware/errorHandler";
 
@@ -77,6 +78,38 @@ export async function withResolvedListingCoords<T extends {
   const coords = await geocodeText(buildGeocodeQuery(body));
   if (!coords) return body;
   return { ...body, latitude: coords.latitude, longitude: coords.longitude };
+}
+
+type CoordsRow = {
+  id: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  city?: string | null;
+  district?: string | null;
+  location?: string | null;
+};
+
+/** Koordinatsız ilanları geocode edip veritabanına yazar */
+async function hydrateListingCoords(
+  listings: CoordsRow[],
+  backend: ListingsBackend,
+): Promise<void> {
+  const sb = backend === "supabase" ? getSupabaseAdmin() : null;
+  for (const listing of listings) {
+    if (listing.latitude != null && listing.longitude != null) continue;
+    const coords = await geocodeText(buildGeocodeQuery(listing));
+    if (!coords) continue;
+    listing.latitude = coords.latitude;
+    listing.longitude = coords.longitude;
+    if (backend === "postgres") {
+      await pgUpdateListingCoords(listing.id, coords.latitude, coords.longitude);
+    } else if (sb) {
+      await sb
+        .from("listings")
+        .update({ latitude: coords.latitude, longitude: coords.longitude })
+        .eq("id", listing.id);
+    }
+  }
 }
 
 export async function dbEnsureUser(
@@ -184,13 +217,14 @@ export async function dbListListings(params: {
   if (params.minPrice != null) query = query.gte("price", params.minPrice);
   if (params.maxPrice != null) query = query.lte("price", params.maxPrice);
 
-  const fetchLimit = params.radiusKm ? Math.min(limit * 4, 100) : limit + 1;
+  const fetchLimit = params.radiusKm ? Math.min(limit * 20, 500) : limit + 1;
   query = query.limit(fetchLimit);
   const { data: rows, error } = await query;
   if (error) throw new Error(error.message);
 
   let filtered = rows ?? [];
   if (params.radiusKm && params.lat != null && params.lon != null) {
+    await hydrateListingCoords(filtered as CoordsRow[], "supabase");
     filtered = filterByRadius(filtered as DbListing[], params.lat, params.lon, params.radiusKm);
   }
 

@@ -55,6 +55,9 @@ export default function HomeScreen() {
 
   const allItems = data?.pages.flatMap((p) => p.items) ?? [];
 
+  const needsGps =
+    filter.radiusKm != null && locationReady && (coords.lat == null || coords.lon == null);
+
   const onEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
@@ -91,7 +94,13 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      {isLoading ? (
+      {needsGps ? (
+        <View style={styles.center}>
+          <Text style={{ color: colors.mutedForeground, textAlign: 'center', paddingHorizontal: 24 }}>
+            Mesafe filtresi için konum izni gerekli. Telefon ayarlarından konum iznini açın.
+          </Text>
+        </View>
+      ) : isLoading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>

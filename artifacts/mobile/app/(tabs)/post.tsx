@@ -100,8 +100,28 @@ export default function PostScreen() {
 
     setLoading(true);
     try {
-      const resolved = await resolveListingCoords(location, coords);
-      const parts = parseLocationParts(location);
+      let submitCoords = coords;
+      let submitLocation = location.trim();
+      if (!submitLocation || submitCoords.latitude == null) {
+        const device = await resolveListingCoords('', {});
+        if (device.latitude != null && device.longitude != null) {
+          submitCoords = device;
+          if (!submitLocation) {
+            const [geo] = await Location.reverseGeocodeAsync({
+              latitude: device.latitude,
+              longitude: device.longitude,
+            });
+            submitLocation = [geo?.district, geo?.city].filter(Boolean).join(', ');
+          }
+        }
+      }
+
+      const resolved = await resolveListingCoords(submitLocation, submitCoords);
+      if (resolved.latitude == null || resolved.longitude == null) {
+        Alert.alert('Konum gerekli', 'İlanınızın mesafe filtresinde görünmesi için konum izni verin veya konum alanına adres yazın.');
+        return;
+      }
+      const parts = parseLocationParts(submitLocation);
       const created = await createListing.mutateAsync({
         title: title.trim(),
         price: parseInt(price.replace(/\D/g, ''), 10),
@@ -109,7 +129,7 @@ export default function PostScreen() {
         description: desc.trim(),
         city: parts.city,
         district: parts.district,
-        location,
+        location: submitLocation,
         latitude: resolved.latitude,
         longitude: resolved.longitude,
         contactPhone: phone.trim(),
