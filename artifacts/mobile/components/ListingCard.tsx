@@ -1,11 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { ListingSummary, formatPrice, useToggleFavorite } from '@/lib/hooks';
+import { formatListingLocation } from '@/lib/listing-location';
 import { flatStyle } from '@/lib/flat-style';
+import { BRAND } from '@/constants/brand';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+export const LISTING_GRID_COLS = 3;
+const GRID_H_PADDING = 14;
+const GRID_GAP = 7;
+export const LISTING_CARD_WIDTH =
+  (SCREEN_WIDTH - GRID_H_PADDING * 2 - GRID_GAP * (LISTING_GRID_COLS - 1)) / LISTING_GRID_COLS;
 
 interface ListingCardProps {
   item: ListingSummary;
@@ -15,8 +24,6 @@ interface ListingCardProps {
 export function ListingCard({ item, compact = false }: ListingCardProps) {
   const colors = useColors();
   const toggleFavorite = useToggleFavorite();
-  const imageHeight = compact ? undefined : 160;
-  const imageSquare = compact;
 
   const handleFavorite = (e?: { preventDefault?: () => void }) => {
     e?.preventDefault?.();
@@ -26,25 +33,34 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
   return (
     <Link href={`/listing/${item.id}`} asChild>
       <Pressable style={flatStyle(styles.cardContainer, compact && styles.compactContainer)}>
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <View style={[styles.imageContainer, imageSquare ? styles.imageSquare : { height: imageHeight }]}>
-            <Image source={{ uri: item.image }} style={StyleSheet.absoluteFillObject} contentFit="cover" transition={150} />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.imageContainer, compact ? styles.imageCompact : styles.imageFull]}>
+            <Image
+              source={{ uri: item.image }}
+              style={StyleSheet.absoluteFillObject}
+              contentFit="cover"
+              transition={150}
+              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+            />
             {item.status === 'sold' && (
               <View style={styles.soldOverlay}>
                 <Text style={styles.soldText}>SATILDI</Text>
               </View>
             )}
-            <Pressable style={styles.favoriteButton} onPress={handleFavorite}>
+            <Pressable style={styles.favoriteButton} onPress={handleFavorite} hitSlop={4}>
               <Ionicons
                 name={item.isFavorite ? 'heart' : 'heart-outline'}
-                size={compact ? 16 : 18}
-                color={colors.accent}
+                size={11}
+                color={item.isFavorite ? BRAND.gold : BRAND.primary}
               />
             </Pressable>
           </View>
 
           <View style={[styles.details, compact && styles.compactDetails]}>
-            <Text style={[styles.price, compact && styles.compactPrice, { color: colors.primary }]}>
+            <Text
+              style={[styles.price, compact && styles.compactPrice, { color: colors.primary }]}
+              numberOfLines={1}
+            >
               {formatPrice(item.price)}
             </Text>
             <Text
@@ -54,9 +70,9 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
               {item.title}
             </Text>
             <View style={styles.locationContainer}>
-              <Ionicons name="location-outline" size={11} color={colors.mutedForeground} />
+              <Ionicons name="location-outline" size={9} color={colors.mutedForeground} />
               <Text style={[styles.distance, { color: colors.mutedForeground }]} numberOfLines={1}>
-                {item.distance ?? item.district ?? item.city ?? 'Konum yok'}
+                {formatListingLocation(item)}
               </Text>
             </View>
           </View>
@@ -69,36 +85,48 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
 const styles = StyleSheet.create({
   cardContainer: {
     width: '100%',
-    paddingHorizontal: 6,
-    paddingBottom: 12,
-  },
-  compactContainer: {
-    width: '50%',
-    paddingHorizontal: 5,
     paddingBottom: 10,
   },
-  card: { borderRadius: 10, overflow: 'hidden', borderWidth: 0, backgroundColor: 'transparent' },
-  imageContainer: { width: '100%', position: 'relative', backgroundColor: '#F0F0F0' },
-  imageSquare: { aspectRatio: 1 },
+  compactContainer: {
+    width: LISTING_CARD_WIDTH,
+    marginBottom: GRID_GAP,
+  },
+  card: {
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  imageContainer: {
+    width: '100%',
+    position: 'relative',
+    backgroundColor: BRAND.primaryLight,
+  },
+  imageCompact: { aspectRatio: 1.2 },
+  imageFull: { height: 160 },
   favoriteButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  soldOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-  soldText: { color: '#FFF', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  details: { padding: 10, gap: 3 },
-  compactDetails: { padding: 8, gap: 2 },
-  price: { fontSize: 15, fontWeight: '800', color: '#2C2C2C' },
-  compactPrice: { fontSize: 14 },
-  title: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
-  compactTitle: { fontSize: 11, lineHeight: 15 },
-  locationContainer: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
-  distance: { fontSize: 11, flex: 1 },
+  soldOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  soldText: { color: '#FFF', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  details: { padding: 8, gap: 1 },
+  compactDetails: { paddingHorizontal: 6, paddingVertical: 5, gap: 0 },
+  price: { fontSize: 14, fontWeight: '700' },
+  compactPrice: { fontSize: 11, fontWeight: '700' },
+  title: { fontSize: 12, fontWeight: '500', lineHeight: 15 },
+  compactTitle: { fontSize: 10, lineHeight: 13, fontWeight: '500' },
+  locationContainer: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 1 },
+  distance: { fontSize: 9, flex: 1 },
 });

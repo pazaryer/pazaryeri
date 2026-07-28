@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, ActivityIndicator } from 'react-native';
 import '@/styles/web-global.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -14,9 +14,12 @@ import {
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { MobileLocationProvider } from '@/contexts/MobileLocationContext';
+import { BRAND } from '@/constants/brand';
+import { AppIcon } from '@/components/AppIcon';
 import { initApi } from '@/lib/api';
 import { initFirebase } from '@/lib/firebase';
-import { isOnboardingComplete } from '@/lib/onboarding';
+import { isOnboardingComplete, subscribeOnboarding } from '@/lib/onboarding';
 
 try {
   initApi();
@@ -36,71 +39,88 @@ const queryClient = new QueryClient({
   },
 });
 
+function segmentKey(segments: string[]): string {
+  return segments.length ? segments.join('/') : 'root';
+}
+
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(Platform.OS === 'web' ? true : null);
+  const lastNavTarget = useRef<string | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    isOnboardingComplete().then(setOnboardingDone);
+    void isOnboardingComplete().then(setOnboardingDone);
+    return subscribeOnboarding(setOnboardingDone);
   }, []);
 
   useEffect(() => {
     if (isLoading || onboardingDone === null) return;
 
     const isWeb = Platform.OS === 'web';
-    const seg = segments[0];
     const segName = segments[0] as string | undefined;
+    const current = segmentKey(segments as string[]);
     const inOnboarding = segName === 'onboarding';
     const inAuth =
+      inOnboarding ||
       segName === 'login' ||
       segName === 'email-auth' ||
       segName === 'oauth' ||
       segName === 'giris' ||
       segName === 'kayit' ||
-      inOnboarding;
-    const inLegal = seg === 'privacy' || seg === 'terms';
+      segName === 'index';
+    const inLegal = segName === 'privacy' || segName === 'terms';
     const isPublicWeb =
       isWeb &&
-      (!seg ||
-        seg === 'index' ||
-        seg === 'kesfet' ||
-        seg === 'listing' ||
-        seg === 'giris' ||
-        seg === 'kayit' ||
+      (!segName ||
+        segName === 'index' ||
+        segName === 'kesfet' ||
+        segName === 'listing' ||
+        segName === 'giris' ||
+        segName === 'kayit' ||
         inLegal);
 
-    const isMobileOAuthBridge =
-      isWeb && segments[0] === 'oauth' && segments[1] === 'mobile';
+    if (isWeb && segments[0] === 'oauth' && segments[1] === 'mobile') return;
 
-    // Mobil köprü: tarayıcıda giriş sonrası web ana sayfasına gitme — uygulamaya dön
-    if (isMobileOAuthBridge) {
+    let target: string | null = null;
+
+    if (isWeb && segName === '(tabs)') {
+      target = '/kesfet';
+    } else if (isWeb && segName === 'login') {
+      target = '/giris';
+    } else if (!isWeb && !onboardingDone && !inOnboarding) {
+      target = '/onboarding';
+    } else if (!user && !inAuth && !inLegal && !isPublicWeb) {
+      target = isWeb ? '/giris' : '/login';
+    } else if (user && (segName === 'login' || segName === 'email-auth' || segName === 'giris' || segName === 'kayit')) {
+      target = isWeb ? '/' : '/(tabs)';
+    }
+
+    if (!target) {
+      lastNavTarget.current = null;
       return;
     }
 
-    if (isWeb && seg === '(tabs)') {
-      router.replace('/kesfet');
+    const targetKey = target.replace(/^\//, '');
+    if (current === targetKey || current.startsWith(`${targetKey}/`)) {
       return;
     }
+    if (lastNavTarget.current === target) return;
 
-    if (isWeb && seg === 'login') {
-      router.replace('/giris');
-      return;
-    }
-
-    if (!isWeb && !onboardingDone && !inOnboarding) {
-      router.replace('/onboarding');
-      return;
-    }
-
-    if (!user && !inAuth && !inLegal && !isPublicWeb) {
-      router.replace(isWeb ? '/giris' : '/login');
-    } else if (user && inAuth) {
-      router.replace(isWeb ? '/' : '/(tabs)');
-    }
+    lastNavTarget.current = target;
+    router.replace(target as never);
   }, [user, isLoading, onboardingDone, segments, router]);
+
+  if (Platform.OS !== 'web' && onboardingDone === null) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: BRAND.primary, gap: 20 }}>
+        <AppIcon size="hero" variant="splash" />
+        <ActivityIndicator size="large" color="#FFFFFF" />
+      </View>
+    );
+  }
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
@@ -116,6 +136,7 @@ function RootLayoutNav() {
       <Stack.Screen name="login" />
       <Stack.Screen name="email-auth" />
       <Stack.Screen name="oauth/google" />
+      <Stack.Screen name="oauth/app-return" options={{ headerShown: false }} />
       <Stack.Screen name="oauth/mobile" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="listing/[id]" />
@@ -183,7 +204,13 @@ export default function RootLayout() {
           <AuthProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <KeyboardShell>
-                <RootLayoutNav />
+                {Platform.OS === 'web' ? (
+                  <RootLayoutNav />
+                ) : (
+                  <MobileLocationProvider>
+                    <RootLayoutNav />
+                  </MobileLocationProvider>
+                )}
               </KeyboardShell>
             </GestureHandlerRootView>
           </AuthProvider>

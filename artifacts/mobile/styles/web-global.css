@@ -1,4 +1,4 @@
-/* Pazaryeri — letgo-esinli global web stilleri */
+/* Pazaryeri — global web stilleri */
 
 html, body, #root {
   height: 100%;
@@ -7,10 +7,11 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #F4F4F4;
-  color: #2C2C2C;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #F7F5FC;
+  color: #1A0A2E;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -20,6 +21,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   overflow-x: hidden;
 }
@@ -78,12 +80,14 @@ input, textarea {
   justify-content: center;
 }
 
-/* İlan grid — letgo tarzı */
+/* İlan grid */
 #pz-listing-grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
   gap: 16px !important;
   width: 100% !important;
+  padding: 0 16px !important;
+  box-sizing: border-box !important;
 }
 #pz-profile-grid {
   display: grid !important;
@@ -96,18 +100,15 @@ input, textarea {
   display: block !important;
   width: 100% !important;
   text-decoration: none !important;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 #pz-listing-grid a:hover {
-  transform: translateY(-3px);
-  opacity: 0.95;
+  transform: translateY(-2px);
 }
 
-/* Kategori grid */
-#pz-category-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
-  gap: 10px !important;
+/* Footer */
+#pz-web-footer {
+  flex-shrink: 0;
 }
 
 /* İlan detay — geniş ekranda bilgi paneli sabit */
@@ -122,21 +123,18 @@ input, textarea {
   }
 }
 
-/* Filtre bölümü */
-#pz-filter-section {
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-}
-
-/* ─── Mobil web (< 640px) ─── */
+/* ─── Mobil web (telefon) ─── */
 @media (max-width: 640px) {
   body {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   #pz-web-shell {
     display: block !important;
     min-height: 100vh;
+    min-height: 100dvh;
     width: 100% !important;
   }
 
@@ -145,6 +143,7 @@ input, textarea {
     width: 100% !important;
     position: relative !important;
     z-index: 1 !important;
+    padding-bottom: 8px !important;
   }
 
   #pz-web-header {
@@ -153,22 +152,31 @@ input, textarea {
     z-index: 50 !important;
     padding-top: env(safe-area-inset-top);
     background: #FFFFFF;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 0 rgba(61, 26, 120, 0.08);
+  }
+
+  #pz-header-nav {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #pz-header-nav::-webkit-scrollbar {
+    display: none;
   }
 
   #pz-listing-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
-  }
-
-  #pz-filter-section {
-    margin-left: 12px !important;
-    margin-right: 12px !important;
+    gap: 10px !important;
+    padding: 0 12px !important;
   }
 
   #pz-listing-detail {
     flex-direction: column !important;
     gap: 16px !important;
+    padding: 0 12px !important;
+  }
+
+  #pz-web-footer {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
   }
 
   html, body, #root {
@@ -177,6 +185,7 @@ input, textarea {
 
   button, a, [role="button"] {
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   input, textarea, select {
@@ -184,16 +193,42 @@ input, textarea {
   }
 }
 
-@media (min-width: 641px) and (max-width: 900px) {
+/* ─── Tablet web ─── */
+@media (min-width: 641px) and (max-width: 1024px) {
   #pz-listing-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: 14px !important;
+    padding: 0 20px !important;
+  }
+
+  #pz-web-header {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  #pz-web-main {
+    padding: 0 8px;
   }
 }
 
+/* ─── Küçük laptop ─── */
+@media (min-width: 641px) and (max-width: 900px) {
+  #pz-listing-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  }
+}
+
+/* ─── Geniş ekran ─── */
 @media (min-width: 1200px) {
   #pz-listing-grid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
     gap: 18px !important;
+    padding: 0 24px !important;
+  }
+}
+
+/* iOS Safari alt çubuk */
+@supports (-webkit-touch-callout: none) {
+  #pz-web-shell {
+    min-height: -webkit-fill-available;
   }
 }

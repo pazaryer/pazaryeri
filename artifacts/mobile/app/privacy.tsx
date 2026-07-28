@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { WebLegalLayout } from '@/components/web/WebLegalLayout';
+import { SUPPORT_EMAIL } from '@/constants/brand';
 
 function PrivacyContent() {
   const colors = useColors();
@@ -29,6 +30,10 @@ function PrivacyContent() {
       <Text style={[styles.heading, { color: colors.foreground }]}>5. Çerezler</Text>
       <Text style={[styles.body, { color: colors.mutedForeground }]}>
         Uygulama performansını iyileştirmek için anonim kullanım verileri toplanabilir.
+      </Text>
+      <Text style={[styles.heading, { color: colors.foreground }]}>6. İletişim</Text>
+      <Text style={[styles.body, { color: colors.mutedForeground }]}>
+        Gizlilik talepleriniz için {SUPPORT_EMAIL} adresine başvurabilirsiniz.
       </Text>
     </View>
   );

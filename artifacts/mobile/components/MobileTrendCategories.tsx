@@ -1,20 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
+import { BRAND } from '@/constants/brand';
 import { MOBILE_EXPLORE_CATEGORIES } from '@/lib/categories';
-
-const EXTRA = [
-  { label: 'Yeni İlanlar', icon: '✨', category: 'Tümü' },
-  { label: 'Ücretsiz', icon: '🎁', category: 'Tümü' },
-];
-
-const ITEMS = [
-  ...EXTRA,
-  ...MOBILE_EXPLORE_CATEGORIES.slice(0, 8).map((c) => ({
-    label: c.name,
-    icon: '📦',
-    category: c.name,
-  })),
-];
+import { CategoryTile } from '@/components/CategoryTile';
 
 type Props = {
   selected: string;
@@ -24,23 +13,31 @@ type Props = {
 export function MobileTrendCategories({ selected, onSelect }: Props) {
   return (
     <View style={styles.wrap}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Trend Kategoriler</Text>
-      </View>
+      <Text style={styles.title}>Kategoriler</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {ITEMS.map((item) => {
-          const active = selected === item.category && item.category !== 'Tümü';
-          return (
-            <Pressable key={item.label} style={styles.card} onPress={() => onSelect(item.category)}>
-              <View style={[styles.iconBg, active && styles.iconBgActive]}>
-                <Text style={styles.icon}>{item.icon}</Text>
-              </View>
-              <Text style={[styles.label, active && styles.labelActive]} numberOfLines={2}>
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        <Pressable
+          style={[styles.allTile, selected === 'Tümü' && styles.allTileActive]}
+          onPress={() => onSelect('Tümü')}
+        >
+          <Image
+            source={{ uri: 'https://images.unsplash.com/photo-1607083206869-4c6b59bdfa1a?w=200&h=200&fit=crop&q=75' }}
+            style={StyleSheet.absoluteFillObject}
+            contentFit="cover"
+          />
+          <View style={styles.allOverlay} />
+          <Text style={styles.allLabel}>Tümü</Text>
+        </Pressable>
+        {MOBILE_EXPLORE_CATEGORIES.map((cat) => (
+          <CategoryTile
+            key={cat.name}
+            name={cat.name}
+            icon={cat.icon}
+            image={cat.imageThumb}
+            active={selected === cat.name}
+            onPress={() => onSelect(cat.name)}
+            variant="mini"
+          />
+        ))}
       </ScrollView>
     </View>
   );
@@ -48,22 +45,32 @@ export function MobileTrendCategories({ selected, onSelect }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { paddingBottom: 4 },
-  header: { paddingHorizontal: 10, marginBottom: 8 },
-  title: { fontSize: 16, fontWeight: '800', color: '#2C2C2C' },
-  row: { paddingHorizontal: 8, gap: 8 },
-  card: { width: 72, alignItems: 'center', gap: 6 },
-  iconBg: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#EEF5FC',
-    borderWidth: 1,
-    borderColor: '#D6E8F7',
-    alignItems: 'center',
-    justifyContent: 'center',
+  title: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: BRAND.text,
+    paddingHorizontal: 12,
+    marginBottom: 8,
   },
-  iconBgActive: { borderColor: '#FF3B30', backgroundColor: '#FFF0EF' },
-  icon: { fontSize: 24 },
-  label: { fontSize: 10, fontWeight: '600', color: '#717171', textAlign: 'center', lineHeight: 13 },
-  labelActive: { color: '#FF3B30', fontWeight: '800' },
+  row: { paddingHorizontal: 10, gap: 8 },
+  allTile: {
+    width: 62,
+    height: 76,
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 8,
+  },
+  allTileActive: { borderWidth: 1.5, borderColor: BRAND.gold },
+  allOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(61, 26, 120, 0.5)',
+  },
+  allLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#FFF',
+    zIndex: 1,
+  },
 });

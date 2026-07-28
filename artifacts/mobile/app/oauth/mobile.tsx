@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AppIcon } from '@/components/AppIcon';
 import { buildApiUrl } from '@/lib/config';
 import { isMobileOAuthReturnUrl } from '@/lib/google-native-auth';
 
@@ -36,7 +37,7 @@ export default function MobileOAuthBridge() {
     <View style={styles.container}>
       <LinearGradient colors={['#3D1A78', '#1A0A2E']} style={StyleSheet.absoluteFill} />
       <View style={styles.card}>
-        <Image source={require('@/assets/images/icon.png')} style={styles.icon} />
+        <AppIcon size="lg" variant="splash" />
         <Text style={styles.title}>Pazaryeri</Text>
         <ActivityIndicator size="large" color="#3D1A78" style={{ marginVertical: 16 }} />
         <Text style={styles.subtitle}>Google hesabınıza yönlendiriliyorsunuz...</Text>

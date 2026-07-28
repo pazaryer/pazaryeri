@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { WebLegalLayout } from '@/components/web/WebLegalLayout';
+import { SUPPORT_EMAIL } from '@/constants/brand';
 
 function TermsContent() {
   const colors = useColors();
@@ -25,6 +26,10 @@ function TermsContent() {
       <Text style={[styles.heading, { color: colors.foreground }]}>4. Sorumluluk Reddi</Text>
       <Text style={[styles.body, { color: colors.mutedForeground }]}>
         Pazaryeri, kullanıcılar arasındaki işlemlerden sorumlu değildir.
+      </Text>
+      <Text style={[styles.heading, { color: colors.foreground }]}>5. İletişim</Text>
+      <Text style={[styles.body, { color: colors.mutedForeground }]}>
+        Sorularınız için {SUPPORT_EMAIL} adresine yazabilirsiniz.
       </Text>
     </View>
   );

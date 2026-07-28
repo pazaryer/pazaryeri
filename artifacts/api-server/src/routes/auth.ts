@@ -13,6 +13,9 @@ const router: IRouter = Router();
 const SITE_PUBLIC_URL =
   process.env.SITE_PUBLIC_URL ?? "https://pazaryeri0.web.app";
 
+const FIREBASE_AUTH_DOMAIN =
+  process.env.FIREBASE_AUTH_DOMAIN ?? "pazaryeri0.firebaseapp.com";
+
 const API_PUBLIC_URL =
   process.env.API_PUBLIC_URL ?? "https://pazaryerim.onrender.com";
 
@@ -35,6 +38,10 @@ function isAllowedReturnUrl(url: string): boolean {
   if (url.startsWith("pazaryeri://")) return true;
   if (url.startsWith("exp://")) return true;
   if (url.startsWith("https://auth.expo.io/")) return true;
+  const site = SITE_PUBLIC_URL.replace(/\/$/, "");
+  if (url.startsWith(`${site}/oauth/app-return`)) return true;
+  if (url.startsWith(`${site}/oauth/mobile`)) return true;
+  if (url.startsWith(`https://${FIREBASE_AUTH_DOMAIN}/oauth/app-return`)) return true;
   return false;
 }
 

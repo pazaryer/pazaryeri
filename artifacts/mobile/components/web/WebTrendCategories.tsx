@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconBgActive: {
-    borderColor: WEB_THEME.accent,
+    borderColor: WEB_THEME.brand,
     backgroundColor: '#FFF0EF',
   },
   icon: { fontSize: 26 },
@@ -106,5 +106,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 14,
   },
-  labelActive: { color: WEB_THEME.accent, fontWeight: '800' },
+  labelActive: { color: WEB_THEME.brand, fontWeight: '800' },
 });

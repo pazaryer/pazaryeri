@@ -274,15 +274,15 @@ export async function pgListListings(params: {
   const imageMap = await pgGetListingImages(listingIds);
   const favSet = await pgGetFavoriteSet(params.userId, listingIds);
 
-  let userLat: number | null = null;
-  let userLon: number | null = null;
-  if (params.userId) {
+  let userLat: number | null = params.lat ?? null;
+  let userLon: number | null = params.lon ?? null;
+  if ((userLat == null || userLon == null) && params.userId) {
     const me = await db.query<{ latitude: number | null; longitude: number | null }>(
       "SELECT latitude, longitude FROM users WHERE id = $1",
       [params.userId],
     );
-    userLat = me.rows[0]?.latitude ?? null;
-    userLon = me.rows[0]?.longitude ?? null;
+    userLat = userLat ?? me.rows[0]?.latitude ?? null;
+    userLon = userLon ?? me.rows[0]?.longitude ?? null;
   }
 
   const items = await Promise.all(

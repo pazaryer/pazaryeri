@@ -11,12 +11,12 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
+import { WebLocationProvider, useWebLocation } from '@/contexts/WebLocationContext';
+import { WebLocationPicker } from './WebLocationPicker';
 import { WEB_CATEGORIES } from '@/lib/categories';
 import { WEB_THEME } from '@/lib/web-theme';
-import { flatStyle } from '@/lib/flat-style';
 
 const NAV_CATEGORIES = WEB_CATEGORIES.filter((c) => c.label !== 'Tüm İlanlar');
-const MOBILE_BREAKPOINT = 640;
 
 interface WebShellProps {
   children: React.ReactNode;
@@ -26,7 +26,16 @@ interface WebShellProps {
   hideFooter?: boolean;
 }
 
-export function WebShell({
+export function WebShell(props: WebShellProps) {
+  return (
+    <WebLocationProvider>
+      <WebShellInner {...props} />
+      <WebLocationPicker />
+    </WebLocationProvider>
+  );
+}
+
+function WebShellInner({
   children,
   searchQuery = '',
   onSearchChange,
@@ -36,27 +45,30 @@ export function WebShell({
   const { width } = useWindowDimensions();
   const router = useRouter();
   const { user } = useAuth();
-  const mobile = width < MOBILE_BREAKPOINT;
+  const { label, openPicker } = useWebLocation();
+  const mobile = width < WEB_THEME.mobileBreakpoint;
+  const tablet = width >= WEB_THEME.mobileBreakpoint && width < WEB_THEME.tabletBreakpoint;
 
   const sellPath = user ? '/ilan-ver' : '/kayit';
 
   return (
     <View nativeID="pz-web-shell" style={[styles.root, mobile && styles.rootMobile]}>
       <View nativeID="pz-web-header" style={styles.header}>
-        {/* Üst satır: logo + arama + aksiyonlar */}
         <View style={[styles.topBar, mobile && styles.topBarMobile]}>
           <Link href="/" asChild>
             <Pressable style={styles.brand}>
-              <Logo size={mobile ? 30 : 34} />
+              <View style={[styles.brandMark, mobile && styles.brandMarkMobile]}>
+                <Logo size={mobile ? 20 : 22} color={WEB_THEME.brand} />
+              </View>
               {!mobile && <Text style={styles.brandText}>Pazaryeri</Text>}
             </Pressable>
           </Link>
 
           {mobile ? (
-            <Pressable style={styles.locationPillMobile} onPress={() => router.push('/kesfet')}>
+            <Pressable style={styles.locationPillMobile} onPress={openPicker}>
               <Text style={styles.locationIcon}>📍</Text>
               <Text style={styles.locationTextMobile} numberOfLines={1}>
-                Türkiye
+                {label}
               </Text>
             </Pressable>
           ) : (
@@ -76,9 +88,10 @@ export function WebShell({
 
           <View style={styles.actions}>
             {!mobile && (
-              <Pressable style={styles.locationPill} onPress={() => router.push('/kesfet')}>
+              <Pressable style={styles.locationPill} onPress={openPicker}>
                 <Text style={styles.locationIcon}>📍</Text>
-                <Text style={styles.locationText}>Türkiye</Text>
+                <Text style={styles.locationText}>{label}</Text>
+                <Text style={styles.locationChevron}>▼</Text>
               </Pressable>
             )}
 
@@ -99,14 +112,13 @@ export function WebShell({
               </Link>
             )}
 
-            <Pressable style={styles.sellBtn} onPress={() => router.push(sellPath)}>
-              <Text style={styles.sellIcon}>📷</Text>
-              <Text style={styles.sellText}>Sat</Text>
+            <Pressable style={styles.ctaBtn} onPress={() => router.push(sellPath)}>
+              <Text style={styles.ctaIcon}>＋</Text>
+              <Text style={styles.ctaText}>İlan Ver</Text>
             </Pressable>
           </View>
         </View>
 
-        {/* Mobil arama */}
         {mobile && (
           <View style={styles.searchWrapMobile}>
             <Text style={styles.searchIcon}>🔍</Text>
@@ -122,7 +134,6 @@ export function WebShell({
           </View>
         )}
 
-        {/* Kategori navigasyonu — letgo tarzı metin linkler */}
         <ScrollView
           nativeID="pz-header-nav"
           horizontal
@@ -136,7 +147,7 @@ export function WebShell({
               <Text style={styles.navAllText}>Tüm Kategoriler</Text>
             </Pressable>
           </Link>
-          {NAV_CATEGORIES.slice(0, mobile ? 8 : 14).map((cat) => (
+          {NAV_CATEGORIES.slice(0, mobile ? 6 : tablet ? 10 : 14).map((cat) => (
             <Link key={cat.label} href={cat.href as any} asChild>
               <Pressable style={styles.navLink}>
                 <Text style={styles.navLinkText}>{cat.label}</Text>
@@ -151,40 +162,61 @@ export function WebShell({
       </View>
 
       {!hideFooter && (
-        <View style={[styles.footer, mobile && styles.footerMobile]}>
+        <View nativeID="pz-web-footer" style={[styles.footer, mobile && styles.footerMobile]}>
           <View style={[styles.footerInner, mobile && styles.footerInnerMobile]}>
-            <View style={styles.footerBrand}>
-              <Logo size={24} />
-              <Text style={styles.footerTitle}>Pazaryeri</Text>
-              <Text style={styles.footerTagline}>Türkiye'nin ikinci el pazarı</Text>
+            <View style={styles.footerBrandRow}>
+              <View style={styles.footerMark}>
+                <Logo size={16} color={WEB_THEME.brand} />
+              </View>
+              <Text style={styles.footerBrandName}>Pazaryeri</Text>
+              {!mobile && (
+                <>
+                  <Text style={styles.footerSep}>·</Text>
+                  <Text style={styles.footerTagline}>Türkiye'nin ikinci el pazarı</Text>
+                </>
+              )}
             </View>
+
             <View style={[styles.footerLinks, mobile && styles.footerLinksMobile]}>
               <Link href="/kesfet" asChild>
                 <Pressable><Text style={styles.footerLink}>İlanlar</Text></Pressable>
               </Link>
+              <Text style={styles.footerSep}>·</Text>
+              <Link href="/kesfet" asChild>
+                <Pressable><Text style={styles.footerLink}>Keşfet</Text></Pressable>
+              </Link>
+              <Text style={styles.footerSep}>·</Text>
               {user ? (
-                <>
-                  <Pressable onPress={() => router.push('/hesabim')}>
-                    <Text style={styles.footerLink}>Hesabım</Text>
-                  </Pressable>
-                  <Pressable onPress={() => router.push('/ilan-ver')}>
-                    <Text style={styles.footerLink}>İlan Ver</Text>
-                  </Pressable>
-                </>
+                <Pressable onPress={() => router.push('/ilan-ver')}>
+                  <Text style={styles.footerLink}>İlan Ver</Text>
+                </Pressable>
+              ) : (
+                <Link href="/kayit" asChild>
+                  <Pressable><Text style={styles.footerLink}>İlan Ver</Text></Pressable>
+                </Link>
+              )}
+              <Text style={styles.footerSep}>·</Text>
+              {user ? (
+                <Pressable onPress={() => router.push('/hesabim')}>
+                  <Text style={styles.footerLink}>Hesabım</Text>
+                </Pressable>
               ) : (
                 <Link href="/giris" asChild>
                   <Pressable><Text style={styles.footerLink}>Giriş</Text></Pressable>
                 </Link>
               )}
-              <Link href="/terms" asChild>
-                <Pressable><Text style={styles.footerLink}>Şartlar</Text></Pressable>
-              </Link>
+              <Text style={styles.footerSep}>·</Text>
               <Link href="/privacy" asChild>
                 <Pressable><Text style={styles.footerLink}>Gizlilik</Text></Pressable>
               </Link>
             </View>
+
+            {mobile && (
+              <Text style={styles.footerTaglineMobile}>Türkiye'nin ikinci el pazarı</Text>
+            )}
+
             <Text style={styles.footerCopy}>
-              © {new Date().getFullYear()} Pazaryeri — İkinci el al & sat
+              © {new Date().getFullYear()} Pazaryeri
             </Text>
           </View>
         </View>
@@ -214,35 +246,46 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   topBarMobile: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 8, gap: 8 },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
-  brandText: { fontSize: 24, fontWeight: '900', color: WEB_THEME.brand, letterSpacing: -0.5 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 0 },
+  brandMark: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: WEB_THEME.brandLight,
+    borderWidth: 1,
+    borderColor: WEB_THEME.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandMarkMobile: { width: 32, height: 32, borderRadius: 8 },
+  brandText: { fontSize: 21, fontWeight: '800', color: WEB_THEME.brand, letterSpacing: -0.3 },
   searchWrap: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: WEB_THEME.surface,
-    borderWidth: 1.5,
+    backgroundColor: WEB_THEME.brandLight,
+    borderWidth: 1,
     borderColor: WEB_THEME.border,
     borderRadius: WEB_THEME.radiusPill,
     paddingHorizontal: 16,
-    height: 46,
+    height: 44,
     gap: 8,
     minWidth: 0,
   },
   searchWrapMobile: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: WEB_THEME.surface,
-    borderWidth: 1.5,
+    backgroundColor: WEB_THEME.brandLight,
+    borderWidth: 1,
     borderColor: WEB_THEME.border,
     borderRadius: WEB_THEME.radiusPill,
     paddingHorizontal: 14,
-    height: 44,
+    height: 42,
     gap: 8,
     marginHorizontal: 12,
     marginBottom: 8,
   },
-  searchIcon: { fontSize: 16, flexShrink: 0 },
+  searchIcon: { fontSize: 15, flexShrink: 0 },
   searchInput: { flex: 1, fontSize: 14, color: WEB_THEME.text, minWidth: 0 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   locationPill: {
@@ -268,81 +311,109 @@ const styles = StyleSheet.create({
     borderColor: WEB_THEME.border,
     minWidth: 0,
   },
-  locationIcon: { fontSize: 13 },
+  locationIcon: { fontSize: 12 },
   locationText: { fontSize: 13, fontWeight: '600', color: WEB_THEME.text },
   locationTextMobile: { fontSize: 12, fontWeight: '600', color: WEB_THEME.text, flex: 1 },
-  loginBtn: { paddingHorizontal: 12, paddingVertical: 8 },
-  loginText: { fontSize: 14, fontWeight: '700', color: WEB_THEME.text },
+  locationChevron: { fontSize: 8, color: WEB_THEME.textMuted, marginLeft: 2 },
+  loginBtn: { paddingHorizontal: 10, paddingVertical: 8 },
+  loginText: { fontSize: 14, fontWeight: '700', color: WEB_THEME.brand },
   iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: WEB_THEME.borderLight,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: WEB_THEME.brandLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconBtnText: { fontSize: 16 },
-  sellBtn: {
+  iconBtnText: { fontSize: 15 },
+  ctaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: WEB_THEME.accent,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    gap: 4,
+    backgroundColor: WEB_THEME.cta,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: WEB_THEME.radiusPill,
+    borderWidth: 1,
+    borderColor: WEB_THEME.brandDark,
   },
-  sellText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14 },
-  sellIcon: { fontSize: 14 },
+  ctaText: { color: WEB_THEME.ctaText, fontWeight: '700', fontSize: 13 },
+  ctaIcon: { color: WEB_THEME.gold, fontWeight: '700', fontSize: 15, lineHeight: 16 },
   navScroll: { width: '100%', borderTopWidth: 1, borderTopColor: WEB_THEME.borderLight },
   navRow: {
     maxWidth: WEB_THEME.maxWidth,
     alignSelf: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 4,
+    paddingVertical: 9,
+    gap: 2,
     flexDirection: 'row',
     alignItems: 'center',
   },
   navAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: WEB_THEME.border,
     marginRight: 4,
     backgroundColor: WEB_THEME.surface,
   },
-  navAllIcon: { fontSize: 12, color: WEB_THEME.text },
-  navAllText: { fontSize: 13, fontWeight: '700', color: WEB_THEME.text },
-  navLink: { paddingHorizontal: 10, paddingVertical: 7 },
-  navLinkText: { fontSize: 13, fontWeight: '500', color: WEB_THEME.textMuted },
+  navAllIcon: { fontSize: 11, color: WEB_THEME.text },
+  navAllText: { fontSize: 12, fontWeight: '700', color: WEB_THEME.text },
+  navLink: { paddingHorizontal: 9, paddingVertical: 6 },
+  navLinkText: { fontSize: 12, fontWeight: '500', color: WEB_THEME.textMuted },
   main: { flex: 1, width: '100%', backgroundColor: WEB_THEME.bg },
   mainMobile: { flexGrow: 0, flexShrink: 0 },
   footer: {
     backgroundColor: WEB_THEME.surface,
     borderTopWidth: 1,
-    borderTopColor: WEB_THEME.border,
-    paddingVertical: 28,
+    borderTopColor: WEB_THEME.borderLight,
+    paddingVertical: 22,
     width: '100%',
     marginTop: 'auto',
   },
-  footerMobile: { paddingVertical: 24 },
+  footerMobile: { paddingVertical: 18 },
   footerInner: {
     maxWidth: WEB_THEME.maxWidth,
     width: '100%',
     alignSelf: 'center',
-    paddingHorizontal: 20,
-    gap: 20,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    gap: 10,
   },
-  footerInnerMobile: { alignItems: 'center' },
-  footerBrand: { gap: 4 },
-  footerTitle: { fontSize: 18, fontWeight: '900', color: WEB_THEME.brand },
-  footerTagline: { fontSize: 13, color: WEB_THEME.textMuted },
-  footerLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 20 },
-  footerLinksMobile: { justifyContent: 'center', gap: 16 },
-  footerLink: { fontSize: 13, fontWeight: '600', color: WEB_THEME.text },
-  footerCopy: { fontSize: 12, color: WEB_THEME.textLight },
+  footerInnerMobile: { paddingHorizontal: 16, gap: 8 },
+  footerBrandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  footerMark: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    backgroundColor: WEB_THEME.brandLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: WEB_THEME.border,
+  },
+  footerBrandName: { fontSize: 14, fontWeight: '700', color: WEB_THEME.brand },
+  footerTagline: { fontSize: 12, color: WEB_THEME.textLight, fontWeight: '400' },
+  footerTaglineMobile: { fontSize: 11, color: WEB_THEME.textLight, textAlign: 'center' },
+  footerLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  footerLinksMobile: { gap: 4 },
+  footerLink: { fontSize: 12, fontWeight: '500', color: WEB_THEME.textMuted },
+  footerSep: { fontSize: 12, color: WEB_THEME.border, fontWeight: '300' },
+  footerCopy: { fontSize: 10, color: WEB_THEME.textLight, letterSpacing: 0.2 },
 });

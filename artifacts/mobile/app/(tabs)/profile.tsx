@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice, useMyListings, useUpdateProfile, type ListingSummary } from '@/lib/hooks';
 import { pickImages } from '@/lib/storage';
 import { formatPhoneDisplay } from '@/lib/contact';
+import { BRAND } from '@/constants/brand';
 
 const { width } = Dimensions.get('window');
 const LISTING_CARD_WIDTH = width * 0.36;
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
   iconBtn: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   profileCenter: { alignItems: 'center', gap: 6 },
   avatarBtn: { position: 'relative' },
-  avatar: { width: 88, height: 88, borderRadius: 44, borderWidth: 3, borderColor: '#FF3B30' },
+  avatar: { width: 88, height: 88, borderRadius: 44, borderWidth: 3, borderColor: BRAND.primary },
   cameraBadge: {
     position: 'absolute',
     bottom: 0,
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#FF3B30',
+    backgroundColor: BRAND.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,

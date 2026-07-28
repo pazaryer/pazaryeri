@@ -185,12 +185,12 @@ export async function dbListListings(params: {
   const imageMap = await getListingImages(listingIds);
   const favSet = await getFavoriteSet(params.userId, listingIds);
 
-  let userLat: number | null = null;
-  let userLon: number | null = null;
-  if (params.userId) {
+  let userLat: number | null = params.lat ?? null;
+  let userLon: number | null = params.lon ?? null;
+  if ((userLat == null || userLon == null) && params.userId) {
     const { data: me } = await sb.from("users").select("latitude, longitude").eq("id", params.userId).single();
-    userLat = me?.latitude ?? null;
-    userLon = me?.longitude ?? null;
+    userLat = userLat ?? me?.latitude ?? null;
+    userLon = userLon ?? me?.longitude ?? null;
   }
 
   const items = await Promise.all(

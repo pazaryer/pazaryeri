@@ -6,13 +6,13 @@ import {
   Pressable,
   ActivityIndicator,
   Platform,
-  Image,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { WebShell } from '@/components/web/WebShell';
 import { WebGoogleLoginButton } from '@/components/web/WebGoogleLoginButton';
+import { AppIcon } from '@/components/AppIcon';
 
 export default function KayitScreen() {
   const router = useRouter();
@@ -68,7 +68,7 @@ export default function KayitScreen() {
       <View style={styles.page}>
         <View style={styles.card}>
           <LinearGradient colors={['#3D1A78', '#1A0A2E']} style={styles.cardHeader}>
-            <Image source={require('@/assets/images/icon.png')} style={styles.icon} />
+            <AppIcon size="md" />
             <Text style={styles.cardTitle}>Kayıt Ol</Text>
             <Text style={styles.cardSubtitle}>Ücretsiz hesap oluşturun</Text>
           </LinearGradient>
@@ -127,8 +127,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8E0F4',
   },
-  cardHeader: { padding: 24, alignItems: 'center', gap: 8 },
-  icon: { width: 56, height: 56, borderRadius: 12 },
+  cardHeader: { padding: 24, alignItems: 'center', gap: 10 },
   cardTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
   cardSubtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 13 },
   cardBody: { padding: 22, gap: 12 },

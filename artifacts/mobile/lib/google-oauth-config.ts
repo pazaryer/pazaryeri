@@ -37,5 +37,6 @@ export const GOOGLE_OAUTH_URIS = {
     FIREBASE_WEB_APP_ORIGIN,
     `https://${FIREBASE_AUTH_DOMAIN}`,
     `${FIREBASE_WEB_APP_ORIGIN}/oauth/mobile`,
+    `${FIREBASE_WEB_APP_ORIGIN}/oauth/app-return`,
   ],
 } as const;

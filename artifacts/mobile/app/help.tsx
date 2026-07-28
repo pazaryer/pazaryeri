@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenLayout } from '@/components/ProfileScreenLayout';
 import { useColors } from '@/hooks/useColors';
+import { SUPPORT_EMAIL } from '@/constants/brand';
 
 const FAQ = [
   {
@@ -20,7 +21,7 @@ const FAQ = [
   },
   {
     q: 'Hesabımı nasıl silerim?',
-    a: 'destek@pazaryeri.app adresine e-posta göndererek hesap silme talebinde bulunabilirsiniz.',
+    a: `${SUPPORT_EMAIL} adresine e-posta göndererek hesap silme talebinde bulunabilirsiniz.`,
   },
 ];
 
@@ -29,7 +30,7 @@ export default function HelpScreen() {
   const router = useRouter();
 
   const openEmail = () => {
-    Linking.openURL('mailto:destek@pazaryeri.app?subject=Pazaryeri%20Destek').catch(() => null);
+    Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Pazaryeri%20Destek`).catch(() => null);
   };
 
   return (
@@ -38,7 +39,7 @@ export default function HelpScreen() {
         <Ionicons name="mail-outline" size={28} color={colors.primary} />
         <View style={styles.contactText}>
           <Text style={[styles.contactTitle, { color: colors.foreground }]}>Bize ulaşın</Text>
-          <Text style={[styles.contactSub, { color: colors.mutedForeground }]}>destek@pazaryeri.app</Text>
+          <Text style={[styles.contactSub, { color: colors.mutedForeground }]}>{SUPPORT_EMAIL}</Text>
         </View>
         <Pressable style={[styles.contactBtn, { backgroundColor: colors.primary }]} onPress={openEmail}>
           <Text style={styles.contactBtnText}>E-posta Gönder</Text>

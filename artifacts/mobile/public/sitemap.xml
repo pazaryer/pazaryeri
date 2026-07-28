@@ -36,10 +36,4 @@
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
-  <url>
-    <loc>https://pazaryeri0.web.app/listing/7acb4f33-398b-4b9d-bdff-1601335f964f</loc>
-    <lastmod>2026-07-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
 </urlset>
