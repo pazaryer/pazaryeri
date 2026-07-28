@@ -156,7 +156,7 @@ export function WebShell({
               <Logo size={22} />
               <Text style={styles.footerTitle}>Pazaryeri</Text>
             </View>
-            <View style={[styles.footerLinks, mobileWeb && styles.footerLinksMobile]}>
+            <View style={[styles.footerLinks, mobile && styles.footerLinksMobile]}>
               <Link href="/kesfet" asChild>
                 <Pressable><Text style={styles.footerLink}>İlanlar</Text></Pressable>
               </Link>
