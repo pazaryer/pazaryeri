@@ -193,7 +193,7 @@ export function WebShell({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent', minHeight: '100%', width: '100%' },
-  rootMobileWeb: { flex: 0, minHeight: '100vh' as unknown as number },
+  rootMobileWeb: { width: '100%' },
   headerSticky: { width: '100%', zIndex: 100 },
   header: {
     backgroundColor: '#FFFFFF',
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   navChipText: { color: '#3D1A78', fontWeight: '600', fontSize: 11 },
   main: { flex: 1, width: '100%', alignSelf: 'stretch', backgroundColor: 'transparent' },
-  mainMobileWeb: { flex: 0, width: '100%' },
+  mainMobileWeb: { width: '100%' },
   footer: {
     backgroundColor: '#1A0A2E',
     paddingVertical: 16,
@@ -333,7 +333,6 @@ const styles = StyleSheet.create({
   footerInnerMobile: {
     flexDirection: 'column',
     alignItems: 'center',
-    textAlign: 'center',
     gap: 14,
   },
   footerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },

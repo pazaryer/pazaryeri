@@ -199,15 +199,13 @@ export function WebListingDetailPage() {
 
   return (
     <WebShell hideFooter>
-      {mobileWeb ? (
-        <View style={styles.page}>
-          <View style={[styles.pageContent, styles.pageContentMobile]}>{content}</View>
-        </View>
-      ) : (
-        <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
-          {content}
-        </ScrollView>
-      )}
+      <ScrollView
+        style={styles.page}
+        contentContainerStyle={[styles.pageContent, mobileWeb && styles.pageContentMobile]}
+        showsVerticalScrollIndicator={false}
+      >
+        {content}
+      </ScrollView>
     </WebShell>
   );
 }

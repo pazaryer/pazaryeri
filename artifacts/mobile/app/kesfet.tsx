@@ -44,9 +44,9 @@ export default function KesfetScreen() {
     }
   };
 
-  const PageBody = mobileWeb ? View : ScrollView;
+  const PageBody = ScrollView;
   const bodyProps = mobileWeb
-    ? { style: styles.page }
+    ? { style: styles.scroll, contentContainerStyle: styles.scrollContentMobile, showsVerticalScrollIndicator: false }
     : { style: styles.scroll, contentContainerStyle: styles.scrollContent };
 
   return (
@@ -81,6 +81,6 @@ export default function KesfetScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, width: '100%' },
   scrollContent: { paddingBottom: 24 },
-  page: { width: '100%', paddingBottom: 24 },
+  scrollContentMobile: { paddingBottom: 32 },
   filterWrap: { paddingTop: 8 },
 });

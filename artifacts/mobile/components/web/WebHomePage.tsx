@@ -40,9 +40,9 @@ export function WebHomePage() {
     }
   };
 
-  const PageBody = mobileWeb ? View : ScrollView;
+  const PageBody = ScrollView;
   const bodyProps = mobileWeb
-    ? { style: styles.page }
+    ? { style: styles.scroll, contentContainerStyle: styles.scrollContentMobile, showsVerticalScrollIndicator: false }
     : { style: styles.scroll, contentContainerStyle: styles.scrollContent };
 
   return (
@@ -74,7 +74,7 @@ export function WebHomePage() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, width: '100%' },
   scrollContent: { paddingBottom: 24 },
-  page: { width: '100%', paddingBottom: 24 },
+  scrollContentMobile: { paddingBottom: 32, flexGrow: 1 },
   filterSection: { paddingVertical: 8, gap: 4, marginHorizontal: 16, marginTop: 8 },
   filterSectionMobile: { marginHorizontal: 0, marginTop: 12, paddingVertical: 12 },
   filterLabel: { fontSize: 13, fontWeight: '700', color: '#1A0A2E', paddingHorizontal: 14, marginBottom: 4 },
