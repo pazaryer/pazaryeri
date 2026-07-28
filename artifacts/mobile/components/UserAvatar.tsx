@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Image } from 'expo-image';
 
 interface UserAvatarProps {
@@ -10,14 +10,35 @@ interface UserAvatarProps {
 }
 
 export function UserAvatar({ name, avatar, size = 40, online }: UserAvatarProps) {
-  const uri =
-    avatar?.startsWith('http')
-      ? avatar
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3D1A78&color=fff&size=${size * 2}`;
+  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3D1A78&color=fff&size=${size * 2}`;
+  const uri = avatar?.startsWith('http') ? avatar : fallback;
 
   return (
     <View style={{ width: size, height: size, position: 'relative' }}>
-      <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} contentFit="cover" />
+      {Platform.OS === 'web' && typeof document !== 'undefined' ? (
+        // eslint-disable-next-line jsx-a11y/alt-text
+        <img
+          src={uri}
+          alt={name}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = fallback;
+          }}
+          style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            objectFit: 'cover',
+            display: 'block',
+            backgroundColor: '#EDE8F5',
+          }}
+        />
+      ) : (
+        <Image
+          source={{ uri }}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+          contentFit="cover"
+        />
+      )}
       {online && (
         <View
           style={[

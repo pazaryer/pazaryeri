@@ -1,39 +1,32 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Link } from 'expo-router';
 import { ListingSummary, formatPrice } from '@/lib/hooks';
-
-const PLACEHOLDER =
-  'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop';
+import { WebImage, resolveImageUri } from '@/components/WebImage';
 
 interface WebListingCardProps {
   item: ListingSummary;
 }
 
-function ListingImage({ uri, alt }: { uri: string; alt: string }) {
-  const src = uri?.startsWith('http') ? uri : PLACEHOLDER;
-  if (typeof document !== 'undefined') {
-    return (
-      // eslint-disable-next-line jsx-a11y/alt-text
-      <img
-        src={src}
-        alt={alt}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = PLACEHOLDER;
-        }}
-      />
-    );
-  }
-  return null;
-}
-
 export function WebListingCard({ item }: WebListingCardProps) {
+  const [failed, setFailed] = useState(false);
+  const src = failed ? resolveImageUri(null) : resolveImageUri(item.image);
+
   return (
     <Link href={`/listing/${item.id}`} asChild>
       <Pressable style={styles.card}>
         <View style={styles.imageWrap}>
-          <ListingImage uri={item.image} alt={item.title} />
+          {Platform.OS === 'web' && typeof document !== 'undefined' ? (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <img
+              src={src}
+              alt={item.title}
+              onError={() => setFailed(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <WebImage uri={item.image} alt={item.title} style={styles.image} />
+          )}
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{item.category}</Text>
           </View>
@@ -45,7 +38,9 @@ export function WebListingCard({ item }: WebListingCardProps) {
         </View>
         <View style={styles.body}>
           <Text style={styles.price}>{formatPrice(item.price)}</Text>
-          <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+          <Text style={styles.title} numberOfLines={2}>
+            {item.title}
+          </Text>
           <View style={styles.meta}>
             <Text style={styles.metaIcon}>📍</Text>
             <Text style={styles.metaText} numberOfLines={1}>
@@ -68,6 +63,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   imageWrap: { aspectRatio: 4 / 3, backgroundColor: '#EDE8F5', position: 'relative', overflow: 'hidden' },
+  image: { width: '100%', height: '100%' },
   badge: {
     position: 'absolute',
     top: 6,

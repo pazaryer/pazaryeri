@@ -21,6 +21,7 @@ export function ContactActions({
   compact,
 }: ContactActionsProps) {
   const colors = useColors();
+  const useEmoji = Platform.OS === 'web';
 
   const notify = (title: string, msg: string) => {
     if (Platform.OS === 'web') showAlert(title, msg);
@@ -52,14 +53,19 @@ export function ContactActions({
         style={[styles.btn, styles.callBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
         onPress={handleCall}
       >
-        <Ionicons name="call" size={18} color="#22C55E" />
+        {useEmoji ? (
+          <Text style={styles.btnEmoji}>📞</Text>
+        ) : (
+          <Ionicons name="call" size={18} color="#22C55E" />
+        )}
         <Text style={[styles.btnText, { color: colors.foreground }]}>Ara</Text>
       </Pressable>
-      <Pressable
-        style={[styles.btn, styles.waBtn, { borderColor: '#25D366' }]}
-        onPress={handleWhatsApp}
-      >
-        <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+      <Pressable style={[styles.btn, styles.waBtn, { borderColor: '#25D366' }]} onPress={handleWhatsApp}>
+        {useEmoji ? (
+          <Text style={styles.btnEmoji}>💬</Text>
+        ) : (
+          <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+        )}
         <Text style={[styles.btnText, { color: '#25D366' }]}>WhatsApp</Text>
       </Pressable>
       <Pressable
@@ -67,7 +73,11 @@ export function ContactActions({
         onPress={onMessage}
         disabled={messageLoading}
       >
-        <Ionicons name="chatbubble" size={18} color="#FFF" />
+        {useEmoji ? (
+          <Text style={styles.btnEmoji}>✉️</Text>
+        ) : (
+          <Ionicons name="chatbubble" size={18} color="#FFF" />
+        )}
         <Text style={[styles.btnText, { color: '#FFF' }]}>Mesaj</Text>
       </Pressable>
     </View>
@@ -75,10 +85,11 @@ export function ContactActions({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 8 },
+  row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   rowCompact: { gap: 6 },
   btn: {
     flex: 1,
+    minWidth: 90,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -90,5 +101,6 @@ const styles = StyleSheet.create({
   callBtn: {},
   waBtn: { backgroundColor: 'rgba(37, 211, 102, 0.08)' },
   msgBtn: { borderWidth: 0 },
+  btnEmoji: { fontSize: 16 },
   btnText: { fontSize: 13, fontWeight: '700' },
 });

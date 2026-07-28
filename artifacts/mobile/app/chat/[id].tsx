@@ -35,7 +35,6 @@ function ChatContent() {
 
   const messages = data?.items ?? [];
   const conversation = data?.conversation;
-  const headerHeight = insets.top + 56;
 
   useEffect(() => {
     heartbeat.mutate();
@@ -44,7 +43,7 @@ function ChatContent() {
   }, [conversationId]);
 
   const scrollToEnd = useCallback(() => {
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   }, []);
 
   useEffect(() => {
@@ -62,6 +61,84 @@ function ChatContent() {
       setText(content);
     }
   };
+
+  const inputBar = (
+    <View
+      style={[
+        styles.inputBar,
+        {
+          paddingBottom: Math.max(insets.bottom, 8),
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
+        },
+      ]}
+    >
+      <TextInput
+        style={[
+          styles.input,
+          { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border },
+        ]}
+        placeholder="Mesajınızı yazın..."
+        placeholderTextColor={colors.mutedForeground}
+        value={text}
+        onChangeText={setText}
+        multiline
+        maxLength={2000}
+        onFocus={scrollToEnd}
+      />
+      <Pressable
+        style={[styles.sendButton, { backgroundColor: colors.primary }, !text.trim() && { opacity: 0.5 }]}
+        onPress={handleSend}
+        disabled={!text.trim() || sendMessage.isPending}
+      >
+        {sendMessage.isPending ? (
+          <ActivityIndicator color="#FFF" size="small" />
+        ) : (
+          <Ionicons name="send" size={20} color="#FFF" />
+        )}
+      </Pressable>
+    </View>
+  );
+
+  const renderMessage = ({ item }: { item: (typeof messages)[number] }) => {
+    const isMine = item.senderId === profile?.id;
+    const otherAvatar = conversation?.otherUser;
+    return (
+      <View style={[styles.msgRow, isMine ? styles.msgRowMine : styles.msgRowTheir]}>
+        {!isMine && otherAvatar && (
+          <UserAvatar name={otherAvatar.name} avatar={otherAvatar.avatar} size={28} />
+        )}
+        <View
+          style={[
+            styles.bubble,
+            isMine ? styles.myBubble : styles.theirBubble,
+            { backgroundColor: isMine ? colors.primary : colors.card },
+          ]}
+        >
+          <Text style={{ color: isMine ? '#FFF' : colors.foreground, fontSize: 15 }}>{item.content}</Text>
+          <Text style={[styles.time, { color: isMine ? 'rgba(255,255,255,0.7)' : colors.mutedForeground }]}>
+            {new Date(item.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+            {isMine && (item.isRead ? ' · Okundu' : item.deliveredAt ? ' · İletildi' : ' · Gönderildi')}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  const messageList = (
+    <FlatList
+      ref={flatListRef}
+      style={styles.flex}
+      data={messages}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.listContent}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+      onContentSizeChange={scrollToEnd}
+      renderItem={renderMessage}
+    />
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -86,7 +163,7 @@ function ChatContent() {
             online={conversation.otherUser.isOnline}
           />
         )}
-        <View style={{ flex: 1, alignItems: 'center' }}>
+        <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.foreground }]} numberOfLines={1}>
             {conversation?.otherUser.name ?? 'Sohbet'}
           </Text>
@@ -97,103 +174,20 @@ function ChatContent() {
             {conversation?.listingTitle ? ` · ${conversation.listingTitle}` : ''}
           </Text>
         </View>
-        <View style={{ width: 28 }} />
+        <View style={styles.headerSpacer} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior="padding"
-        keyboardVerticalOffset={headerHeight}
-      >
-        {isLoading ? (
-          <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            style={styles.flex}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16, paddingBottom: 12, flexGrow: 1 }}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            onContentSizeChange={scrollToEnd}
-            renderItem={({ item }) => {
-              const isMine = item.senderId === profile?.id;
-              const otherAvatar = conversation?.otherUser;
-              return (
-                <View style={[styles.msgRow, isMine ? styles.msgRowMine : styles.msgRowTheir]}>
-                  {!isMine && otherAvatar && (
-                    <UserAvatar name={otherAvatar.name} avatar={otherAvatar.avatar} size={28} />
-                  )}
-                  <View
-                    style={[
-                      styles.bubble,
-                      isMine ? styles.myBubble : styles.theirBubble,
-                      { backgroundColor: isMine ? colors.primary : colors.card },
-                    ]}
-                  >
-                  <Text style={{ color: isMine ? '#FFF' : colors.foreground, fontSize: 15 }}>
-                    {item.content}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.time,
-                      { color: isMine ? 'rgba(255,255,255,0.7)' : colors.mutedForeground },
-                    ]}
-                  >
-                    {new Date(item.createdAt).toLocaleTimeString('tr-TR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                    {isMine && (
-                      item.isRead ? ' · Okundu' : item.deliveredAt ? ' · İletildi' : ' · Gönderildi'
-                    )}
-                  </Text>
-                </View>
-                </View>
-              );
-            }}
-          />
-        )}
+      {isLoading ? (
+        <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
+      ) : Platform.OS === 'ios' ? (
+        <KeyboardAvoidingView style={styles.flex} behavior="padding" keyboardVerticalOffset={0}>
+          {messageList}
+        </KeyboardAvoidingView>
+      ) : (
+        messageList
+      )}
 
-        <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
-          <View
-            style={[
-              styles.inputBar,
-              {
-                paddingBottom: Math.max(insets.bottom, 8),
-                backgroundColor: colors.card,
-                borderTopColor: colors.border,
-              },
-            ]}
-          >
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border },
-              ]}
-              placeholder="Mesajınızı yazın..."
-              placeholderTextColor={colors.mutedForeground}
-              value={text}
-              onChangeText={setText}
-              multiline
-              maxLength={2000}
-              onFocus={scrollToEnd}
-            />
-            <Pressable
-              style={[styles.sendButton, { backgroundColor: colors.primary }, !text.trim() && { opacity: 0.5 }]}
-              onPress={handleSend}
-              disabled={!text.trim() || sendMessage.isPending}
-            >
-              {sendMessage.isPending ? (
-                <ActivityIndicator color="#FFF" size="small" />
-              ) : (
-                <Ionicons name="send" size={20} color="#FFF" />
-              )}
-            </Pressable>
-          </View>
-        </KeyboardStickyView>
-      </KeyboardAvoidingView>
+      <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>{inputBar}</KeyboardStickyView>
     </View>
   );
 }
@@ -209,12 +203,15 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
   },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerSpacer: { width: 28 },
   headerTitle: { fontSize: 16, fontWeight: '700', textAlign: 'center' },
   headerSub: { fontSize: 11, textAlign: 'center', marginTop: 2 },
+  listContent: { padding: 16, paddingBottom: 88, flexGrow: 1 },
   msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginBottom: 8, maxWidth: '88%' },
   msgRowMine: { alignSelf: 'flex-end' },
   msgRowTheir: { alignSelf: 'flex-start' },
-  bubble: { padding: 12, borderRadius: 16 },
+  bubble: { padding: 12, borderRadius: 16, maxWidth: '100%' },
   myBubble: { borderBottomRightRadius: 4 },
   theirBubble: { borderBottomLeftRadius: 4 },
   time: { fontSize: 10, marginTop: 4, alignSelf: 'flex-end' },
@@ -230,7 +227,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   sendButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  webWrap: { flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center' as const },
+  webWrap: { flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center' as const, minHeight: 500 },
 });
 
 export default function ChatScreen() {

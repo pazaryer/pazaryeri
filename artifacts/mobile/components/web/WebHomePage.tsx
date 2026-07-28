@@ -42,7 +42,7 @@ export function WebHomePage() {
     <WebShell searchQuery={search} onSearchChange={setSearch} onSearchSubmit={handleSearch}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <WebTrustBar />
-        <View style={styles.filterSection}>
+        <View nativeID="pz-filter-section" style={styles.filterSection}>
           <Text style={styles.filterLabel}>Kategoriler</Text>
           <CategoryFilter
             categories={[...LISTING_CATEGORIES]}
@@ -67,6 +67,6 @@ export function WebHomePage() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, width: '100%' },
   scrollContent: { paddingBottom: 24 },
-  filterSection: { paddingVertical: 8, gap: 4 },
+  filterSection: { paddingVertical: 8, gap: 4, marginHorizontal: 16, marginTop: 8 },
   filterLabel: { fontSize: 13, fontWeight: '700', color: '#1A0A2E', paddingHorizontal: 14, marginTop: 8, marginBottom: 4 },
 });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 
@@ -21,6 +21,7 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
   const colors = useColors();
   const [expanded, setExpanded] = useState(false);
   const hasFilter = !!(value.radiusKm || value.city);
+  const useEmoji = Platform.OS === 'web';
 
   return (
     <View style={styles.wrap}>
@@ -34,7 +35,11 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
             ]}
             onPress={() => onChange({})}
           >
-            <Ionicons name="globe-outline" size={13} color={!hasFilter ? colors.primary : colors.mutedForeground} />
+            {useEmoji ? (
+              <Text style={styles.emoji}>🌍</Text>
+            ) : (
+              <Ionicons name="globe-outline" size={13} color={!hasFilter ? colors.primary : colors.mutedForeground} />
+            )}
             <Text style={[styles.chipText, { color: !hasFilter ? colors.primary : colors.foreground }]}>Tümü</Text>
           </Pressable>
           {RADIUS_OPTIONS.map((km) => (
@@ -47,11 +52,15 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
               ]}
               onPress={() => onChange({ ...value, radiusKm: value.radiusKm === km ? undefined : km, city: undefined })}
             >
-              <Ionicons
-                name="navigate-outline"
-                size={13}
-                color={value.radiusKm === km ? '#FFF' : colors.mutedForeground}
-              />
+              {useEmoji ? (
+                <Text style={styles.emoji}>📍</Text>
+              ) : (
+                <Ionicons
+                  name="navigate-outline"
+                  size={13}
+                  color={value.radiusKm === km ? '#FFF' : colors.mutedForeground}
+                />
+              )}
               <Text style={[styles.chipText, { color: value.radiusKm === km ? '#FFF' : colors.foreground }]}>
                 {km} km
               </Text>
@@ -61,14 +70,26 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
             style={[styles.chip, styles.moreChip, { borderColor: colors.border, backgroundColor: colors.card }]}
             onPress={() => setExpanded(!expanded)}
           >
-            <Ionicons name="location" size={13} color={colors.primary} />
+            {useEmoji ? (
+              <Text style={styles.emoji}>🏙️</Text>
+            ) : (
+              <Ionicons name="location" size={13} color={colors.primary} />
+            )}
             <Text style={[styles.chipText, { color: colors.primary }]}>Şehir</Text>
-            <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={12} color={colors.mutedForeground} />
+            {useEmoji ? (
+              <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
+            ) : (
+              <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={12} color={colors.mutedForeground} />
+            )}
           </Pressable>
         </ScrollView>
         {hasFilter && (
           <Pressable onPress={() => onChange({})} hitSlop={8} style={styles.clearBtn}>
-            <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+            {useEmoji ? (
+              <Text style={styles.clearEmoji}>✕</Text>
+            ) : (
+              <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+            )}
           </Pressable>
         )}
       </View>
@@ -110,6 +131,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   moreChip: { paddingRight: 8 },
+  emoji: { fontSize: 12 },
+  chevron: { fontSize: 9, color: '#7A6B8A' },
+  clearEmoji: { fontSize: 16, color: '#7A6B8A', fontWeight: '700' },
   chipText: { fontSize: 12, fontWeight: '600' },
   clearBtn: { paddingLeft: 4 },
   cityRow: { paddingHorizontal: 12, gap: 6 },

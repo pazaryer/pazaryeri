@@ -10,10 +10,11 @@ type Props = {
   title: string;
   children: React.ReactNode;
   scroll?: boolean;
+  headerRight?: React.ReactNode;
   contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
 };
 
-export function ProfileScreenLayout({ title, children, scroll = true, contentContainerStyle }: Props) {
+export function ProfileScreenLayout({ title, children, scroll = true, headerRight, contentContainerStyle }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -24,7 +25,7 @@ export function ProfileScreenLayout({ title, children, scroll = true, contentCon
         <Ionicons name="chevron-back" size={28} color={colors.foreground} />
       </Pressable>
       <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
-      <View style={styles.spacer} />
+      {headerRight ? <View style={styles.headerRight}>{headerRight}</View> : <View style={styles.spacer} />}
     </View>
   );
 
@@ -72,5 +73,6 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
   title: { fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'center' },
   spacer: { width: 40 },
+  headerRight: { minWidth: 40, alignItems: 'flex-end' },
   content: { padding: 20, gap: 16 },
 });

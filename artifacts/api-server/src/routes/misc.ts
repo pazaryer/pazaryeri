@@ -124,6 +124,19 @@ router.get("/notifications", authMiddleware, async (req, res, next) => {
   }
 });
 
+router.patch("/notifications/read-all", authMiddleware, async (req, res, next) => {
+  try {
+    await getSupabaseAdmin()
+      .from("notifications")
+      .update({ is_read: "true" })
+      .eq("user_id", req.user!.id)
+      .eq("is_read", "false");
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.patch("/notifications/:notificationId/read", authMiddleware, async (req, res, next) => {
   try {
     await getSupabaseAdmin()

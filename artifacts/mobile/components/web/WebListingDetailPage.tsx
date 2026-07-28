@@ -9,9 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { WebShell } from '@/components/web/WebShell';
-import { WebPage } from '@/components/web/WebPage';
 import {
   useListing,
   useToggleFavorite,
@@ -23,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ListingOwnerActions } from '@/components/ListingOwnerActions';
 import { ContactActions } from '@/components/ContactActions';
 import { UserAvatar } from '@/components/UserAvatar';
+import { WebImage } from '@/components/WebImage';
 import { getListingContactPhone } from '@/lib/contact';
 import { showAlert } from '@/lib/web-alert';
 
@@ -51,12 +50,12 @@ export function WebListingDetailPage() {
     return (
       <WebShell hideFooter>
         <View style={styles.center}>
-          <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>İlan yüklenemedi</Text>
-          <Text style={{ color: '#666', marginBottom: 16, textAlign: 'center', paddingHorizontal: 24 }}>
+          <Text style={styles.errorTitle}>İlan yüklenemedi</Text>
+          <Text style={styles.errorSub}>
             {error instanceof Error ? error.message : 'İlan bulunamadı'}
           </Text>
-          <Pressable style={{ backgroundColor: '#3D1A78', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }} onPress={() => refetch()}>
-            <Text style={{ color: '#FFF', fontWeight: '700' }}>Tekrar Dene</Text>
+          <Pressable style={styles.retryBtn} onPress={() => refetch()}>
+            <Text style={styles.retryText}>Tekrar Dene</Text>
           </Pressable>
         </View>
       </WebShell>
@@ -89,26 +88,25 @@ export function WebListingDetailPage() {
 
   return (
     <WebShell hideFooter>
-      <WebPage>
       <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
         <Pressable style={styles.back} onPress={() => router.back()}>
           <Text style={styles.backIcon}>←</Text>
           <Text style={styles.backText}>Geri</Text>
         </Pressable>
 
-        <View style={[styles.layout, isWide && styles.layoutWide]}>
+        <View nativeID="pz-listing-detail" style={[styles.layout, isWide && styles.layoutWide]}>
           <View style={[styles.gallery, isWide && styles.galleryWide]}>
-            <Pressable onPress={openImageFullscreen}>
-              <Image source={{ uri: images[activeImage] }} style={styles.mainImage} contentFit="cover" />
+            <Pressable onPress={openImageFullscreen} style={styles.mainImageWrap}>
+              <WebImage uri={images[activeImage]} alt={listing.title} style={styles.mainImage} />
             </Pressable>
             {images.length > 1 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbs}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbs}>
                 {images.map((img, i) => (
                   <Pressable key={i} onPress={() => setActiveImage(i)}>
-                    <Image
-                      source={{ uri: img }}
+                    <WebImage
+                      uri={img}
+                      alt={`${listing.title} ${i + 1}`}
                       style={[styles.thumb, activeImage === i && styles.thumbActive]}
-                      contentFit="cover"
                     />
                   </Pressable>
                 ))}
@@ -137,7 +135,7 @@ export function WebListingDetailPage() {
 
             <View style={styles.seller}>
               <UserAvatar name={listing.seller.name} avatar={listing.seller.avatar} size={48} />
-              <View>
+              <View style={styles.sellerInfo}>
                 <Text style={styles.sellerName}>{listing.seller.name}</Text>
                 <Text style={styles.sellerMeta}>
                   ★ {listing.seller.rating} · {listing.seller.totalSales} satış
@@ -192,28 +190,39 @@ export function WebListingDetailPage() {
           </View>
         </View>
       </ScrollView>
-      </WebPage>
     </WebShell>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, width: '100%' },
-  pageContent: { maxWidth: 1200, width: '100%', alignSelf: 'center', padding: 24, paddingBottom: 60 },
+  page: { flex: 1, width: '100%', backgroundColor: '#F7F5FC' },
+  pageContent: {
+    maxWidth: 1200,
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    paddingBottom: 60,
+  },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 400 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20 },
+  errorTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8, color: '#1A0A2E' },
+  errorSub: { color: '#666', marginBottom: 16, textAlign: 'center', paddingHorizontal: 24 },
+  retryBtn: { backgroundColor: '#3D1A78', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
+  retryText: { color: '#FFF', fontWeight: '700' },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   backIcon: { color: '#3D1A78', fontSize: 18, fontWeight: '700' },
   backText: { color: '#3D1A78', fontWeight: '600', fontSize: 14 },
-  layout: { gap: 24 },
-  layoutWide: { flexDirection: 'row', alignItems: 'flex-start' },
-  gallery: { gap: 12 },
-  galleryWide: { flex: 1.2 },
-  mainImage: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16, backgroundColor: '#EDE8F5' },
-  thumbs: { flexDirection: 'row' },
-  thumb: { width: 72, height: 72, borderRadius: 10, marginRight: 8, opacity: 0.7 },
+  layout: { gap: 20 },
+  layoutWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 32 },
+  gallery: { gap: 12, width: '100%' },
+  galleryWide: { flex: 1.1, minWidth: 0 },
+  mainImageWrap: { width: '100%', borderRadius: 16, overflow: 'hidden', backgroundColor: '#EDE8F5' },
+  mainImage: { width: '100%', height: 360, borderRadius: 16, backgroundColor: '#EDE8F5' },
+  thumbs: { gap: 8, paddingVertical: 4 },
+  thumb: { width: 72, height: 72, borderRadius: 10, opacity: 0.7, backgroundColor: '#EDE8F5' },
   thumbActive: { opacity: 1, borderWidth: 2, borderColor: '#3D1A78' },
-  info: { gap: 12 },
-  infoWide: { flex: 1, paddingTop: 8 },
+  info: { gap: 12, width: '100%' },
+  infoWide: { flex: 1, minWidth: 0, paddingTop: 4 },
   price: { fontSize: 32, fontWeight: '800', color: '#3D1A78' },
   title: { fontSize: 22, fontWeight: '700', color: '#1A0A2E', lineHeight: 30 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 4 },
@@ -231,6 +240,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2D9F0',
     marginTop: 8,
   },
+  sellerInfo: { flex: 1, minWidth: 0 },
   sellerName: { fontSize: 16, fontWeight: '700', color: '#1A0A2E' },
   sellerMeta: { fontSize: 13, color: '#7A6B8A', marginTop: 2 },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1A0A2E', marginTop: 12 },
@@ -248,7 +258,7 @@ const styles = StyleSheet.create({
   },
   safetyIcon: { fontSize: 20 },
   safetyText: { flex: 1, fontSize: 13, color: '#1A0A2E', lineHeight: 20 },
-  actions: { flexDirection: 'row', gap: 12, marginTop: 20, alignItems: 'center' },
+  actions: { flexDirection: 'row', gap: 12, marginTop: 20, alignItems: 'center', flexWrap: 'wrap' },
   favBtn: {
     width: 50,
     height: 50,

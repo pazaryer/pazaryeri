@@ -1,7 +1,8 @@
 import React from 'react';
-import { ScrollView, Text, Pressable, StyleSheet } from 'react-native';
+import { ScrollView, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { Ionicons } from '@expo/vector-icons';
+import { categoryEmoji } from '@/lib/category-icons';
 
 interface CategoryFilterProps {
   categories: string[];
@@ -9,20 +10,31 @@ interface CategoryFilterProps {
   onSelect: (category: string) => void;
 }
 
-const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+const NATIVE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Tümü: 'apps',
   Elektronik: 'phone-portrait',
+  Telefon: 'call',
+  Bilgisayar: 'laptop',
   Araç: 'car-sport',
+  Emlak: 'business',
   Mobilya: 'bed',
+  'Ev & Bahçe': 'home',
   Moda: 'shirt',
-  Spor: 'fitness',
-  Ev: 'home',
-  'Ev Aletleri': 'tv',
+  Spor: 'bicycle',
+  Bebek: 'happy',
+  Hobi: 'book',
+  'İş & Ofis': 'briefcase',
+  Hayvanlar: 'paw',
+  Müzik: 'musical-notes',
+  'Beyaz Eşya': 'snow',
+  Kozmetik: 'sparkles',
+  Antika: 'diamond',
   Diğer: 'ellipsis-horizontal',
 };
 
 export function CategoryFilter({ categories, selectedCategory, onSelect }: CategoryFilterProps) {
   const colors = useColors();
+  const useEmoji = Platform.OS === 'web';
 
   return (
     <ScrollView
@@ -44,11 +56,15 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Categ
               },
             ]}
           >
-            <Ionicons
-              name={ICONS[category] ?? 'grid'}
-              size={14}
-              color={selected ? '#FFF' : colors.mutedForeground}
-            />
+            {useEmoji ? (
+              <Text style={styles.emoji}>{categoryEmoji(category)}</Text>
+            ) : (
+              <Ionicons
+                name={NATIVE_ICONS[category] ?? 'grid'}
+                size={14}
+                color={selected ? '#FFF' : colors.mutedForeground}
+              />
+            )}
             <Text style={[styles.chipText, { color: selected ? '#FFF' : colors.foreground }]}>
               {category}
             </Text>
@@ -70,5 +86,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
+  emoji: { fontSize: 13 },
   chipText: { fontSize: 12, fontWeight: '600' },
 });

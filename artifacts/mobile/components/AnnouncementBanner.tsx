@@ -1,0 +1,110 @@
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { ANNOUNCEMENTS } from '@/lib/categories';
+
+const MARQUEE_TEXT = ANNOUNCEMENTS.join('   •   ') + '   •   ';
+
+function WebMarquee() {
+  return (
+    <View style={styles.track}>
+      <div className="pz-marquee-track">
+        <span className="pz-marquee-item">{MARQUEE_TEXT}</span>
+        <span className="pz-marquee-item" aria-hidden="true">
+          {MARQUEE_TEXT}
+        </span>
+      </div>
+    </View>
+  );
+}
+
+function MobileMarquee() {
+  const translateX = useSharedValue(0);
+
+  useEffect(() => {
+    translateX.value = withRepeat(
+      withTiming(-420, { duration: 18000, easing: Easing.linear }),
+      -1,
+      false,
+    );
+  }, [translateX]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  return (
+    <View style={styles.track}>
+      <Animated.View style={[styles.mobileRow, animStyle]}>
+        <Text style={styles.marqueeText}>{MARQUEE_TEXT}</Text>
+        <Text style={styles.marqueeText}>{MARQUEE_TEXT}</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
+export function AnnouncementBanner() {
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === 'web' ? 0 : insets.top;
+
+  return (
+    <View style={[styles.wrap, topPad > 0 && { paddingTop: topPad, height: 38 + topPad }]}>
+      <View style={styles.badge}>
+        <Text style={styles.badgeText}>DUYURU</Text>
+      </View>
+      {Platform.OS === 'web' ? <WebMarquee /> : <MobileMarquee />}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: {
+    width: '100%',
+    backgroundColor: '#2A1260',
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(201,168,76,0.3)',
+    height: 38,
+  },
+  badge: {
+    backgroundColor: '#C9A84C',
+    paddingHorizontal: 14,
+    height: '100%',
+    justifyContent: 'center',
+    zIndex: 2,
+    flexShrink: 0,
+  },
+  badgeText: {
+    color: '#1A0A2E',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+  },
+  track: {
+    flex: 1,
+    overflow: 'hidden',
+    height: '100%',
+    justifyContent: 'center',
+  },
+  mobileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 1200,
+  },
+  marqueeText: {
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 13,
+    fontWeight: '600',
+    paddingRight: 48,
+    flexShrink: 0,
+  },
+});

@@ -18,6 +18,7 @@ import { ListingCard } from '@/components/ListingCard';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { LocationFilterBar, type LocationFilterValue } from '@/components/LocationFilterBar';
 import { Logo } from '@/components/Logo';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { useListings, useNotifications } from '@/lib/hooks';
 import { LISTING_CATEGORIES } from '@/lib/categories';
 
@@ -26,7 +27,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
-  const headerTop = isWeb ? 67 : insets.top;
+  const headerTop = isWeb ? 67 : 12;
 
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
   const [locationFilter, setLocationFilter] = useState<LocationFilterValue>({});
@@ -68,6 +69,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <AnnouncementBanner />
       <View style={[styles.header, { paddingTop: headerTop, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
           <View style={styles.logoRow}>

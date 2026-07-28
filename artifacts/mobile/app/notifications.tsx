@@ -1,72 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Switch,
   Pressable,
-  Linking,
   Platform,
-  Alert,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenLayout } from '@/components/ProfileScreenLayout';
 import { useColors } from '@/hooks/useColors';
-import { useMarkNotificationRead, useNotifications } from '@/lib/hooks';
-
-const STORAGE_KEY = 'pz_notification_prefs';
-
-type Prefs = {
-  messages: boolean;
-  listings: boolean;
-  offers: boolean;
-};
-
-const DEFAULT_PREFS: Prefs = { messages: true, listings: true, offers: true };
+import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/hooks';
 
 export default function NotificationsScreen() {
   const colors = useColors();
   const router = useRouter();
-  const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const isExpoGo = Constants.appOwnership === 'expo';
   const { data, isLoading } = useNotifications();
   const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
   const items = data?.items ?? [];
   const unread = items.filter((n) => !n.isRead).length;
 
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) });
-      })
-      .catch(() => null);
-  }, []);
-
-  const updatePref = async (key: keyof Prefs, value: boolean) => {
-    const next = { ...prefs, [key]: value };
-    setPrefs(next);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  };
-
-  const openSystemSettings = () => {
-    if (Platform.OS === 'ios') {
-      Linking.openURL('app-settings:').catch(() =>
-        Alert.alert('Bilgi', 'Ayarlar → Pazaryeri → Bildirimler bölümünden açabilirsiniz'),
-      );
-    } else {
-      Linking.openSettings().catch(() =>
-        Alert.alert('Bilgi', 'Telefon ayarlarından Pazaryeri bildirimlerini açabilirsiniz'),
-      );
-    }
-  };
-
   const handleNotificationPress = async (id: string, type: string, rawData?: string | null) => {
-    if (!rawData) return;
+    if (!rawData) {
+      await markRead.mutateAsync(id);
+      return;
+    }
     try {
       const parsed = JSON.parse(rawData) as { conversationId?: string; listingId?: string };
       await markRead.mutateAsync(id);
@@ -80,10 +43,25 @@ export default function NotificationsScreen() {
     }
   };
 
+  const headerRight =
+    unread > 0 ? (
+      <Pressable
+        onPress={() => markAllRead.mutate()}
+        disabled={markAllRead.isPending}
+        hitSlop={8}
+      >
+        {markAllRead.isPending ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          <Text style={[styles.markAllText, { color: colors.primary }]}>Tümünü okundu işaretle</Text>
+        )}
+      </Pressable>
+    ) : null;
+
   return (
-    <ProfileScreenLayout title="Bildirimler">
+    <ProfileScreenLayout title="Bildirimler" headerRight={headerRight}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 24 }}>
-        {isExpoGo && (
+        {isExpoGo && Platform.OS !== 'web' && (
           <View style={[styles.note, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
             <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
               Expo Go'da anlık bildirimler sınırlıdır. Tam bildirim desteği için mağaza sürümünü kullanın.
@@ -91,9 +69,18 @@ export default function NotificationsScreen() {
           </View>
         )}
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-          UYGULAMA İÇİ BİLDİRİMLER {unread > 0 ? `(${unread} yeni)` : ''}
-        </Text>
+        {unread > 0 && (
+          <Pressable
+            style={[styles.markAllBtn, { backgroundColor: colors.secondary, borderColor: colors.primary }]}
+            onPress={() => markAllRead.mutate()}
+            disabled={markAllRead.isPending}
+          >
+            <Ionicons name="checkmark-done" size={18} color={colors.primary} />
+            <Text style={[styles.markAllBtnText, { color: colors.primary }]}>
+              Tümünü okundu işaretle ({unread})
+            </Text>
+          </Pressable>
+        )}
 
         {isLoading ? (
           <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />
@@ -115,9 +102,7 @@ export default function NotificationsScreen() {
             >
               <View style={styles.notifIcon}>
                 <Ionicons
-                  name={
-                    n.type === 'message' ? 'chatbubble' : n.type === 'offer' ? 'pricetag' : 'heart'
-                  }
+                  name={n.type === 'message' ? 'chatbubble' : n.type === 'offer' ? 'pricetag' : 'heart'}
                   size={18}
                   color={colors.primary}
                 />
@@ -134,75 +119,25 @@ export default function NotificationsScreen() {
             </Pressable>
           ))
         )}
-
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 8 }]}>TERCİHLER</Text>
-
-        <ToggleRow
-          title="Mesajlar"
-          subtitle="Yeni mesaj geldiğinde bildir"
-          value={prefs.messages}
-          onChange={(v) => updatePref('messages', v)}
-          colors={colors}
-        />
-        <ToggleRow
-          title="İlanlarım"
-          subtitle="İlan görüntülenme ve favori bildirimleri"
-          value={prefs.listings}
-          onChange={(v) => updatePref('listings', v)}
-          colors={colors}
-        />
-        <ToggleRow
-          title="Teklifler"
-          subtitle="İlanınıza teklif geldiğinde bildir"
-          value={prefs.offers}
-          onChange={(v) => updatePref('offers', v)}
-          colors={colors}
-        />
-
-        <Pressable
-          style={[styles.systemBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
-          onPress={openSystemSettings}
-        >
-          <Text style={[styles.systemBtnText, { color: colors.primary }]}>Telefon Bildirim Ayarlarını Aç</Text>
-        </Pressable>
       </ScrollView>
     </ProfileScreenLayout>
-  );
-}
-
-function ToggleRow({
-  title,
-  subtitle,
-  value,
-  onChange,
-  colors,
-}: {
-  title: string;
-  subtitle: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-  colors: ReturnType<typeof useColors>;
-}) {
-  return (
-    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.rowText}>
-        <Text style={[styles.rowTitle, { color: colors.foreground }]}>{title}</Text>
-        <Text style={[styles.rowSub, { color: colors.mutedForeground }]}>{subtitle}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onChange}
-        trackColor={{ false: '#D1C4E9', true: '#C9A84C' }}
-        thumbColor={value ? '#3D1A78' : '#f4f3f4'}
-      />
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
   note: { padding: 12, borderRadius: 10, borderWidth: 1 },
   noteText: { fontSize: 13, lineHeight: 19 },
-  sectionLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
+  markAllText: { fontSize: 11, fontWeight: '700' },
+  markAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  markAllBtnText: { fontSize: 14, fontWeight: '700' },
   empty: { alignItems: 'center', padding: 24, borderRadius: 14, borderWidth: 1, gap: 8 },
   emptyText: { fontSize: 14 },
   notifCard: { flexDirection: 'row', padding: 14, borderRadius: 14, borderWidth: 1, gap: 12 },
@@ -218,23 +153,4 @@ const styles = StyleSheet.create({
   notifTitle: { fontSize: 15, fontWeight: '700' },
   notifSub: { fontSize: 13, lineHeight: 18 },
   notifTime: { fontSize: 11, marginTop: 4 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 12,
-  },
-  rowText: { flex: 1 },
-  rowTitle: { fontSize: 16, fontWeight: '600' },
-  rowSub: { fontSize: 13, marginTop: 2 },
-  systemBtn: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  systemBtnText: { fontSize: 15, fontWeight: '600' },
 });
