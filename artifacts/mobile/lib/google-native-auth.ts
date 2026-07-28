@@ -3,15 +3,15 @@ import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { buildApiUrl, sitePath } from './config';
+import { buildApiUrl } from './config';
 import { getFirebaseAuth } from './firebase';
 import { resolveGoogleWebClientId } from './google-client-id';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const ANDROID_BRIDGE_PATH = '/oauth/app-return';
+let oauthInFlight: Promise<void> | null = null;
 
-/** Expo Go / production için native OAuth dönüş URI'si (exp:// veya pazaryeri://auth). */
+/** Expo Go (exp://) veya production (pazaryeri://auth) dönüş adresi. */
 export function getNativeOAuthRedirectUri(): string {
   return AuthSession.makeRedirectUri({
     scheme: 'pazaryeri',
@@ -19,37 +19,25 @@ export function getNativeOAuthRedirectUri(): string {
   });
 }
 
-/**
- * Render API'ye verilen return URL.
- * Android: HTTPS köprü (Custom Tab güvenilir kapanır, Gmail açılmaz).
- * iOS: doğrudan native scheme.
- */
+/** API ve tarayıcı oturumu aynı native URI kullanır — döngü önlenir. */
 export function getApiOAuthReturnUri(): string {
-  const native = getNativeOAuthRedirectUri();
-  if (Platform.OS === 'android') {
-    const bridge = sitePath(ANDROID_BRIDGE_PATH);
-    return `${bridge}?native=${encodeURIComponent(native)}`;
-  }
-  return native;
-}
-
-/**
- * WebBrowser.openAuthSessionAsync ikinci parametresi — yönlendirme yakalanınca oturum kapanır.
- */
-export function getBrowserOAuthRedirectUri(): string {
-  if (Platform.OS === 'android') {
-    return sitePath(ANDROID_BRIDGE_PATH);
-  }
   return getNativeOAuthRedirectUri();
 }
 
-/** @deprecated getNativeOAuthRedirectUri kullanın */
+export function getBrowserOAuthRedirectUri(): string {
+  return getNativeOAuthRedirectUri();
+}
+
 export function getGoogleOAuthRedirectUri(): string {
-  return getApiOAuthReturnUri();
+  return getNativeOAuthRedirectUri();
 }
 
 export function getAppOAuthRedirectUri(): string {
-  return getApiOAuthReturnUri();
+  return getNativeOAuthRedirectUri();
+}
+
+export function isOAuthInFlight(): boolean {
+  return oauthInFlight !== null;
 }
 
 export function getGoogleClientIds() {
@@ -88,24 +76,31 @@ async function completeGoogleSignIn(idToken: string): Promise<void> {
 }
 
 /**
- * Mobil Google giriş — Render API OAuth köprüsü.
- * Android: API → HTTPS app-return → token yakalanır veya native deep link.
- * iOS: pazaryeri://auth / exp:// deep link.
+ * Mobil Google giriş — Render API OAuth.
+ * Native deep link (exp:// veya pazaryeri://auth) ile tek adımda döner.
  */
 export async function signInWithGoogleMobile(): Promise<void> {
   if (Platform.OS === 'web') {
     throw new Error('Web için /giris kullanın');
   }
+  if (oauthInFlight) return oauthInFlight;
 
-  const apiReturn = getApiOAuthReturnUri();
-  const browserRedirect = getBrowserOAuthRedirectUri();
-  const startUrl = `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(apiReturn)}`;
+  oauthInFlight = runGoogleOAuth();
+  try {
+    await oauthInFlight;
+  } finally {
+    oauthInFlight = null;
+  }
+}
+
+async function runGoogleOAuth(): Promise<void> {
+  const redirectUri = getNativeOAuthRedirectUri();
+  const startUrl = `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(redirectUri)}`;
 
   if (__DEV__) {
     console.log('[Google] API OAuth start:', startUrl);
-    console.log('[Google] API return:', apiReturn);
-    console.log('[Google] browser redirect:', browserRedirect);
-    console.log('[Google] app ownership:', Constants.appOwnership);
+    console.log('[Google] redirect:', redirectUri);
+    console.log('[Google] ownership:', Constants.appOwnership);
   }
 
   if (Platform.OS === 'android') {
@@ -118,7 +113,7 @@ export async function signInWithGoogleMobile(): Promise<void> {
 
   let result: WebBrowser.WebBrowserAuthSessionResult;
   try {
-    result = await WebBrowser.openAuthSessionAsync(startUrl, browserRedirect, {
+    result = await WebBrowser.openAuthSessionAsync(startUrl, redirectUri, {
       preferEphemeralSession: false,
       showInRecents: false,
       createTask: false,
@@ -133,34 +128,35 @@ export async function signInWithGoogleMobile(): Promise<void> {
     }
   }
 
+  if (result.type === 'success') {
+    const { idToken, error } = parseOAuthReturnUrl(result.url);
+    if (error) throw new Error(error);
+    if (idToken) {
+      await completeGoogleSignIn(idToken);
+      return;
+    }
+  }
+
+  // Custom Tab kapandıysa deep link /auth ekranı işlemiş olabilir
+  const user = getFirebaseAuth().currentUser;
+  if (user) return;
+
   if (result.type === 'cancel' || result.type === 'dismiss') {
     throw new Error('Google girişi iptal edildi');
   }
 
-  if (result.type !== 'success') {
-    throw new Error('Google girişi başarısız — tekrar deneyin');
-  }
-
-  const { idToken, error } = parseOAuthReturnUrl(result.url);
-  if (error) {
-    throw new Error(error);
-  }
-  if (!idToken) {
-    throw new Error('Google token alınamadı — uygulamaya dönüp tekrar deneyin');
-  }
-
-  await completeGoogleSignIn(idToken);
+  throw new Error('Google girişi başarısız — tekrar deneyin');
 }
 
-/** Deep link /auth?id_token=... ile tamamlama */
+/** Deep link /auth?id_token=... ile tamamlama (yedek) */
 export async function completeGoogleSignInFromUrl(returnUrl: string): Promise<void> {
+  if (getFirebaseAuth().currentUser) return;
   const { idToken, error } = parseOAuthReturnUrl(returnUrl);
   if (error) throw new Error(error);
   if (!idToken) throw new Error('Google token alınamadı');
   await completeGoogleSignIn(idToken);
 }
 
-/** @deprecated signInWithGoogleMobile kullanın */
 export async function promptGoogleSignIn(): Promise<string> {
   await signInWithGoogleMobile();
   const user = getFirebaseAuth().currentUser;
@@ -173,7 +169,7 @@ export function useNativeGoogleAuth() {
     request: null,
     response: null,
     promptAsync: signInWithGoogleMobile,
-    redirectUri: getApiOAuthReturnUri(),
+    redirectUri: getNativeOAuthRedirectUri(),
     webClientId: resolveGoogleWebClientId(),
   };
 }

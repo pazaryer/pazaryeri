@@ -191,7 +191,6 @@ router.get("/auth/google/start", (req, res) => {
     state,
     code_challenge: challenge,
     code_challenge_method: "S256",
-    prompt: "select_account",
     access_type: "online",
   });
 

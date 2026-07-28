@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -26,8 +26,11 @@ function MobileLoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const busyRef = useRef(false);
 
   const handleGoogleLogin = async () => {
+    if (busyRef.current || googleLoading) return;
+    busyRef.current = true;
     setGoogleLoading(true);
     try {
       await signInWithGoogleMobile();
@@ -38,6 +41,7 @@ function MobileLoginScreen() {
       Alert.alert('Giriş Hatası', msg);
     } finally {
       setGoogleLoading(false);
+      busyRef.current = false;
     }
   };
 

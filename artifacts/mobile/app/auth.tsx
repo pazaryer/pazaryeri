@@ -1,15 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { BRAND } from '@/constants/brand';
-import { completeGoogleSignInFromUrl } from '@/lib/google-native-auth';
-
-WebBrowser.maybeCompleteAuthSession();
+import { completeGoogleSignInFromUrl, isOAuthInFlight } from '@/lib/google-native-auth';
+import { getFirebaseAuth } from '@/lib/firebase';
 
 /**
- * OAuth deep link hedefi: pazaryeri://auth?id_token=... veya exp://.../--/auth?id_token=...
- * HTTPS köprü sayfasından uygulamaya dönüşte token burada işlenir.
+ * OAuth deep link: pazaryeri://auth?id_token=... veya exp://.../--/auth?id_token=...
+ * openAuthSessionAsync tamamlayamazsa yedek tamamlama.
  */
 export default function AuthCallbackScreen() {
   const router = useRouter();
@@ -21,6 +19,21 @@ export default function AuthCallbackScreen() {
   useEffect(() => {
     if (handled.current) return;
     handled.current = true;
+
+    if (getFirebaseAuth().currentUser) {
+      router.replace('/(tabs)');
+      return;
+    }
+
+    if (isOAuthInFlight()) {
+      const unsub = getFirebaseAuth().onAuthStateChanged((u) => {
+        if (u) {
+          unsub();
+          router.replace('/(tabs)');
+        }
+      });
+      return () => unsub();
+    }
 
     const idToken = pickParam(params.id_token);
     const err = pickParam(params.error);

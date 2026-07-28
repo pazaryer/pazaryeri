@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pazaryeri — Giriş</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f7f5fc;
+      color: #1a0a2e;
+      text-align: center;
+      padding: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <p id="msg">Giriş tamamlanıyor…</p>
+    <button id="retry" type="button" hidden style="margin-top:16px;padding:12px 24px;border:0;border-radius:24px;background:#3d1a78;color:#fff;font-weight:700;">
+      Uygulamaya dön
+    </button>
+  </div>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var native = params.get('native');
+      var idToken = params.get('id_token');
+      var err = params.get('error');
+      var retry = document.getElementById('retry');
+      var msg = document.getElementById('msg');
+
+      function openApp() {
+        if (!native) return;
+        var sep = native.indexOf('?') >= 0 ? '&' : '?';
+        var target;
+        if (idToken) {
+          target = native + sep + 'id_token=' + encodeURIComponent(idToken);
+        } else if (err) {
+          target = native + sep + 'error=' + encodeURIComponent(err);
+        } else {
+          return;
+        }
+        location.replace(target);
+        setTimeout(function () { location.href = target; }, 400);
+      }
+
+      if (!native) {
+        msg.textContent = 'Giriş tamamlandı. Uygulamaya dönün.';
+        return;
+      }
+
+      if (err) {
+        msg.textContent = 'Giriş tamamlanamadı: ' + err;
+        retry.hidden = false;
+        retry.onclick = openApp;
+        return;
+      }
+
+      if (idToken) {
+        openApp();
+        setTimeout(function () {
+          msg.textContent = 'Giriş başarılı. Uygulamaya dönülüyor…';
+          retry.hidden = false;
+          retry.onclick = openApp;
+        }, 2000);
+      }
+    })();
+  </script>
+</body>
+</html>
