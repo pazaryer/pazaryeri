@@ -18,25 +18,12 @@ type Props = {
   style?: ViewStyle;
 };
 
-function WebMarquee() {
-  return (
-    <View style={styles.track}>
-      <div className="pz-marquee-track">
-        <span className="pz-marquee-item">{MARQUEE_TEXT}</span>
-        <span className="pz-marquee-item" aria-hidden="true">
-          {MARQUEE_TEXT}
-        </span>
-      </div>
-    </View>
-  );
-}
-
-function MobileMarquee() {
+function MarqueeTrack() {
   const translateX = useSharedValue(0);
 
   useEffect(() => {
     translateX.value = withRepeat(
-      withTiming(-420, { duration: 18000, easing: Easing.linear }),
+      withTiming(-520, { duration: Platform.OS === 'web' ? 35000 : 18000, easing: Easing.linear }),
       -1,
       false,
     );
@@ -48,7 +35,7 @@ function MobileMarquee() {
 
   return (
     <View style={styles.track}>
-      <Animated.View style={[styles.mobileRow, animStyle]}>
+      <Animated.View style={[styles.marqueeRow, animStyle]}>
         <Text style={styles.marqueeText}>{MARQUEE_TEXT}</Text>
         <Text style={styles.marqueeText}>{MARQUEE_TEXT}</Text>
       </Animated.View>
@@ -72,7 +59,7 @@ export function AnnouncementBanner({ embedded, style }: Props) {
       <View style={[styles.badge, embedded && styles.badgeEmbedded]}>
         <Text style={styles.badgeText}>DUYURU</Text>
       </View>
-      {Platform.OS === 'web' ? <WebMarquee /> : <MobileMarquee />}
+      <MarqueeTrack />
     </View>
   );
 }
@@ -125,10 +112,10 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
   },
-  mobileRow: {
+  marqueeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: 1200,
+    width: 1600,
   },
   marqueeText: {
     color: 'rgba(255,255,255,0.95)',

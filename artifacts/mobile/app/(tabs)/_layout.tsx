@@ -1,74 +1,50 @@
 import React from 'react';
 import { Platform, StyleSheet, useColorScheme, View, Pressable } from 'react-native';
 import { useColors } from '@/hooks/useColors';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { Tabs, useRouter } from 'expo-router';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import { SymbolView } from 'expo-symbols';
+import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-function NativeTabLayout() {
-  const colors = useColors();
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: 'house', selected: 'house.fill' }} />
-        <Label>Ana Sayfa</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="explore">
-        <Icon sf={{ default: 'safari', selected: 'safari.fill' }} />
-        <Label>Keşfet</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="post">
-        <Icon sf="plus.circle.fill" />
-        <Label>İlan Ver</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="messages">
-        <Icon sf={{ default: 'message', selected: 'message.fill' }} />
-        <Label>Mesajlar</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <Icon sf={{ default: 'person', selected: 'person.fill' }} />
-        <Label>Profil</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
+import { useCompactScreen } from '@/hooks/useCompactScreen';
 
 function CustomPostTabButton({ children, onPress }: any) {
   const colors = useColors();
+  const compact = useCompactScreen();
+  const size = compact ? 50 : 56;
+  const lift = compact ? 16 : 20;
+
   return (
     <Pressable
       style={{
         ...StyleSheet.absoluteFillObject,
-        top: -20,
+        top: -lift,
         justifyContent: 'center',
         alignItems: 'center',
       }}
       onPress={onPress}
     >
-      <View style={{
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
-        elevation: 5,
-      }}>
-        <Ionicons name="add" size={32} color="#FFF" />
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: colors.primary,
+          justifyContent: 'center',
+          alignItems: 'center',
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.4,
+          shadowRadius: 8,
+          elevation: 5,
+        }}
+      >
+        <Ionicons name="add" size={compact ? 28 : 32} color="#FFF" />
       </View>
     </Pressable>
   );
 }
 
-function ClassicTabLayout() {
+export default function TabLayout() {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -76,23 +52,8 @@ function ClassicTabLayout() {
   const isWeb = Platform.OS === 'web';
   const isAndroid = Platform.OS === 'android';
   const insets = useSafeAreaInsets();
-  const tabBarHeight = (isAndroid ? 64 : 56) + insets.bottom;
-
-  const renderTabIcon = (
-    iosName: string,
-    iosNameFocused: string,
-    androidName: keyof typeof Ionicons.glyphMap,
-    androidNameFocused: keyof typeof Ionicons.glyphMap,
-    color: string,
-    focused: boolean,
-  ) => {
-    if (isIOS) {
-      return <SymbolView name={focused ? iosNameFocused : iosName} tintColor={color} size={22} />;
-    }
-    return (
-      <Ionicons name={focused ? androidNameFocused : androidName} size={22} color={color} />
-    );
-  };
+  const compact = useCompactScreen();
+  const tabBarHeight = (isAndroid ? (compact ? 58 : 64) : compact ? 52 : 56) + insets.bottom;
 
   return (
     <Tabs
@@ -102,11 +63,11 @@ function ClassicTabLayout() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: compact ? 10 : 11,
           fontWeight: '600',
-          marginBottom: isAndroid ? 6 : 4,
+          marginBottom: isAndroid ? (compact ? 4 : 6) : compact ? 3 : 4,
         },
-        tabBarIconStyle: { marginTop: 6 },
+        tabBarIconStyle: { marginTop: compact ? 4 : 6 },
         tabBarStyle: {
           position: 'absolute',
           backgroundColor: isIOS ? 'transparent' : colors.background,
@@ -132,16 +93,22 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: 'Ana Sayfa',
-          tabBarIcon: ({ color, focused }) =>
-            renderTabIcon('house', 'house.fill', 'home-outline', 'home', color, focused),
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={compact ? 20 : 22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Keşfet',
-          tabBarIcon: ({ color, focused }) =>
-            renderTabIcon('safari', 'safari.fill', 'compass-outline', 'compass', color, focused),
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'compass' : 'compass-outline'}
+              size={compact ? 20 : 22}
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
@@ -157,25 +124,28 @@ function ClassicTabLayout() {
         name="messages"
         options={{
           title: 'Mesajlar',
-          tabBarIcon: ({ color, focused }) =>
-            renderTabIcon('message', 'message.fill', 'chatbubble-outline', 'chatbubble', color, focused),
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'chatbubble' : 'chatbubble-outline'}
+              size={compact ? 20 : 22}
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, focused }) =>
-            renderTabIcon('person', 'person.fill', 'person-outline', 'person', color, focused),
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'person' : 'person-outline'}
+              size={compact ? 20 : 22}
+              color={color}
+            />
+          ),
         }}
       />
     </Tabs>
   );
-}
-
-export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
 }

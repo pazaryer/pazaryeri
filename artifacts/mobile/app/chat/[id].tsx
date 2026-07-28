@@ -256,7 +256,11 @@ function ChatContent() {
         messageList
       )}
 
-      <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>{inputBar}</KeyboardStickyView>
+      {Platform.OS === 'web' ? (
+        inputBar
+      ) : (
+        <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>{inputBar}</KeyboardStickyView>
+      )}
     </View>
   );
 }

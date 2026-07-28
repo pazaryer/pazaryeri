@@ -13,9 +13,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
 import { WEB_CATEGORIES } from '@/lib/categories';
 import { WebAnnouncementBanner } from './WebAnnouncementBanner';
-import { useIsMobileWeb, useIsTabletWeb } from '@/hooks/useIsMobileWeb';
 
 const HEADER_CATEGORIES = WEB_CATEGORIES;
+const MOBILE_BREAKPOINT = 640;
+const TABLET_BREAKPOINT = 1024;
 
 interface WebShellProps {
   children: React.ReactNode;
@@ -35,21 +36,19 @@ export function WebShell({
   const { width } = useWindowDimensions();
   const router = useRouter();
   const { user, profile } = useAuth();
-  const mobileWeb = useIsMobileWeb();
-  const tabletWeb = useIsTabletWeb();
-  const mobile = mobileWeb || width < 640;
-  const tablet = tabletWeb || width < 1024;
+  const mobile = width < MOBILE_BREAKPOINT;
+  const tablet = width < TABLET_BREAKPOINT;
 
   return (
-    <View style={[styles.root, mobileWeb && styles.rootMobileWeb]}>
+    <View style={styles.root}>
       <View nativeID="pz-web-header" style={styles.headerSticky}>
         <WebAnnouncementBanner />
-        <View style={[styles.header, mobileWeb && styles.headerMobile]}>
-          <View style={[styles.headerTop, mobileWeb && styles.headerTopMobile]}>
+        <View style={[styles.header, mobile && styles.headerMobile]}>
+          <View style={[styles.headerTop, mobile && styles.headerTopMobile]}>
             <Link href="/" asChild>
               <Pressable style={styles.brand}>
-                <Logo size={mobileWeb ? 28 : mobile ? 30 : 36} />
-                <Text style={[styles.brandText, mobileWeb && styles.brandTextMobile]}>
+                <Logo size={mobile ? 28 : 36} />
+                <Text style={[styles.brandText, mobile && styles.brandTextMobile]}>
                   Pazaryeri
                 </Text>
               </Pressable>
@@ -70,41 +69,41 @@ export function WebShell({
               </View>
             )}
 
-            <View style={[styles.headerActions, mobileWeb && styles.headerActionsMobile]}>
+            <View style={[styles.headerActions, mobile && styles.headerActionsMobile]}>
               {user ? (
                 <>
                   <Pressable
-                    style={[styles.actionBtn, mobileWeb && styles.actionBtnMobile]}
+                    style={[styles.actionBtn, mobile && styles.actionBtnMobile]}
                     onPress={() => router.push('/ilan-ver')}
                   >
                     <Text style={styles.actionIcon}>＋</Text>
                     {!tablet && <Text style={styles.actionText}>İlan Ver</Text>}
                   </Pressable>
                   <Pressable
-                    style={[styles.actionBtn, mobileWeb && styles.actionBtnMobile]}
+                    style={[styles.actionBtn, mobile && styles.actionBtnMobile]}
                     onPress={() => router.push('/mesajlar')}
                   >
                     <Text style={styles.actionIcon}>💬</Text>
                     {!tablet && <Text style={styles.actionText}>Mesajlar</Text>}
                   </Pressable>
                   <Pressable
-                    style={[styles.profileBtn, mobileWeb && styles.profileBtnMobile]}
+                    style={[styles.profileBtn, mobile && styles.profileBtnMobile]}
                     onPress={() => router.push('/hesabim')}
                   >
                     <Text style={styles.profileBtnText} numberOfLines={1}>
-                      {mobileWeb ? '👤' : (profile?.name?.split(' ')[0] ?? 'Hesabım')}
+                      {mobile ? '👤' : (profile?.name?.split(' ')[0] ?? 'Hesabım')}
                     </Text>
                   </Pressable>
                 </>
               ) : (
                 <>
                   <Link href="/giris" asChild>
-                    <Pressable style={[styles.ghostBtn, mobileWeb && styles.ghostBtnMobile]}>
+                    <Pressable style={[styles.ghostBtn, mobile && styles.ghostBtnMobile]}>
                       <Text style={styles.ghostBtnText}>Giriş</Text>
                     </Pressable>
                   </Link>
                   <Link href="/kayit" asChild>
-                    <Pressable style={[styles.primaryBtn, mobileWeb && styles.primaryBtnMobile]}>
+                    <Pressable style={[styles.primaryBtn, mobile && styles.primaryBtnMobile]}>
                       <Text style={styles.primaryBtnText}>{mobile ? 'Kayıt' : 'Kayıt Ol'}</Text>
                     </Pressable>
                   </Link>
@@ -114,7 +113,7 @@ export function WebShell({
           </View>
 
           {mobile && (
-            <View style={[styles.searchWrapMobile, mobileWeb && styles.searchWrapMobileCompact]}>
+            <View style={[styles.searchWrapMobile, styles.searchWrapMobileCompact]}>
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 value={searchQuery}
@@ -148,11 +147,11 @@ export function WebShell({
         </View>
       </View>
 
-      <View style={[styles.main, mobileWeb && styles.mainMobileWeb]}>{children}</View>
+      <View style={styles.main}>{children}</View>
 
       {!hideFooter && (
-        <View style={[styles.footer, mobileWeb && styles.footerMobile]}>
-          <View style={[styles.footerInner, mobileWeb && styles.footerInnerMobile]}>
+        <View style={[styles.footer, mobile && styles.footerMobile]}>
+          <View style={[styles.footerInner, mobile && styles.footerInnerMobile]}>
             <View style={styles.footerLeft}>
               <Logo size={22} />
               <Text style={styles.footerTitle}>Pazaryeri</Text>
@@ -192,7 +191,6 @@ export function WebShell({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent', minHeight: '100%', width: '100%' },
-  rootMobileWeb: { width: '100%' },
   headerSticky: { width: '100%', zIndex: 100 },
   header: {
     backgroundColor: '#FFFFFF',
@@ -310,7 +308,6 @@ const styles = StyleSheet.create({
   },
   navChipText: { color: '#3D1A78', fontWeight: '600', fontSize: 11 },
   main: { flex: 1, width: '100%', alignSelf: 'stretch', backgroundColor: 'transparent' },
-  mainMobileWeb: { width: '100%' },
   footer: {
     backgroundColor: '#1A0A2E',
     paddingVertical: 16,

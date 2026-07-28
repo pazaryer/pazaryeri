@@ -510,11 +510,13 @@ export function useRejectOffer() {
   });
 }
 
-export function useNotifications() {
+export function useNotifications(enabled = true) {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: () => apiFetch<{ items: AppNotification[] }>('/notifications'),
+    enabled,
     refetchInterval: Platform.OS === 'web' ? false : 30_000,
+    retry: false,
   });
 }
 

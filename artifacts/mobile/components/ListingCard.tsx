@@ -5,6 +5,7 @@ import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { ListingSummary, formatPrice, useToggleFavorite } from '@/lib/hooks';
+import { useCompactScreen } from '@/hooks/useCompactScreen';
 
 interface ListingCardProps {
   item: ListingSummary;
@@ -14,7 +15,9 @@ interface ListingCardProps {
 export function ListingCard({ item, compact = false }: ListingCardProps) {
   const colors = useColors();
   const toggleFavorite = useToggleFavorite();
-  const imageHeight = compact ? 110 : 160;
+  const isCompact = useCompactScreen();
+  const dense = compact || isCompact;
+  const imageHeight = dense ? 100 : compact ? 110 : 160;
 
   const handleFavorite = (e?: { preventDefault?: () => void }) => {
     e?.preventDefault?.();
@@ -23,7 +26,7 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
 
   return (
     <Link href={`/listing/${item.id}`} asChild>
-      <Pressable style={[styles.cardContainer, compact && styles.compactContainer]}>
+      <Pressable style={[styles.cardContainer, dense && styles.compactContainer]}>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.imageContainer, { height: imageHeight }]}>
             <Image source={{ uri: item.image }} style={StyleSheet.absoluteFillObject} contentFit="cover" transition={150} />
@@ -33,15 +36,15 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
               </View>
             )}
             <Pressable style={styles.favoriteButton} onPress={handleFavorite}>
-              <Ionicons name={item.isFavorite ? 'heart' : 'heart-outline'} size={compact ? 16 : 18} color={colors.accent} />
+              <Ionicons name={item.isFavorite ? 'heart' : 'heart-outline'} size={dense ? 15 : compact ? 16 : 18} color={colors.accent} />
             </Pressable>
           </View>
 
-          <View style={[styles.details, compact && styles.compactDetails]}>
-            <Text style={[styles.price, compact && styles.compactPrice, { color: colors.primary }]}>
+          <View style={[styles.details, dense && styles.compactDetails]}>
+            <Text style={[styles.price, dense && styles.compactPrice, { color: colors.primary }]}>
               {formatPrice(item.price)}
             </Text>
-            <Text style={[styles.title, compact && styles.compactTitle, { color: colors.foreground }]} numberOfLines={2}>
+            <Text style={[styles.title, dense && styles.compactTitle, { color: colors.foreground }]} numberOfLines={2}>
               {item.title}
             </Text>
             <View style={styles.locationContainer}>
@@ -59,7 +62,7 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
 
 const styles = StyleSheet.create({
   cardContainer: { flex: 1, margin: 5, minWidth: '46%' },
-  compactContainer: { margin: 4, minWidth: '47%' },
+  compactContainer: { margin: 3, minWidth: '48%' },
   card: { borderRadius: 12, overflow: 'hidden', borderWidth: 1 },
   imageContainer: { width: '100%', position: 'relative', backgroundColor: '#E8E4F0' },
   favoriteButton: {

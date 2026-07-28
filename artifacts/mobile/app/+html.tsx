@@ -16,6 +16,11 @@ export default function Root({ children }: PropsWithChildren) {
         <meta property="og:type" content="website" />
         <meta name="theme-color" content="#3D1A78" />
         <ScrollViewStyleReset />
+        <style>{`
+          html, body { height: 100%; margin: 0; padding: 0; }
+          body { overflow: auto !important; -webkit-overflow-scrolling: touch; }
+          #root { display: flex; min-height: 100%; flex: 1; }
+        `}</style>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />

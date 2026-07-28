@@ -26,6 +26,10 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
   const handleRestart = async () => {
     try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.reload();
+        return;
+      }
       await reloadAppAsync();
     } catch (restartError) {
       console.error('Failed to restart app:', restartError);
@@ -69,12 +73,18 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
       <View style={styles.content}>
         <Text style={[styles.title, { color: colors.foreground }]}>
-          Something went wrong
+          Bir şeyler ters gitti
         </Text>
 
         <Text style={[styles.message, { color: colors.mutedForeground }]}>
-          Please reload the app to continue.
+          Sayfayı yenileyerek tekrar deneyin.
         </Text>
+
+        {error?.message ? (
+          <Text style={[styles.errorHint, { color: colors.mutedForeground }]} numberOfLines={3}>
+            {error.message}
+          </Text>
+        ) : null}
 
         <Pressable
           onPress={handleRestart}
@@ -90,7 +100,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           <Text
             style={[styles.buttonText, { color: colors.primaryForeground }]}
           >
-            Try Again
+            Yeniden Dene
           </Text>
         </Pressable>
       </View>
@@ -116,7 +126,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                 ]}
               >
                 <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-                  Error Details
+                  Hata Detayı
                 </Text>
                 <Pressable
                   onPress={() => setIsModalVisible(false)}
@@ -193,6 +203,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  errorHint: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 8,
+    opacity: 0.85,
   },
   topButton: {
     position: 'absolute',

@@ -1,9 +1,8 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import '@/styles/web-global.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
@@ -18,8 +17,12 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { initApi } from '@/lib/api';
 import { initFirebase } from '@/lib/firebase';
 
-initApi();
-initFirebase();
+try {
+  initApi();
+  initFirebase();
+} catch (err) {
+  console.error('[Pazaryeri] Başlatma hatası:', err);
+}
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient({
@@ -112,6 +115,12 @@ function RootLayoutNav() {
   );
 }
 
+function KeyboardShell({ children }: { children: ReactNode }) {
+  if (Platform.OS === 'web') return <>{children}</>;
+  const { KeyboardProvider } = require('react-native-keyboard-controller');
+  return <KeyboardProvider>{children}</KeyboardProvider>;
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -139,6 +148,16 @@ export default function RootLayout() {
     return () => clearTimeout(t);
   }, [fontsLoaded, fontError, hideSplash]);
 
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const onError = (event: ErrorEvent) => {
+        console.error('[Pazaryeri] Web hata:', event.error ?? event.message);
+      };
+      window.addEventListener('error', onError);
+      return () => window.removeEventListener('error', onError);
+    }
+  }, []);
+
   const ready = fontsLoaded || fontError || fontTimeout;
   if (!ready) return null;
 
@@ -148,9 +167,9 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
+              <KeyboardShell>
                 <RootLayoutNav />
-              </KeyboardProvider>
+              </KeyboardShell>
             </GestureHandlerRootView>
           </AuthProvider>
         </QueryClientProvider>

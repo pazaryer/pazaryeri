@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, ActivityIndicator, StyleSheet, type ViewStyle } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform, type ViewStyle } from 'react-native';
 import { renderGoogleSignInButton } from '@/lib/google-web-signin';
 
 interface WebGoogleLoginButtonProps {
@@ -35,10 +35,21 @@ export function WebGoogleLoginButton({
     );
   }
 
+  if (Platform.OS === 'web') {
+    return (
+      <View
+        // @ts-expect-error web id attribute
+        id={containerId}
+        className="google-signin-host"
+        style={[styles.wrap, style]}
+        accessibilityRole="button"
+        accessibilityLabel="Google ile devam et"
+      />
+    );
+  }
+
   return (
     <View
-      // @ts-expect-error web className
-      className="google-signin-host"
       nativeID={containerId}
       style={[styles.wrap, style]}
       accessibilityRole="button"

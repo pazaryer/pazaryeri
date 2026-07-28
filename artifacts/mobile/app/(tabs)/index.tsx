@@ -21,11 +21,13 @@ import { Logo } from '@/components/Logo';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { useListings, useNotifications } from '@/lib/hooks';
 import { LISTING_CATEGORIES } from '@/lib/categories';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user } = useAuth();
   const isWeb = Platform.OS === 'web';
   const headerTop = isWeb ? 67 : insets.top;
 
@@ -33,7 +35,7 @@ export default function HomeScreen() {
   const [locationFilter, setLocationFilter] = useState<LocationFilterValue>({});
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
 
-  const { data: notificationsData } = useNotifications();
+  const { data: notificationsData } = useNotifications(!!user);
   const unreadNotifs = notificationsData?.items.filter((n) => !n.isRead).length ?? 0;
 
   useEffect(() => {
