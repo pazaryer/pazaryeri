@@ -9,7 +9,7 @@
 
 1. Bilgisayarında şu dosyayı aç: **`supabase/setup.sql`**
 2. **Ctrl+A** (hepsini seç) → **Ctrl+C** (kopyala)
-3. Supabase SQL Editor'e git: https://supabase.com/dashboard/project/vqllsqrgwwzrehcgeyot/sql/new
+3. Supabase SQL Editor'e git: https://supabase.com/dashboard/project/vqllsqrgwwzrehcegyot/sql/new
 4. Editörü **tamamen temizle** (eski her şeyi sil)
 5. **Ctrl+V** yapıştır
 6. **Run** bas
@@ -40,7 +40,7 @@ Render Dashboard → **pazaryerim** → **Settings**
 
 | KEY | VALUE |
 |-----|-------|
-| `SUPABASE_URL` | `https://vqllsqrgwwzrehcgeyot.supabase.co` |
+| `SUPABASE_URL` | `https://vqllsqrgwwzrehcegyot.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | *( .env dosyandan kopyala )* |
 | `R2_ACCESS_KEY_ID` | *( .env dosyandan kopyala )* |
 | `R2_SECRET_ACCESS_KEY` | *( .env dosyandan kopyala )* |

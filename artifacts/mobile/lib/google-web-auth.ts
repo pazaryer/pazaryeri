@@ -25,12 +25,19 @@ export async function startGoogleRedirect(returnUrl?: string) {
   if (returnUrl) saveOAuthReturnUrl(returnUrl);
   const auth = getFirebaseAuth();
   const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
   await signInWithRedirect(auth, provider);
 }
 
 export async function completeGoogleRedirect(): Promise<UserCredential | null> {
   const auth = getFirebaseAuth();
   return getRedirectResult(auth);
+}
+
+/** Mobil köprü için Google OAuth id_token (Firebase getIdToken DEĞİL) */
+export function extractGoogleIdTokenFromRedirect(result: UserCredential): string | null {
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  return credential?.idToken ?? null;
 }
 
 function openDeepLink(target: string) {
@@ -47,6 +54,16 @@ export function redirectToAppWithToken(returnUrl: string, idToken: string) {
   const safeReturn = /auth\.expo\.io/i.test(returnUrl) ? 'pazaryeri://auth' : returnUrl;
   const sep = safeReturn.includes('?') ? '&' : '?';
   const target = `${safeReturn}${sep}id_token=${encodeURIComponent(idToken)}`;
+
+  if (typeof window !== 'undefined') {
+    // Custom Tab / ASWebAuthenticationSession için location.replace daha güvenilir
+    window.location.replace(target);
+    window.setTimeout(() => {
+      window.location.href = target;
+    }, 300);
+    return;
+  }
+
   openDeepLink(target);
 }
 

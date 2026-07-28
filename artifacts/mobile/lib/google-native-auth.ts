@@ -1,118 +1,114 @@
-import * as Linking from 'expo-linking';
+import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
-import { sitePath } from './config';
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { buildApiUrl } from './config';
+import { getFirebaseAuth } from './firebase';
 import { resolveGoogleWebClientId } from './google-client-id';
 
 WebBrowser.maybeCompleteAuthSession();
 
-function isBrokenExpoProxy(url: string): boolean {
-  return /auth\.expo\.io/i.test(url);
+/**
+ * Expo Go ve production build için uygulama dönüş URI'si.
+ * auth.expo.io proxy kullanılmaz — Render API OAuth köprüsü tercih edilir.
+ */
+export function getGoogleOAuthRedirectUri(): string {
+  return AuthSession.makeRedirectUri({
+    scheme: 'pazaryeri',
+    path: 'auth',
+  });
 }
 
-/**
- * Uygulamaya dönüş — auth.expo.io ASLA kullanılmaz (Expo Go'da kırık).
- */
 export function getAppOAuthRedirectUri(): string {
-  const fromEnv = process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI?.trim();
-  if (fromEnv && !isBrokenExpoProxy(fromEnv)) {
-    return fromEnv;
-  }
-
-  const linked = Linking.createURL('auth');
-  if (linked && !isBrokenExpoProxy(linked)) {
-    return linked;
-  }
-
-  return 'pazaryeri://auth';
+  return getGoogleOAuthRedirectUri();
 }
 
 export function getGoogleClientIds() {
   return { webClientId: resolveGoogleWebClientId() };
 }
 
-/** @deprecated use getAppOAuthRedirectUri */
-export function getGoogleRedirectUri(): string {
-  return getAppOAuthRedirectUri();
-}
-
 export function isMobileOAuthReturnUrl(url: string): boolean {
-  if (!url || isBrokenExpoProxy(url)) return false;
-  return url.startsWith('pazaryeri://') || url.startsWith('exp://');
+  if (!url) return false;
+  return (
+    url.startsWith('pazaryeri://') ||
+    url.startsWith('exp://') ||
+    url.startsWith('https://auth.expo.io/')
+  );
 }
 
-function parseParam(url: string, key: string): string | null {
-  const m = url.match(new RegExp(`[?&#]${key}=([^&#]+)`));
-  if (!m?.[1]) return null;
+function parseOAuthReturnUrl(returnUrl: string): { idToken?: string; error?: string } {
   try {
-    return decodeURIComponent(m[1]);
+    const url = new URL(returnUrl);
+    const error = url.searchParams.get('error');
+    if (error) return { error: decodeURIComponent(error) };
+    const idToken = url.searchParams.get('id_token');
+    if (idToken) return { idToken };
+    return {};
   } catch {
-    return m[1];
+    const idMatch = returnUrl.match(/[?&]id_token=([^&]+)/);
+    if (idMatch?.[1]) return { idToken: decodeURIComponent(idMatch[1]) };
+    const errMatch = returnUrl.match(/[?&]error=([^&]+)/);
+    if (errMatch?.[1]) return { error: decodeURIComponent(errMatch[1]) };
+    return {};
   }
 }
 
 /**
- * Mobil Google giriş — pazaryeri0.web.app/oauth/mobile köprüsü (GIS).
+ * Mobil Google giriş — Render API OAuth köprüsü (auth.expo.io yerine).
+ * Google hesabı seçildikten sonra pazaryeri:// veya exp:// ile uygulamaya döner.
  */
-export async function promptGoogleSignIn(): Promise<string> {
+export async function signInWithGoogleMobile(): Promise<void> {
   if (Platform.OS === 'web') {
     throw new Error('Web için /giris kullanın');
   }
 
-  const appRedirect = getAppOAuthRedirectUri();
-  const bridgeUrl = `${sitePath('/oauth/mobile')}?return=${encodeURIComponent(appRedirect)}`;
+  const appRedirect = getGoogleOAuthRedirectUri();
+  const startUrl = `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(appRedirect)}`;
 
   if (__DEV__) {
-    console.log('[Google OAuth] bridge =', bridgeUrl);
-    console.log('[Google OAuth] return =', appRedirect);
+    console.log('[Google] API OAuth start:', startUrl);
+    console.log('[Google] app redirect:', appRedirect);
   }
 
-  const result = await WebBrowser.openAuthSessionAsync(bridgeUrl, appRedirect, {
-    showInRecents: true,
-    createTask: false,
+  const result = await WebBrowser.openAuthSessionAsync(startUrl, appRedirect, {
+    preferEphemeralSession: false,
+    showInRecents: false,
   });
 
   if (result.type === 'cancel' || result.type === 'dismiss') {
     throw new Error('Google girişi iptal edildi');
   }
 
-  if (result.type !== 'success' || !result.url) {
-    throw new Error('Google girişi başarısız');
+  if (result.type !== 'success') {
+    throw new Error('Google girişi başarısız — tekrar deneyin');
   }
 
-  const oauthError = parseParam(result.url, 'error');
-  if (oauthError) {
-    throw new Error(oauthError);
+  const { idToken, error } = parseOAuthReturnUrl(result.url);
+  if (error) {
+    throw new Error(error);
   }
-
-  const idToken = parseParam(result.url, 'id_token');
   if (!idToken) {
     throw new Error('Google token alınamadı — tekrar deneyin');
   }
 
-  return idToken;
+  const credential = GoogleAuthProvider.credential(idToken);
+  await signInWithCredential(getFirebaseAuth(), credential);
+}
+
+/** @deprecated signInWithGoogleMobile kullanın */
+export async function promptGoogleSignIn(): Promise<string> {
+  await signInWithGoogleMobile();
+  const user = getFirebaseAuth().currentUser;
+  if (!user) throw new Error('Google girişi tamamlanamadı');
+  return user.getIdToken();
 }
 
 export function useNativeGoogleAuth() {
-  const redirectUri = getAppOAuthRedirectUri();
-  const { webClientId } = getGoogleClientIds();
   return {
     request: null,
     response: null,
-    promptAsync: promptGoogleSignIn,
-    redirectUri,
-    webClientId,
+    promptAsync: signInWithGoogleMobile,
+    redirectUri: getGoogleOAuthRedirectUri(),
+    webClientId: resolveGoogleWebClientId(),
   };
-}
-
-export function extractGoogleIdToken(_response: unknown): string | null {
-  return null;
-}
-
-export function isGoogleAuthCancelled(_response: unknown): boolean {
-  return false;
-}
-
-export function getGoogleAuthErrorMessage(_response: unknown): string {
-  return 'Google girişi başarısız';
 }

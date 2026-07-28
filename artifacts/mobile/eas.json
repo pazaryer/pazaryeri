@@ -15,10 +15,23 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com",
+        "EXPO_PUBLIC_API_URL": "https://pazaryerim.onrender.com",
+        "EXPO_PUBLIC_SITE_URL": "https://pazaryeri0.web.app"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal"
+      }
+    }
   }
 }

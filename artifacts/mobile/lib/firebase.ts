@@ -34,6 +34,10 @@ const firebaseConfig = {
   measurementId: cfg('measurementId'),
 };
 
+export function getFirebaseWebConfig() {
+  return { ...firebaseConfig };
+}
+
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 

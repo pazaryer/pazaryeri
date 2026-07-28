@@ -16,7 +16,7 @@ if (Test-Path $sqlPath) {
 }
 
 # 2. Supabase SQL Editor'i ac
-$sqlUrl = "https://supabase.com/dashboard/project/vqllsqrgwwzrehcgeyot/sql/new"
+$sqlUrl = "https://supabase.com/dashboard/project/vqllsqrgwwzrehcegyot/sql/new"
 Start-Process $sqlUrl
 Write-Host "[OK] Supabase SQL Editor acildi: $sqlUrl" -ForegroundColor Green
 

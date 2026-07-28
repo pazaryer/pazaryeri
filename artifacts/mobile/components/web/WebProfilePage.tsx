@@ -236,7 +236,19 @@ export function WebProfilePage() {
                     >
                       <Image source={{ uri: item.image }} style={styles.listingImage} />
                       <View style={styles.listingBody}>
-                        <Text style={styles.listingPrice}>{formatPrice(item.price)}</Text>
+                        <View style={styles.listingTopRow}>
+                          <Text style={styles.listingPrice}>{formatPrice(item.price)}</Text>
+                          {item.status === 'sold' && (
+                            <View style={styles.statusSold}>
+                              <Text style={styles.statusSoldText}>Satıldı</Text>
+                            </View>
+                          )}
+                          {item.status === 'active' && (
+                            <View style={styles.statusActive}>
+                              <Text style={styles.statusActiveText}>Yayında</Text>
+                            </View>
+                          )}
+                        </View>
                         <Text style={styles.listingTitle} numberOfLines={2}>{item.title}</Text>
                         <Text style={styles.listingMeta}>{item.views} görüntülenme</Text>
                       </View>
@@ -391,7 +403,12 @@ const styles = StyleSheet.create({
   },
   listingImage: { width: '100%', height: 160, backgroundColor: '#EDE8F5' },
   listingBody: { padding: 12, gap: 4 },
+  listingTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   listingPrice: { fontSize: 16, fontWeight: '800', color: '#3D1A78' },
+  statusSold: { backgroundColor: '#FFEBEE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusSoldText: { color: '#C62828', fontSize: 11, fontWeight: '700' },
+  statusActive: { backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusActiveText: { color: '#2E7D32', fontSize: 11, fontWeight: '700' },
   listingTitle: { fontSize: 13, fontWeight: '600', color: '#1A0A2E', lineHeight: 18 },
   listingMeta: { fontSize: 11, color: '#7A6B8A' },
 });

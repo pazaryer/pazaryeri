@@ -31,11 +31,13 @@
         "backgroundColor": "#E31E24"
       },
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "ACCESS_FINE_LOCATION",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -76,9 +78,6 @@
       "reactCompiler": true
     },
     "extra": {
-      "eas": {
-        "projectId": "pazaryeri"
-      },
       "siteUrl": "https://pazaryeri0.web.app",
       "apiUrl": "https://pazaryerim.onrender.com",
       "firebase": {
@@ -91,10 +90,13 @@
         "measurementId": "G-X4KF641X5R"
       },
       "google": {
-        "webClientId": "445495602976-7sqmtkk198ucafhpgsc0girnbvuujh20.apps.googleusercontent.com"
+        "webClientId": "637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com"
       },
       "router": {
         "origin": "https://pazaryeri0.web.app"
+      },
+      "eas": {
+        "projectId": "423cbdcd-276b-4ad2-b84d-2036eb13ab08"
       }
     },
     "owner": "pazaryeri"

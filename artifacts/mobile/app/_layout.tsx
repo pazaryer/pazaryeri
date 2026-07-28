@@ -42,12 +42,13 @@ function RootLayoutNav() {
 
     const isWeb = Platform.OS === 'web';
     const seg = segments[0];
+    const segName = segments[0] as string | undefined;
     const inAuth =
-      seg === 'login' ||
-      seg === 'email-auth' ||
-      seg === 'oauth' ||
-      seg === 'giris' ||
-      seg === 'kayit';
+      segName === 'login' ||
+      segName === 'email-auth' ||
+      segName === 'oauth' ||
+      segName === 'giris' ||
+      segName === 'kayit';
     const inLegal = seg === 'privacy' || seg === 'terms';
     const isPublicWeb =
       isWeb &&
@@ -58,6 +59,14 @@ function RootLayoutNav() {
         seg === 'giris' ||
         seg === 'kayit' ||
         inLegal);
+
+    const isMobileOAuthBridge =
+      isWeb && segments[0] === 'oauth' && segments[1] === 'mobile';
+
+    // Mobil köprü: tarayıcıda giriş sonrası web ana sayfasına gitme — uygulamaya dön
+    if (isMobileOAuthBridge) {
+      return;
+    }
 
     if (isWeb && seg === '(tabs)') {
       router.replace('/kesfet');
@@ -83,6 +92,7 @@ function RootLayoutNav() {
       <Stack.Screen name="kayit" />
       <Stack.Screen name="kesfet" />
       <Stack.Screen name="ilan-ver" />
+      <Stack.Screen name="ilan-duzenle/[id]" />
       <Stack.Screen name="hesabim" />
       <Stack.Screen name="mesajlar" />
       <Stack.Screen name="login" />
@@ -94,6 +104,10 @@ function RootLayoutNav() {
       <Stack.Screen name="chat/[id]" />
       <Stack.Screen name="privacy" />
       <Stack.Screen name="terms" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="addresses" />
+      <Stack.Screen name="help" />
     </Stack>
   );
 }

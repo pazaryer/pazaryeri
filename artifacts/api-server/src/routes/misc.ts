@@ -1,15 +1,16 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
+import { dbListListings } from "../lib/listings-store";
+import { authMiddleware } from "../middleware/auth";
+import { AppError } from "../middleware/errorHandler";
+import { getSupabaseAdmin } from "../lib/supabase-db";
 import {
-  getSupabaseAdmin,
   formatListingSummary,
   getFavoriteSet,
   getListingImages,
   type DbListing,
   type DbUser,
 } from "../lib/supabase-db";
-import { authMiddleware } from "../middleware/auth";
-import { AppError } from "../middleware/errorHandler";
 
 const router: IRouter = Router();
 
@@ -17,32 +18,8 @@ router.get("/search", async (req, res, next) => {
   try {
     const q = String(req.query.q ?? "").trim();
     if (!q) return res.json({ items: [], hasMore: false, nextCursor: null });
-
-    const sb = getSupabaseAdmin();
-    const { data: rows } = await sb
-      .from("listings")
-      .select("*, users!listings_seller_id_fkey(*)")
-      .eq("status", "active")
-      .ilike("title", `%${q}%`)
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    const listingIds = (rows ?? []).map((r) => r.id);
-    const imageMap = await getListingImages(listingIds);
-    const favSet = await getFavoriteSet(undefined, listingIds);
-
-    const items = await Promise.all(
-      (rows ?? []).map((row) =>
-        formatListingSummary(
-          row as DbListing,
-          row.users as DbUser,
-          imageMap.get(row.id)?.[0] ?? "",
-          favSet.has(row.id),
-        ),
-      ),
-    );
-
-    res.json({ items, hasMore: false, nextCursor: null });
+    const result = await dbListListings({ limit: 20, q });
+    res.json(result);
   } catch (err) {
     next(err);
   }
@@ -59,7 +36,7 @@ router.get("/favorites", authMiddleware, async (req, res, next) => {
 
     const items = await Promise.all(
       (favs ?? []).map(async (f) => {
-        const listing = (f as any).listings as DbListing & { users: DbUser };
+        const listing = (f as { listings: DbListing & { users: DbUser } }).listings;
         const imageMap = await getListingImages([listing.id]);
         return formatListingSummary(listing, listing.users, imageMap.get(listing.id)?.[0] ?? "", true);
       }),

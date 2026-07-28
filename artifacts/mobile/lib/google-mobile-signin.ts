@@ -1,5 +1,6 @@
 /** @deprecated Render/web köprüsü kaldırıldı — google-native-auth.ts kullanın */
 export {
-  getGoogleRedirectUri as getAppOAuthRedirectUri,
+  getGoogleOAuthRedirectUri as getAppOAuthRedirectUri,
+  getGoogleOAuthRedirectUri as getGoogleRedirectUri,
   isMobileOAuthReturnUrl,
 } from './google-native-auth';

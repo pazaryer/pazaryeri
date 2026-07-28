@@ -8,7 +8,8 @@
     "build": "node scripts/build.js",
     "export:web": "expo export -p web",
     "serve": "node server/serve.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "eas-build-pre-install": "cd ../.. && corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install --frozen-lockfile --filter @workspace/mobile..."
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -36,6 +37,7 @@
     "expo-linear-gradient": "~15.0.8",
     "firebase": "^11.3.1",
     "expo-auth-session": "~7.0.8",
+    "expo-crypto": "~15.0.8",
     "expo-linking": "~8.0.10",
     "expo-location": "~19.0.8",
     "expo-notifications": "~0.32.12",

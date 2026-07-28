@@ -1,0 +1,26 @@
+# Monorepo — sadece mobil build için gerekli dosyalar yüklensin
+**/node_modules/
+**/.git/
+**/.expo/
+**/.turbo/
+**/.cache/
+**/dist/
+artifacts/api-server/
+artifacts/web/
+lib/db/
+lib/integrations/
+scripts/
+*.md
+*.bat
+*.ps1
+.agent/
+.cursor/
+terminals/
+web-build.log
+pnpm-debug.log*
+**/*.map
+
+# Mobil + workspace bağımlılıkları KALIR:
+# package.json, pnpm-lock.yaml, pnpm-workspace.yaml
+# artifacts/mobile/
+# lib/api-client-react/

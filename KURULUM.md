@@ -6,7 +6,7 @@ Tüm credential'lar `.env` dosyalarına kaydedildi. Aşağıdaki 4 adımı tamam
 
 ## Adım 1: Supabase Veritabanı (5 dk)
 
-1. [Supabase Dashboard](https://supabase.com/dashboard/project/vqllsqrgwwzrehcgeyot) açın
+1. [Supabase Dashboard](https://supabase.com/dashboard/project/vqllsqrgwwzrehcegyot) açın
 2. **SQL Editor** > New Query
 3. `supabase/setup.sql` dosyasının tamamını yapıştırıp **Run** basın
 4. **Settings > Database** > Connection string (URI) kopyalayın

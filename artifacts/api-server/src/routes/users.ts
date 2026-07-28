@@ -1,12 +1,13 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import {
-  getSupabaseAdmin,
-  ensureUser,
-  formatUser,
-} from "../lib/supabase-db";
+  dbSyncUser,
+  dbGetUser,
+  dbUpdateUser,
+  dbGetUserById,
+  dbUpdatePushToken,
+} from "../lib/listings-store";
 import { authMiddleware } from "../middleware/auth";
-import { AppError } from "../middleware/errorHandler";
 
 const router: IRouter = Router();
 
@@ -22,21 +23,21 @@ const updateUserSchema = z.object({
 
 const syncUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  email: z.union([z.string().email(), z.literal('')]).optional(),
+  email: z.union([z.string().email(), z.literal("")]).optional(),
   phone: z.string().max(30).optional(),
-  avatar: z.union([z.string().url(), z.literal('')]).optional(),
+  avatar: z.union([z.string().url(), z.literal("")]).optional(),
 });
 
 router.post("/users/sync", authMiddleware, async (req, res, next) => {
   try {
     const body = syncUserSchema.parse(req.body);
-    const user = await ensureUser(req.user!.id, {
+    const user = await dbSyncUser(req.user!.id, {
       name: body.name,
       email: body.email || req.user!.email,
       phone: body.phone ?? req.user!.phone,
       avatar: body.avatar || undefined,
     });
-    res.json(formatUser(user));
+    res.json(user);
   } catch (err) {
     next(err);
   }
@@ -44,11 +45,11 @@ router.post("/users/sync", authMiddleware, async (req, res, next) => {
 
 router.get("/users/me", authMiddleware, async (req, res, next) => {
   try {
-    const user = await ensureUser(req.user!.id, {
+    const user = await dbGetUser(req.user!.id, {
       email: req.user!.email,
       phone: req.user!.phone,
     });
-    res.json(formatUser(user));
+    res.json(user);
   } catch (err) {
     next(err);
   }
@@ -57,16 +58,8 @@ router.get("/users/me", authMiddleware, async (req, res, next) => {
 router.put("/users/me", authMiddleware, async (req, res, next) => {
   try {
     const body = updateUserSchema.parse(req.body);
-    await ensureUser(req.user!.id);
-    const sb = getSupabaseAdmin();
-    const { data, error } = await sb
-      .from("users")
-      .update({ ...body, updated_at: new Date().toISOString() })
-      .eq("id", req.user!.id)
-      .select()
-      .single();
-    if (error || !data) throw new AppError("Kullanıcı bulunamadı", 404);
-    res.json(formatUser(data));
+    const user = await dbUpdateUser(req.user!.id, body);
+    res.json(user);
   } catch (err) {
     next(err);
   }
@@ -74,10 +67,8 @@ router.put("/users/me", authMiddleware, async (req, res, next) => {
 
 router.get("/users/:userId", async (req, res, next) => {
   try {
-    const sb = getSupabaseAdmin();
-    const { data, error } = await sb.from("users").select("*").eq("id", req.params.userId).single();
-    if (error || !data) throw new AppError("Kullanıcı bulunamadı", 404);
-    res.json(formatUser(data));
+    const user = await dbGetUserById(req.params.userId);
+    res.json(user);
   } catch (err) {
     next(err);
   }
@@ -86,10 +77,7 @@ router.get("/users/:userId", async (req, res, next) => {
 router.post("/users/me/push-token", authMiddleware, async (req, res, next) => {
   try {
     const { token } = z.object({ token: z.string() }).parse(req.body);
-    await getSupabaseAdmin()
-      .from("users")
-      .update({ push_token: token, updated_at: new Date().toISOString() })
-      .eq("id", req.user!.id);
+    await dbUpdatePushToken(req.user!.id, token);
     res.json({ success: true });
   } catch (err) {
     next(err);

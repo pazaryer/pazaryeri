@@ -8,7 +8,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_REF = 'vqllsqrgwwzrehcgeyot';
+const PROJECT_REF = 'vqllsqrgwwzrehcegyot';
 const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 if (!ACCESS_TOKEN) {
   console.error('SUPABASE_ACCESS_TOKEN ortam degiskeni gerekli (.env dosyasindan)');

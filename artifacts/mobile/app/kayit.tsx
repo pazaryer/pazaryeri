@@ -12,10 +12,11 @@ import { Redirect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { WebShell } from '@/components/web/WebShell';
+import { WebGoogleLoginButton } from '@/components/web/WebGoogleLoginButton';
 
 export default function KayitScreen() {
   const router = useRouter();
-  const { signInWithGooglePopup, user, isLoading } = useAuth();
+  const { signInWithGoogleIdToken, user, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,21 +26,28 @@ export default function KayitScreen() {
     }
   }, [user, isLoading, router]);
 
-  const handleGoogleSignup = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await signInWithGooglePopup();
-      router.replace('/');
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Google ile kayıt başarısız';
-      if (!msg.includes('popup-closed') && !msg.includes('cancel')) {
+  const handleGoogleCredential = useCallback(
+    async (idToken: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await signInWithGoogleIdToken(idToken);
+        router.replace('/');
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Google ile kayıt başarısız';
         setError(msg);
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
+    },
+    [signInWithGoogleIdToken, router],
+  );
+
+  const handleGoogleError = useCallback((msg: string) => {
+    if (!msg.includes('iptal') && !msg.includes('cancel')) {
+      setError(msg);
     }
-  }, [signInWithGooglePopup, router]);
+  }, []);
 
   if (Platform.OS !== 'web') {
     return <Redirect href="/login" />;
@@ -72,21 +80,11 @@ export default function KayitScreen() {
               </View>
             )}
 
-            {loading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator color="#3D1A78" />
-                <Text style={styles.loadingText}>Hesap oluşturuluyor...</Text>
-              </View>
-            ) : (
-              <Pressable
-                style={styles.googleBtn}
-                onPress={handleGoogleSignup}
-                disabled={loading}
-              >
-                <Text style={styles.googleIcon}>G</Text>
-                <Text style={styles.googleBtnText}>Google ile Devam Et</Text>
-              </Pressable>
-            )}
+            <WebGoogleLoginButton
+              loading={loading}
+              onCredential={handleGoogleCredential}
+              onError={handleGoogleError}
+            />
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
@@ -112,8 +110,6 @@ export default function KayitScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 400 },
-  loadingBox: { alignItems: 'center', gap: 10, padding: 16 },
-  loadingText: { color: '#7A6B8A', fontSize: 14 },
   page: {
     flex: 1,
     width: '100%',
@@ -144,21 +140,6 @@ const styles = StyleSheet.create({
     borderColor: '#FECACA',
   },
   errorText: { color: '#B91C1C', fontSize: 12, fontWeight: '600', lineHeight: 17 },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    height: 52,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#DADCE0',
-    backgroundColor: '#FFFFFF',
-  },
-  googleIcon: { fontSize: 18, fontWeight: '800', color: '#EA4335' },
-  googleBtnText: { fontSize: 15, fontWeight: '700', color: '#1A0A2E' },
-  fallbackBtn: { alignItems: 'center', paddingVertical: 4 },
-  fallbackText: { color: '#7A6B8A', fontSize: 12, textDecorationLine: 'underline' },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#E8E0F4' },
   dividerText: { color: '#9D8BB5', fontSize: 12 },

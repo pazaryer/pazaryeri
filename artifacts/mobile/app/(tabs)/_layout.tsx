@@ -74,7 +74,25 @@ function ClassicTabLayout() {
   const isDark = colorScheme === 'dark';
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
+  const isAndroid = Platform.OS === 'android';
   const insets = useSafeAreaInsets();
+  const tabBarHeight = (isAndroid ? 64 : 56) + insets.bottom;
+
+  const renderTabIcon = (
+    iosName: string,
+    iosNameFocused: string,
+    androidName: keyof typeof Ionicons.glyphMap,
+    androidNameFocused: keyof typeof Ionicons.glyphMap,
+    color: string,
+    focused: boolean,
+  ) => {
+    if (isIOS) {
+      return <SymbolView name={focused ? iosNameFocused : iosName} tintColor={color} size={22} />;
+    }
+    return (
+      <Ionicons name={focused ? androidNameFocused : androidName} size={22} color={color} />
+    );
+  };
 
   return (
     <Tabs
@@ -82,15 +100,21 @@ function ClassicTabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginBottom: isAndroid ? 6 : 4,
+        },
+        tabBarIconStyle: { marginTop: 6 },
         tabBarStyle: {
           position: 'absolute',
           backgroundColor: isIOS ? 'transparent' : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
+          borderTopWidth: isWeb || isAndroid ? 1 : 0,
           borderTopColor: colors.border,
-          elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
-          paddingBottom: isWeb ? 34 : insets.bottom,
+          elevation: isAndroid ? 8 : 0,
+          height: tabBarHeight,
+          paddingBottom: insets.bottom,
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -99,48 +123,25 @@ function ClassicTabLayout() {
               tint={isDark ? 'dark' : 'light'}
               style={StyleSheet.absoluteFill}
             />
-          ) : isWeb ? (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
-            />
-          ) : null,
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
+          ),
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Ana Sayfa',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center', gap: 4 }}>
-              {isIOS 
-                ? <SymbolView name={focused ? "house.fill" : "house"} tintColor={color} size={22} />
-                : <Ionicons name={focused ? "home" : "home-outline"} size={22} color={color} />
-              }
-              {focused && (
-                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary }} />
-              )}
-            </View>
-          ),
+          tabBarIcon: ({ color, focused }) =>
+            renderTabIcon('house', 'house.fill', 'home-outline', 'home', color, focused),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Keşfet',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center', gap: 4 }}>
-              {isIOS 
-                ? <SymbolView name={focused ? "safari.fill" : "safari"} tintColor={color} size={22} />
-                : <Ionicons name={focused ? "compass" : "compass-outline"} size={22} color={color} />
-              }
-              {focused && (
-                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary }} />
-              )}
-            </View>
-          ),
+          tabBarIcon: ({ color, focused }) =>
+            renderTabIcon('safari', 'safari.fill', 'compass-outline', 'compass', color, focused),
         }}
       />
       <Tabs.Screen
@@ -148,6 +149,7 @@ function ClassicTabLayout() {
         options={{
           title: 'İlan Ver',
           tabBarIcon: () => null,
+          tabBarLabel: () => null,
           tabBarButton: (props) => <CustomPostTabButton {...props} />,
         }}
       />
@@ -155,34 +157,16 @@ function ClassicTabLayout() {
         name="messages"
         options={{
           title: 'Mesajlar',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center', gap: 4 }}>
-              {isIOS 
-                ? <SymbolView name={focused ? "message.fill" : "message"} tintColor={color} size={22} />
-                : <Ionicons name={focused ? "chatbubble" : "chatbubble-outline"} size={22} color={color} />
-              }
-              {focused && (
-                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary }} />
-              )}
-            </View>
-          ),
+          tabBarIcon: ({ color, focused }) =>
+            renderTabIcon('message', 'message.fill', 'chatbubble-outline', 'chatbubble', color, focused),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center', gap: 4 }}>
-              {isIOS 
-                ? <SymbolView name={focused ? "person.fill" : "person"} tintColor={color} size={22} />
-                : <Ionicons name={focused ? "person" : "person-outline"} size={22} color={color} />
-              }
-              {focused && (
-                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary }} />
-              )}
-            </View>
-          ),
+          tabBarIcon: ({ color, focused }) =>
+            renderTabIcon('person', 'person.fill', 'person-outline', 'person', color, focused),
         }}
       />
     </Tabs>

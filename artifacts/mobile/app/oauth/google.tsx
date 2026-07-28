@@ -3,6 +3,7 @@ import { View, Text, ActivityIndicator, StyleSheet, Platform } from 'react-nativ
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   completeGoogleRedirect,
+  extractGoogleIdTokenFromRedirect,
   redirectToAppWithError,
   redirectToAppWithToken,
   saveOAuthReturnUrl,
@@ -55,9 +56,12 @@ export default function GoogleOAuthScreen() {
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.removeItem(STARTED_KEY);
           }
-          const idToken = await result.user.getIdToken();
           if (isNativeBridge) {
-            redirectToAppWithToken(appReturn, idToken);
+            const googleIdToken = extractGoogleIdTokenFromRedirect(result);
+            if (!googleIdToken) {
+              throw new Error('Google token alınamadı');
+            }
+            redirectToAppWithToken(appReturn, googleIdToken);
             return;
           }
           router.replace('/');

@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { Platform } from 'react-native';
 import { apiFetch } from './api';
 import { updateWebProfile } from './web-profile';
+import { updateMobileProfile } from './mobile-profile';
 
 export interface ListingSummary {
   id: string;
@@ -120,7 +121,7 @@ export function useMyListings() {
 export function useSearch(q: string) {
   return useQuery({
     queryKey: ['search', q],
-    queryFn: () => apiFetch<ListResponse>(`/search?q=${encodeURIComponent(q)}`),
+    queryFn: () => apiFetch<ListResponse>(`/listings?q=${encodeURIComponent(q)}&limit=20`),
     enabled: q.length >= 2,
   });
 }
@@ -169,6 +170,50 @@ export function useCreateListing() {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    onSuccess: (detail) => {
+      qc.setQueryData(['listing', detail.id], detail);
+      qc.invalidateQueries({ queryKey: ['listings'] });
+      qc.invalidateQueries({ queryKey: ['my-listings'] });
+    },
+  });
+}
+
+export function useUpdateListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: string;
+      title?: string;
+      price?: number;
+      category?: string;
+      description?: string;
+      city?: string;
+      district?: string;
+      location?: string;
+      latitude?: number;
+      longitude?: number;
+      images?: string[];
+    }) =>
+      apiFetch<ListingDetail>(`/listings/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['listings'] });
+      qc.invalidateQueries({ queryKey: ['my-listings'] });
+      qc.invalidateQueries({ queryKey: ['listing', vars.id] });
+    },
+  });
+}
+
+export function useDeleteListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ success: boolean }>(`/listings/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['listings'] });
       qc.invalidateQueries({ queryKey: ['my-listings'] });
@@ -223,10 +268,7 @@ export function useUpdateProfile() {
       if (Platform.OS === 'web') {
         return updateWebProfile(data);
       }
-      return apiFetch('/users/me', {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      return updateMobileProfile(data);
     },
   });
 }

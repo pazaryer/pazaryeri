@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, Platform, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Image,
+} from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/contexts/AuthContext';
-import { promptGoogleSignIn } from '@/lib/google-native-auth';
+import { signInWithGoogleMobile } from '@/lib/google-native-auth';
 
 export default function LoginScreen() {
   if (Platform.OS === 'web') {
@@ -15,20 +23,19 @@ export default function LoginScreen() {
 
 function MobileLoginScreen() {
   const router = useRouter();
-  const { signInWithGoogleIdToken } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
+    setGoogleLoading(true);
     try {
-      const idToken = await promptGoogleSignIn();
-      await signInWithGoogleIdToken(idToken);
-    } catch (e: any) {
-      const msg = e?.message ?? '';
+      await signInWithGoogleMobile();
+      router.replace('/(tabs)');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
       if (msg.includes('iptal') || msg.includes('cancel')) return;
-      Alert.alert('Giriş Hatası', msg || 'Google ile giriş başarısız');
+      Alert.alert('Giriş Hatası', msg);
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
 
@@ -50,22 +57,34 @@ function MobileLoginScreen() {
 
         <View style={styles.actions}>
           <Pressable
-            style={[styles.googleButton, loading && styles.disabled]}
+            style={[styles.optionButton, styles.googleButton, googleLoading && styles.disabled]}
             onPress={handleGoogleLogin}
-            disabled={loading}
+            disabled={googleLoading}
           >
-            {loading ? (
+            {googleLoading ? (
               <ActivityIndicator color="#3D1A78" />
             ) : (
               <>
-                <Ionicons name="logo-google" size={24} color="#EA4335" />
+                <Ionicons name="logo-google" size={22} color="#EA4335" />
                 <Text style={styles.googleText}>Google ile Giriş Yap</Text>
               </>
             )}
           </Pressable>
 
-          <Pressable style={styles.phoneLink} onPress={() => router.push('/email-auth')}>
-            <Text style={styles.phoneLinkText}>E-posta ile Devam Et</Text>
+          <Pressable
+            style={styles.optionButton}
+            onPress={() => router.push('/email-auth')}
+          >
+            <Ionicons name="mail-outline" size={22} color="#3D1A78" />
+            <Text style={styles.optionText}>E-posta ile Giriş Yap</Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.optionButton, styles.registerButton]}
+            onPress={() => router.push('/email-auth?mode=register')}
+          >
+            <Ionicons name="person-add-outline" size={22} color="#FFFFFF" />
+            <Text style={styles.registerText}>Kayıt Ol</Text>
           </Pressable>
 
           <Text style={styles.legal}>
@@ -90,19 +109,15 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'space-between',
-    padding: 32,
-    paddingTop: 120,
-    paddingBottom: 60,
+    padding: 28,
+    paddingTop: 100,
+    paddingBottom: 48,
   },
-  logoContainer: { alignItems: 'center', gap: 16 },
+  logoContainer: { alignItems: 'center', gap: 14 },
   appIcon: {
     width: 96,
     height: 96,
     borderRadius: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
     elevation: 6,
   },
   title: {
@@ -112,40 +127,36 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
   },
   tagline: {
-    fontSize: 18,
+    fontSize: 17,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
   },
-  actions: { gap: 24 },
-  googleButton: {
+  actions: { gap: 12 },
+  optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    borderRadius: 16,
-    gap: 12,
+    borderRadius: 14,
+    gap: 10,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    minHeight: 56,
+    minHeight: 54,
+  },
+  googleButton: {},
+  registerButton: {
+    backgroundColor: '#C9A84C',
+    marginTop: 4,
   },
   disabled: { opacity: 0.7 },
-  googleText: { fontSize: 16, fontWeight: '600', color: '#000000' },
-  phoneLink: { alignItems: 'center' },
-  phoneLinkText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
+  googleText: { fontSize: 16, fontWeight: '600', color: '#1A0A2E' },
+  optionText: { fontSize: 16, fontWeight: '600', color: '#1A0A2E' },
+  registerText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   legal: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
+    marginTop: 8,
   },
   legalLink: {
     color: '#C9A84C',

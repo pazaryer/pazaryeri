@@ -12,15 +12,22 @@ import {
 import { useRouter } from 'expo-router';
 import { WebShell } from './WebShell';
 import { WebPage } from './WebPage';
-import { useCreateListing } from '@/lib/hooks';
+import { useCreateListing, useUpdateListing, useListing } from '@/lib/hooks';
 import { pickImages } from '@/lib/storage';
 import { showAlert } from '@/lib/web-alert';
 
 const CATEGORIES = ['Elektronik', 'Araç', 'Mobilya', 'Moda', 'Spor', 'Ev', 'Hobi', 'Diğer'];
 
-export function WebPostPage() {
+interface WebPostPageProps {
+  editId?: string;
+}
+
+export function WebPostPage({ editId }: WebPostPageProps) {
   const router = useRouter();
   const createListing = useCreateListing();
+  const updateListing = useUpdateListing();
+  const { data: existing, isLoading: loadingExisting } = useListing(editId ?? '');
+  const isEdit = Boolean(editId);
 
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
@@ -30,6 +37,18 @@ export function WebPostPage() {
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
+
+  React.useEffect(() => {
+    if (!isEdit || !existing || prefilled) return;
+    setTitle(existing.title);
+    setPrice(String(existing.price));
+    setCategory(existing.category);
+    setDesc(existing.description ?? '');
+    setLocation(existing.location ?? [existing.district, existing.city].filter(Boolean).join(', '));
+    setImages(existing.images.length > 0 ? existing.images : existing.image ? [existing.image] : []);
+    setPrefilled(true);
+  }, [isEdit, existing, prefilled]);
 
   const handlePickImages = async () => {
     setUploading(true);
@@ -54,7 +73,7 @@ export function WebPostPage() {
     setLoading(true);
     try {
       const parts = location.split(',').map((s) => s.trim()).filter(Boolean);
-      await createListing.mutateAsync({
+      const payload = {
         title: title.trim(),
         price: parseInt(price.replace(/\D/g, ''), 10),
         category,
@@ -63,20 +82,38 @@ export function WebPostPage() {
         district: parts[0] ?? undefined,
         location: location.trim() || 'Türkiye',
         images,
-      });
-      showAlert('Başarılı', 'İlanınız yayınlandı!');
-      router.push('/kesfet');
+      };
+
+      if (isEdit && editId) {
+        await updateListing.mutateAsync({ id: editId, ...payload });
+        showAlert('Başarılı', 'İlanınız güncellendi!');
+        router.push(`/listing/${editId}`);
+      } else {
+        await createListing.mutateAsync(payload);
+        showAlert('Başarılı', 'İlanınız yayınlandı!');
+        router.push('/kesfet');
+      }
     } catch (e: any) {
-      showAlert('Hata', e.message ?? 'İlan oluşturulamadı');
+      showAlert('Hata', e.message ?? (isEdit ? 'İlan güncellenemedi' : 'İlan oluşturulamadı'));
     } finally {
       setLoading(false);
     }
   };
 
+  if (isEdit && loadingExisting) {
+    return (
+      <WebShell hideFooter>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+          <ActivityIndicator size="large" color="#3D1A78" />
+        </View>
+      </WebShell>
+    );
+  }
+
   return (
     <WebShell hideFooter>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        <WebPage title="İlan Ver" subtitle="Ücretsiz ilanınızı dakikalar içinde yayınlayın" narrow>
+        <WebPage title={isEdit ? 'İlanı Düzenle' : 'İlan Ver'} subtitle={isEdit ? 'İlan bilgilerinizi güncelleyin' : 'Ücretsiz ilanınızı dakikalar içinde yayınlayın'} narrow>
           <View style={styles.card}>
             <Text style={styles.label}>Fotoğraflar ({images.length}/10)</Text>
             <View style={styles.photoRow}>
@@ -175,7 +212,7 @@ export function WebPostPage() {
               {loading ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.submitText}>İlanı Yayınla</Text>
+                <Text style={styles.submitText}>{isEdit ? 'Değişiklikleri Kaydet' : 'İlanı Yayınla'}</Text>
               )}
             </Pressable>
           </View>

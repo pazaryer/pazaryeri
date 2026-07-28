@@ -21,22 +21,40 @@ import {
   formatTimeAgo,
 } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
+import { ListingOwnerActions } from '@/components/ListingOwnerActions';
 
 export function WebListingDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { user, profile } = useAuth();
-  const { data: listing, isLoading } = useListing(id);
+  const listingId = Array.isArray(id) ? id[0] : id;
+  const { data: listing, isLoading, isError, error, refetch, isFetching } = useListing(listingId ?? '');
   const toggleFavorite = useToggleFavorite();
   const startConversation = useStartConversation();
   const [activeImage, setActiveImage] = useState(0);
 
-  if (isLoading || !listing) {
+  if (isLoading || (isFetching && !listing)) {
     return (
       <WebShell hideFooter>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#3D1A78" />
+        </View>
+      </WebShell>
+    );
+  }
+
+  if (isError || !listing) {
+    return (
+      <WebShell hideFooter>
+        <View style={styles.center}>
+          <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>İlan yüklenemedi</Text>
+          <Text style={{ color: '#666', marginBottom: 16, textAlign: 'center', paddingHorizontal: 24 }}>
+            {error instanceof Error ? error.message : 'İlan bulunamadı'}
+          </Text>
+          <Pressable style={{ backgroundColor: '#3D1A78', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }} onPress={() => refetch()}>
+            <Text style={{ color: '#FFF', fontWeight: '700' }}>Tekrar Dene</Text>
+          </Pressable>
         </View>
       </WebShell>
     );
@@ -154,6 +172,14 @@ export function WebListingDetailPage() {
               <View style={styles.soldBadge}>
                 <Text style={styles.soldBadgeText}>Bu ilan satıldı</Text>
               </View>
+            )}
+
+            {isOwner && (
+              <ListingOwnerActions
+                listingId={listing.id}
+                status={listing.status}
+                onDeleted={() => router.replace('/hesabim')}
+              />
             )}
           </View>
         </View>

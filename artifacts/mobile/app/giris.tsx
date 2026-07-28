@@ -12,35 +12,11 @@ import { Redirect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { WebShell } from '@/components/web/WebShell';
-
-function GoogleLoginButton({
-  loading,
-  onPress,
-}: {
-  loading: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      style={[styles.googleBtn, loading && { opacity: 0.7 }]}
-      onPress={onPress}
-      disabled={loading}
-    >
-      {loading ? (
-        <ActivityIndicator color="#3D1A78" />
-      ) : (
-        <>
-          <Text style={styles.googleIcon}>G</Text>
-          <Text style={styles.googleBtnText}>Google ile Devam Et</Text>
-        </>
-      )}
-    </Pressable>
-  );
-}
+import { WebGoogleLoginButton } from '@/components/web/WebGoogleLoginButton';
 
 export default function GirisScreen() {
   const router = useRouter();
-  const { signInWithGooglePopup, user, isLoading } = useAuth();
+  const { signInWithGoogleIdToken, user, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,21 +26,28 @@ export default function GirisScreen() {
     }
   }, [user, isLoading, router]);
 
-  const handleGoogleLogin = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await signInWithGooglePopup();
-      router.replace('/');
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
-      if (!msg.includes('popup-closed') && !msg.includes('cancel')) {
+  const handleGoogleCredential = useCallback(
+    async (idToken: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await signInWithGoogleIdToken(idToken);
+        router.replace('/');
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
         setError(msg);
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
+    },
+    [signInWithGoogleIdToken, router],
+  );
+
+  const handleGoogleError = useCallback((msg: string) => {
+    if (!msg.includes('iptal') && !msg.includes('cancel')) {
+      setError(msg);
     }
-  }, [signInWithGooglePopup, router]);
+  }, []);
 
   if (Platform.OS !== 'web') {
     return <Redirect href="/login" />;
@@ -98,7 +81,11 @@ export default function GirisScreen() {
               </View>
             )}
 
-            <GoogleLoginButton loading={loading} onPress={handleGoogleLogin} />
+            <WebGoogleLoginButton
+              loading={loading}
+              onCredential={handleGoogleCredential}
+              onError={handleGoogleError}
+            />
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
@@ -159,23 +146,6 @@ const styles = StyleSheet.create({
     borderColor: '#FECACA',
   },
   errorText: { color: '#B91C1C', fontSize: 12, fontWeight: '600', lineHeight: 17 },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    height: 52,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#DADCE0',
-    backgroundColor: '#FFFFFF',
-  },
-  googleIcon: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#EA4335',
-  },
-  googleBtnText: { fontSize: 15, fontWeight: '700', color: '#1A0A2E' },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#E8E0F4' },
   dividerText: { color: '#9D8BB5', fontSize: 12 },

@@ -82,7 +82,7 @@ export default function PostScreen() {
     setLoading(true);
     try {
       const parts = location.split(',').map((s) => s.trim());
-      await createListing.mutateAsync({
+      const created = await createListing.mutateAsync({
         title: title.trim(),
         price: parseInt(price.replace(/\D/g, ''), 10),
         category,
@@ -93,7 +93,8 @@ export default function PostScreen() {
         images,
       });
       Alert.alert('Başarılı', 'İlanınız yayınlandı!', [
-        { text: 'Tamam', onPress: () => router.push('/(tabs)') },
+        { text: 'İlanı Gör', onPress: () => router.push(`/listing/${created.id}`) },
+        { text: 'Ana Sayfa', onPress: () => router.push('/(tabs)') },
       ]);
       setTitle('');
       setPrice('');

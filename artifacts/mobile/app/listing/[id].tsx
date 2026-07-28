@@ -28,6 +28,7 @@ import {
 } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { sitePath } from '@/lib/config';
+import { ListingOwnerActions } from '@/components/ListingOwnerActions';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -45,17 +46,38 @@ function MobileListingDetailScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
 
-  const { data: listing, isLoading } = useListing(id);
+  const listingId = Array.isArray(id) ? id[0] : id;
+  const { data: listing, isLoading, isError, error, refetch, isFetching } = useListing(listingId ?? '');
   const toggleFavorite = useToggleFavorite();
   const startConversation = useStartConversation();
   const createReport = useCreateReport();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  if (isLoading || !listing) {
+  if (isLoading || (isFetching && !listing)) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (isError || !listing) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={24} color={colors.foreground} />
+        </Pressable>
+        <View style={styles.errorWrap}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.mutedForeground} />
+          <Text style={[styles.errorTitle, { color: colors.foreground }]}>İlan yüklenemedi</Text>
+          <Text style={[styles.errorSub, { color: colors.mutedForeground }]}>
+            {error instanceof Error ? error.message : 'İlan bulunamadı veya bağlantı hatası oluştu.'}
+          </Text>
+          <Pressable style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={() => refetch()}>
+            <Text style={styles.retryBtnText}>Tekrar Dene</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -205,6 +227,14 @@ function MobileListingDetailScreen() {
               Güvenliğiniz için ödeme ve teslimatı yüz yüze yapmayı tercih edin.
             </Text>
           </View>
+
+          {isOwner && (
+            <ListingOwnerActions
+              listingId={listing.id}
+              status={listing.status}
+              onDeleted={() => router.replace('/(tabs)/profile')}
+            />
+          )}
         </View>
       </ScrollView>
 
@@ -235,6 +265,12 @@ function MobileListingDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  backBtn: { padding: 16, alignSelf: 'flex-start' },
+  errorWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32, gap: 12 },
+  errorTitle: { fontSize: 20, fontWeight: '700', marginTop: 8 },
+  errorSub: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  retryBtn: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  retryBtnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
   topActions: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', zIndex: 10 },
   rightActions: { flexDirection: 'row', alignItems: 'center' },
   circleButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 255, 255, 0.85)', justifyContent: 'center', alignItems: 'center' },

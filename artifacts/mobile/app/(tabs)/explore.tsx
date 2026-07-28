@@ -1,135 +1,279 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Platform, ActivityIndicator } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  Pressable,
+  Platform,
+  ActivityIndicator,
+  RefreshControl,
+  Dimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
-import { useSearch } from '@/lib/hooks';
+import { useListings } from '@/lib/hooks';
 import { ListingCard } from '@/components/ListingCard';
+import { MOBILE_EXPLORE_CATEGORIES } from '@/lib/categories';
 
-const TRENDING = ['iPhone 14', 'PS5', 'Bisiklet', 'Nike', 'MacBook'];
-
-const BENTO_CATEGORIES = [
-  { name: 'Elektronik', icon: 'hardware-chip-outline', image: 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=800&q=90', style: 'full', height: 160 },
-  { name: 'Araç', icon: 'car-sport-outline', image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&q=90', style: 'half', height: 140 },
-  { name: 'Mobilya', icon: 'bed-outline', image: 'https://images.unsplash.com/photo-1567016432779-094069958ea5?w=600&q=90', style: 'half', height: 140 },
-  { name: 'Moda', icon: 'shirt-outline', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&q=90', style: 'half', height: 120 },
-  { name: 'Spor', icon: 'bicycle-outline', image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=90', style: 'half', height: 120 },
-  { name: 'Ev', icon: 'home-outline', image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=90', style: 'full', height: 110 },
-];
+const { width } = Dimensions.get('window');
+const CARD_GAP = 10;
+const CATEGORY_WIDTH = (width - 32 - CARD_GAP) / 2;
 
 export default function ExploreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const isWeb = Platform.OS === 'web';
-  const paddingTop = isWeb ? 67 : insets.top + 20;
+  const paddingTop = isWeb ? 67 : insets.top;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: searchResults, isLoading: searching } = useSearch(searchQuery);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const {
+    data: listingsData,
+    isLoading: listingsLoading,
+    refetch,
+    isRefetching,
+  } = useListings({
+    category: selectedCategory && searchQuery.length < 2 ? selectedCategory : undefined,
+    q: searchQuery.length >= 2 ? searchQuery : undefined,
+  });
+
+  const allItems = listingsData?.pages.flatMap((p) => p.items) ?? [];
+  const showSearch = searchQuery.length >= 2;
+  const displayItems = allItems;
+
+  const trending = useMemo(() => {
+    const titles = allItems.slice(0, 8).map((item) => {
+      const words = item.title.trim().split(/\s+/).slice(0, 2).join(' ');
+      return words.length >= 3 ? words : item.title.slice(0, 24);
+    });
+    return [...new Set(titles)].slice(0, 6);
+  }, [allItems]);
+
+  const openCategory = (name: string) => {
+    setSearchQuery('');
+    setSelectedCategory(name);
+  };
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       keyboardShouldPersistTaps="handled"
+      refreshControl={
+        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+      }
     >
-      <View style={[styles.header, { paddingTop }]}>
-        <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="search" size={20} color={colors.primary} />
+      <LinearGradient
+        colors={['#3D1A78', '#1A0A2E']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.hero, { paddingTop: paddingTop + 12 }]}
+      >
+        <Text style={styles.heroTitle}>Keşfet</Text>
+        <Text style={styles.heroSub}>Canlı ilanlar arasında ara, kategoriye göz at</Text>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={20} color="#9D8BB5" />
           <TextInput
             placeholder="Ne arıyorsunuz?"
-            placeholderTextColor={colors.mutedForeground}
-            style={[styles.searchInput, { color: colors.foreground }]}
+            placeholderTextColor="#9D8BB5"
+            style={styles.searchInput}
             value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoFocus
+            onChangeText={(t) => {
+              setSearchQuery(t);
+              if (t.length >= 2) setSelectedCategory(null);
+            }}
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+            <Pressable
+              onPress={() => {
+                setSearchQuery('');
+                setSelectedCategory(null);
+              }}
+            >
+              <Ionicons name="close-circle" size={20} color="#C9A84C" />
             </Pressable>
           )}
         </View>
-      </View>
+      </LinearGradient>
 
-      {searchQuery.length >= 2 && (
+      {!showSearch && !selectedCategory && trending.length > 0 && (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Arama Sonuçları
-          </Text>
-          {searching ? (
-            <ActivityIndicator color={colors.primary} />
-          ) : searchResults?.items.length === 0 ? (
-            <Text style={{ color: colors.mutedForeground }}>Sonuç bulunamadı</Text>
-          ) : (
-            <View style={styles.resultsGrid}>
-              {searchResults?.items.map((item) => (
-                <ListingCard key={item.id} item={item} />
-              ))}
-            </View>
-          )}
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Güncel İlanlar</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {trending.map((label) => (
+              <Pressable
+                key={label}
+                style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => setSearchQuery(label)}
+              >
+                <Ionicons name="flash-outline" size={14} color={colors.primary} />
+                <Text style={[styles.chipText, { color: colors.foreground }]} numberOfLines={1}>
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
       )}
 
-      {searchQuery.length < 2 && (
-        <>
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Trend Aramalar</Text>
-            <View style={styles.chipContainer}>
-              {TRENDING.map((trend) => (
-                <Pressable
-                  key={trend}
-                  style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={() => setSearchQuery(trend)}
-                >
-                  <Ionicons name="trending-up" size={14} color={colors.primary} />
-                  <Text style={[styles.chipText, { color: colors.foreground }]}>{trend}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.section}>
+      {!showSearch && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Kategoriler</Text>
-            <View style={styles.bentoGrid}>
-              {BENTO_CATEGORIES.map((cat) => (
+            {selectedCategory && (
+              <Pressable onPress={() => setSelectedCategory(null)}>
+                <Text style={[styles.clearFilter, { color: colors.primary }]}>Tümünü göster</Text>
+              </Pressable>
+            )}
+          </View>
+          <View style={styles.categoryGrid}>
+            {MOBILE_EXPLORE_CATEGORIES.map((cat) => {
+              const active = selectedCategory === cat.name;
+              return (
                 <Pressable
                   key={cat.name}
-                  style={[styles.bentoCard, cat.style === 'full' ? styles.bentoFull : styles.bentoHalf, { height: cat.height }]}
-                  onPress={() => setSearchQuery(cat.name)}
+                  style={[
+                    styles.categoryCard,
+                    { width: CATEGORY_WIDTH },
+                    active && styles.categoryCardActive,
+                  ]}
+                  onPress={() => openCategory(cat.name)}
                 >
-                  <Image source={{ uri: cat.image }} style={StyleSheet.absoluteFillObject} contentFit="cover" />
-                  <LinearGradient colors={['transparent', 'rgba(10,5,25,0.75)']} style={StyleSheet.absoluteFillObject} />
-                  <View style={styles.bentoContent}>
-                    <Ionicons name={cat.icon as any} size={36} color="#FFFFFF" />
-                    <Text style={styles.bentoText}>{cat.name}</Text>
-                  </View>
+                  <LinearGradient
+                    colors={cat.gradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFillObject}
+                  />
+                  <Ionicons name={cat.icon as keyof typeof Ionicons.glyphMap} size={28} color="#FFF" />
+                  <Text style={styles.categoryLabel}>{cat.name}</Text>
+                  {active && (
+                    <View style={styles.activeBadge}>
+                      <Ionicons name="checkmark" size={12} color="#3D1A78" />
+                    </View>
+                  )}
                 </Pressable>
-              ))}
-            </View>
+              );
+            })}
           </View>
-        </>
+        </View>
       )}
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+          {showSearch
+            ? `"${searchQuery}" sonuçları`
+            : selectedCategory
+              ? `${selectedCategory} ilanları`
+              : 'Son eklenen ilanlar'}
+        </Text>
+
+        {(listingsLoading) && displayItems.length === 0 ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
+        ) : displayItems.length === 0 ? (
+          <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Ionicons name="search-outline" size={40} color={colors.mutedForeground} />
+            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>İlan bulunamadı</Text>
+            <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
+              Farklı bir arama deneyin veya ilk ilanı siz verin
+            </Text>
+            <Pressable
+              style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
+              onPress={() => router.push('/(tabs)/post')}
+            >
+              <Text style={styles.emptyBtnText}>İlan Ver</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.resultsGrid}>
+            {displayItems.map((item) => (
+              <ListingCard key={item.id} item={item} />
+            ))}
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingBottom: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 52, borderRadius: 26, borderWidth: 1, gap: 12 },
-  searchInput: { flex: 1, fontSize: 16 },
-  section: { paddingHorizontal: 16, marginBottom: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
-  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1, gap: 6 },
-  chipText: { fontSize: 14, fontWeight: '500' },
-  bentoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  bentoCard: { borderRadius: 20, overflow: 'hidden' },
-  bentoFull: { width: '100%' },
-  bentoHalf: { width: '48%', flexGrow: 1 },
-  bentoContent: { flex: 1, padding: 16, justifyContent: 'space-between', alignItems: 'flex-start' },
-  bentoText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginTop: 'auto' },
+  hero: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    marginBottom: 8,
+  },
+  heroTitle: { fontSize: 32, fontWeight: '800', color: '#FFF', letterSpacing: -0.5 },
+  heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.75)', marginTop: 4, marginBottom: 16 },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 50,
+    gap: 10,
+  },
+  searchInput: { flex: 1, fontSize: 16, color: '#1A0A2E' },
+  section: { paddingHorizontal: 16, marginTop: 16 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  clearFilter: { fontSize: 13, fontWeight: '600', marginBottom: 12 },
+  chipRow: { gap: 8, paddingRight: 8 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 6,
+    maxWidth: 180,
+  },
+  chipText: { fontSize: 13, fontWeight: '600' },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_GAP },
+  categoryCard: {
+    height: 96,
+    borderRadius: 16,
+    padding: 14,
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+  categoryCardActive: {
+    borderWidth: 2,
+    borderColor: '#C9A84C',
+  },
+  categoryLabel: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  activeBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#C9A84C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   resultsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  empty: {
+    alignItems: 'center',
+    padding: 32,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 8,
+  },
+  emptyTitle: { fontSize: 17, fontWeight: '700', marginTop: 8 },
+  emptySub: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  emptyBtn: { marginTop: 12, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  emptyBtnText: { color: '#FFF', fontWeight: '700' },
 });

@@ -38,3 +38,13 @@ export function sitePath(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`;
   return `${base}${p}`;
 }
+
+/** Mobil Google OAuth — firebaseapp.com origin (origin_mismatch önlenir) */
+export function oauthBridgePath(path: string): string {
+  const authDomain =
+    process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ??
+    Constants.expoConfig?.extra?.firebase?.authDomain ??
+    'pazaryeri0.firebaseapp.com';
+  const p = path.startsWith('/') ? path : `/${path}`;
+  return `https://${authDomain.replace(/\/$/, '')}${p}`;
+}

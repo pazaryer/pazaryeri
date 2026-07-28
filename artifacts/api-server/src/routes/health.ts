@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { HealthCheckResponse } from "@workspace/api-zod";
-import { isPostgresConfigured, pgHealthCheck } from "../lib/postgres-db";
 import { getImageStorageStatus } from "../lib/image-storage";
+import { getListingsDbStatus } from "../lib/listings-store";
 import {
   GOOGLE_WEB_CLIENT_ID,
   GOOGLE_OAUTH_URIS,
@@ -15,11 +15,12 @@ const API_PUBLIC_URL =
 
 router.get("/healthz", async (_req, res) => {
   const data = HealthCheckResponse.parse({ status: "ok" });
-  const dbOk = isPostgresConfigured() ? await pgHealthCheck() : null;
+  const listingsDb = await getListingsDbStatus();
   res.json({
     ...data,
-    db: dbOk,
-    dbMode: dbOk ? "postgres" : "supabase",
+    db: listingsDb.backend !== "none",
+    dbMode: listingsDb.backend,
+    listingsDb,
     storage: getImageStorageStatus(),
     google: {
       clientId: resolveGoogleWebClientId(),

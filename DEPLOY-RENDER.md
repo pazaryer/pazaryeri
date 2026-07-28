@@ -16,7 +16,7 @@ SQL Editor'e yapıştırman gereken: `supabase/setup.sql` dosyasının **tamamı
 
 ## 1. Supabase — SQL Editor (2 dk)
 
-1. Aç: https://supabase.com/dashboard/project/vqllsqrgwwzrehcgeyot/sql/new
+1. Aç: https://supabase.com/dashboard/project/vqllsqrgwwzrehcegyot/sql/new
 2. Proje klasöründeki `supabase/setup.sql` dosyasını aç
 3. **Tüm içeriği** kopyala (230+ satır, `-- Pazaryeri` ile başlar)
 4. SQL Editor'e yapıştır → **Run** (Ctrl+Enter)
@@ -44,7 +44,7 @@ Render'da şu an **Rust** seçilmiş — bu yanlış. Node.js olmalı.
 Aşağıdakileri tek tek ekle (`.env` dosyandan kopyala):
 
 ```
-SUPABASE_URL=https://vqllsqrgwwzrehcgeyot.supabase.co
+SUPABASE_URL=https://vqllsqrgwwzrehcegyot.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=(service_role key)
 R2_ACCESS_KEY_ID=(cloudflare r2 key)
 R2_SECRET_ACCESS_KEY=(cloudflare r2 secret)

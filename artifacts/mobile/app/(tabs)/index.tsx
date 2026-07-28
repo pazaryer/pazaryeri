@@ -17,8 +17,7 @@ import { ListingCard } from '@/components/ListingCard';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { Logo } from '@/components/Logo';
 import { useListings } from '@/lib/hooks';
-
-const CATEGORIES = ['Tümü', 'Elektronik', 'Araç', 'Mobilya', 'Moda', 'Spor', 'Ev', 'Diğer'];
+import { LISTING_CATEGORIES } from '@/lib/categories';
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -110,7 +109,7 @@ export default function HomeScreen() {
           ListHeaderComponent={
             <View style={styles.listHeader}>
               <CategoryFilter
-                categories={CATEGORIES}
+                categories={[...LISTING_CATEGORIES]}
                 selectedCategory={selectedCategory}
                 onSelect={setSelectedCategory}
               />

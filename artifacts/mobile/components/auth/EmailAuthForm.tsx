@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { WebShell } from '@/components/web/WebShell';
 
 type Mode = 'login' | 'register' | 'forgot';
 
@@ -81,7 +80,12 @@ export function EmailAuthForm({ mode }: EmailAuthFormProps) {
     }
   };
 
-  const backHref = subMode === 'register' || mode === 'register' ? '/kayit' : '/giris';
+  const backHref =
+    Platform.OS === 'web'
+      ? subMode === 'register' || mode === 'register'
+        ? '/kayit'
+        : '/giris'
+      : '/login';
 
   return (
     <KeyboardAvoidingView
@@ -159,7 +163,7 @@ export function EmailAuthForm({ mode }: EmailAuthFormProps) {
             <Pressable onPress={() => setSubMode('forgot')}>
               <Text style={styles.linkPrimary}>Şifremi unuttum</Text>
             </Pressable>
-            <Pressable onPress={() => router.push('/kayit')}>
+            <Pressable onPress={() => router.push(Platform.OS === 'web' ? '/kayit' : '/email-auth?mode=register')}>
               <Text style={styles.linkMuted}>
                 Hesabın yok mu? <Text style={styles.linkBold}>Kayıt ol</Text>
               </Text>
@@ -168,7 +172,7 @@ export function EmailAuthForm({ mode }: EmailAuthFormProps) {
         )}
 
         {subMode === 'register' && (
-          <Pressable onPress={() => router.push('/giris')}>
+          <Pressable onPress={() => router.push(Platform.OS === 'web' ? '/giris' : '/login')}>
             <Text style={styles.linkMuted}>
               Zaten hesabın var mı? <Text style={styles.linkBold}>Giriş yap</Text>
             </Text>

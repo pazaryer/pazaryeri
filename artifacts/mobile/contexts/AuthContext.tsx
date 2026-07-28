@@ -17,6 +17,7 @@ import Constants from 'expo-constants';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { apiFetch } from '@/lib/api';
 import { loadWebProfileExtras } from '@/lib/web-profile';
+import { loadMobileProfileExtras } from '@/lib/mobile-profile';
 import { SITE_URL } from '@/lib/config';
 import { requestGoogleIdToken } from '@/lib/google-web-signin';
 
@@ -63,9 +64,11 @@ function buildSyncPayload(u: User): Record<string, string> {
   return payload;
 }
 
-async function applyWebProfileExtras(u: User, base: UserProfile): Promise<UserProfile> {
-  if (Platform.OS !== 'web') return base;
-  const extras = await loadWebProfileExtras(u.uid);
+async function applyProfileExtras(u: User, base: UserProfile): Promise<UserProfile> {
+  const extras =
+    Platform.OS === 'web'
+      ? await loadWebProfileExtras(u.uid)
+      : await loadMobileProfileExtras(u.uid);
   return {
     ...base,
     name: extras.name ?? u.displayName?.trim() ?? base.name,
@@ -105,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         body: JSON.stringify(buildSyncPayload(u)),
       });
-      setProfile(await applyWebProfileExtras(u, p));
+      setProfile(await applyProfileExtras(u, p));
 
       if (Platform.OS !== 'web' && Constants.appOwnership !== 'expo') {
         const { registerForPushNotifications } = await import('@/lib/notifications');
@@ -113,12 +116,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       const base = fallbackProfile(u);
-      setProfile(await applyWebProfileExtras(u, base));
+      setProfile(await applyProfileExtras(u, base));
       try {
         const p = await apiFetch<UserProfile>('/users/me');
-        setProfile(await applyWebProfileExtras(u, p));
+        setProfile(await applyProfileExtras(u, p));
       } catch {
-        setProfile(await applyWebProfileExtras(u, fallbackProfile(u)));
+        setProfile(await applyProfileExtras(u, fallbackProfile(u)));
       }
     } finally {
       syncingRef.current = null;
@@ -171,8 +174,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogleIdToken = async (idToken: string) => {
-    const credential = GoogleAuthProvider.credential(idToken);
-    await signInWithCredential(getFirebaseAuth(), credential);
+    try {
+      const credential = GoogleAuthProvider.credential(idToken);
+      await signInWithCredential(getFirebaseAuth(), credential);
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code;
+      if (code === 'auth/invalid-credential' || code === 'auth/custom-token-mismatch') {
+        throw new Error(
+          'Google girişi Firebase ile eşleşmedi. Firebase Console → Authentication → Google → Safelist client IDs bölümüne 637257... client ID ekleyin.',
+        );
+      }
+      throw e;
+    }
   };
 
   const signInWithGoogleRedirect = async () => {
@@ -217,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       base = fallbackProfile(user);
     }
-    setProfile(await applyWebProfileExtras(user, base));
+    setProfile(await applyProfileExtras(user, base));
   };
 
   const patchProfile = useCallback((patch: Partial<UserProfile>) => {

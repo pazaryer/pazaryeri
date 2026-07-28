@@ -2,13 +2,21 @@ import "./node-polyfills";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "") ?? "";
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+const serviceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+  process.env.SUPABASE_SECRET_KEY?.trim() ||
+  "";
 
 let admin: SupabaseClient | null = null;
 
 export function getSupabaseAdmin(): SupabaseClient {
   if (!supabaseUrl || !serviceKey) {
     throw new Error("SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY gerekli");
+  }
+  if (!supabaseUrl.startsWith("https://") || !supabaseUrl.includes(".supabase.co")) {
+    throw new Error(
+      "SUPABASE_URL geçersiz — https://PROJE_ID.supabase.co formatında olmalı (postgres bağlantı dizesi değil)",
+    );
   }
   if (!admin) {
     admin = createClient(supabaseUrl, serviceKey, {
@@ -17,6 +25,23 @@ export function getSupabaseAdmin(): SupabaseClient {
     });
   }
   return admin;
+}
+
+export async function supabaseHealthCheck(): Promise<{ ok: boolean; error?: string }> {
+  if (!supabaseUrl || !serviceKey) {
+    return { ok: false, error: "SUPABASE_URL veya SUPABASE_SERVICE_ROLE_KEY eksik" };
+  }
+  if (!supabaseUrl.startsWith("https://")) {
+    return { ok: false, error: "SUPABASE_URL https:// ile başlamalı" };
+  }
+  try {
+    const sb = getSupabaseAdmin();
+    const { error } = await sb.from("listings").select("id").limit(1);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 export type DbUser = {

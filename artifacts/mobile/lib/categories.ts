@@ -4,6 +4,45 @@ export interface CategoryItem {
   href: string;
 }
 
+export const LISTING_CATEGORIES = [
+  'Tümü',
+  'Elektronik',
+  'Telefon',
+  'Bilgisayar',
+  'Araç',
+  'Emlak',
+  'Mobilya',
+  'Ev & Bahçe',
+  'Moda',
+  'Spor',
+  'Bebek',
+  'Hobi',
+  'İş & Ofis',
+  'Hayvanlar',
+  'Müzik',
+  'Beyaz Eşya',
+  'Kozmetik',
+  'Antika',
+  'Diğer',
+] as const;
+
+export type ListingCategory = (typeof LISTING_CATEGORIES)[number];
+
+export const MOBILE_EXPLORE_CATEGORIES: {
+  name: string;
+  icon: string;
+  gradient: [string, string];
+}[] = [
+  { name: 'Elektronik', icon: 'phone-portrait-outline', gradient: ['#5B4B8A', '#3D1A78'] },
+  { name: 'Telefon', icon: 'call-outline', gradient: ['#6A4C93', '#4A2C7A'] },
+  { name: 'Araç', icon: 'car-sport-outline', gradient: ['#7A5C3E', '#4A3520'] },
+  { name: 'Emlak', icon: 'business-outline', gradient: ['#4A6FA5', '#2C4A6E'] },
+  { name: 'Mobilya', icon: 'bed-outline', gradient: ['#8B6F47', '#5C4A30'] },
+  { name: 'Moda', icon: 'shirt-outline', gradient: ['#9B4D7A', '#6B2D5A'] },
+  { name: 'Spor', icon: 'bicycle-outline', gradient: ['#3D8B6E', '#2A5C4A'] },
+  { name: 'Ev & Bahçe', icon: 'home-outline', gradient: ['#5A8F5A', '#3A6B3A'] },
+];
+
 export const WEB_CATEGORIES: CategoryItem[] = [
   { label: 'Tüm İlanlar', icon: '📋', href: '/kesfet' },
   { label: 'Elektronik', icon: '📱', href: '/kesfet?kategori=Elektronik' },
