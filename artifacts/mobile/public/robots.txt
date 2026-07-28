@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /hesabim
+Disallow: /mesajlar
+Disallow: /ilan-ver
+Disallow: /chat/
+
+Sitemap: https://pazaryeri0.web.app/sitemap.xml

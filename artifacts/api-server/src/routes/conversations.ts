@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { getSupabaseAdmin, ensureUser, getListingImages, userPresence } from "../lib/supabase-db";
 import { authMiddleware } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
+import { refreshConversationPreview } from "../lib/conversation-utils";
 import { notifyUser } from "../lib/notify";
 
 const router: IRouter = Router();
@@ -251,6 +252,42 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
       deliveredAt: msg.delivered_at ?? null,
       createdAt: msg.created_at,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/conversations/:conversationId", authMiddleware, async (req, res, next) => {
+  try {
+    const userId = req.user!.id;
+    const sb = getSupabaseAdmin();
+    const { data: convo } = await sb.from("conversations").select("*").eq("id", req.params.conversationId).single();
+    if (!convo) throw new AppError("Sohbet bulunamadı", 404);
+    if (convo.buyer_id !== userId && convo.seller_id !== userId) throw new AppError("Yetkisiz", 403);
+
+    await sb.from("messages").delete().eq("conversation_id", convo.id);
+    await sb.from("conversations").delete().eq("id", convo.id);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/messages/:messageId", authMiddleware, async (req, res, next) => {
+  try {
+    const userId = req.user!.id;
+    const sb = getSupabaseAdmin();
+    const { data: msg } = await sb.from("messages").select("*").eq("id", req.params.messageId).single();
+    if (!msg) throw new AppError("Mesaj bulunamadı", 404);
+    if (msg.sender_id !== userId) throw new AppError("Sadece kendi mesajınızı silebilirsiniz", 403);
+
+    const { data: convo } = await sb.from("conversations").select("*").eq("id", msg.conversation_id).single();
+    if (!convo) throw new AppError("Sohbet bulunamadı", 404);
+    if (convo.buyer_id !== userId && convo.seller_id !== userId) throw new AppError("Yetkisiz", 403);
+
+    await sb.from("messages").delete().eq("id", msg.id);
+    await refreshConversationPreview(msg.conversation_id);
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

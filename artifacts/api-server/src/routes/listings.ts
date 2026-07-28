@@ -9,6 +9,7 @@ import {
 } from "../lib/listings-store";
 import { getSupabaseAdmin } from "../lib/supabase-db";
 import { trackUniqueListingView } from "../lib/views";
+import { purgeListingCompletely } from "../lib/purge-listing";
 import { authMiddleware, optionalAuth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 
@@ -157,7 +158,7 @@ router.delete("/listings/:listingId", authMiddleware, async (req, res, next) => 
     const { data: listing } = await sb.from("listings").select("seller_id").eq("id", req.params.listingId).single();
     if (!listing) throw new AppError("İlan bulunamadı", 404);
     if (listing.seller_id !== req.user!.id) throw new AppError("Yetkisiz", 403);
-    await sb.from("listings").update({ status: "deleted", updated_at: new Date().toISOString() }).eq("id", req.params.listingId);
+    await purgeListingCompletely(req.params.listingId);
     res.json({ success: true });
   } catch (err) {
     next(err);

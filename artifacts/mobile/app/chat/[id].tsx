@@ -8,16 +8,18 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useColors } from '@/hooks/useColors';
-import { useMessages, useSendMessage, useHeartbeat, formatLastActive } from '@/lib/hooks';
+import { useMessages, useSendMessage, useDeleteMessage, useDeleteConversation, useHeartbeat, formatLastActive } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserAvatar } from '@/components/UserAvatar';
 import { WebShell } from '@/components/web/WebShell';
+import { showConfirm } from '@/lib/web-alert';
 
 function ChatContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,6 +32,8 @@ function ChatContent() {
 
   const { data, isLoading } = useMessages(conversationId ?? '');
   const sendMessage = useSendMessage();
+  const deleteMessage = useDeleteMessage();
+  const deleteConversation = useDeleteConversation();
   const heartbeat = useHeartbeat();
   const [text, setText] = useState('');
 
@@ -59,6 +63,49 @@ function ChatContent() {
       scrollToEnd();
     } catch {
       setText(content);
+    }
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    if (!conversationId) return;
+    const doDelete = async () => {
+      try {
+        await deleteMessage.mutateAsync({ messageId, conversationId });
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Mesaj silinemedi';
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Hata', msg);
+      }
+    };
+    if (Platform.OS === 'web') {
+      showConfirm('Mesajı Sil', 'Bu mesaj kalıcı olarak silinecek. Emin misiniz?', doDelete);
+    } else {
+      Alert.alert('Mesajı Sil', 'Bu mesaj kalıcı olarak silinecek. Emin misiniz?', [
+        { text: 'İptal', style: 'cancel' },
+        { text: 'Sil', style: 'destructive', onPress: () => void doDelete() },
+      ]);
+    }
+  };
+
+  const handleDeleteConversation = () => {
+    if (!conversationId) return;
+    const doDelete = async () => {
+      try {
+        await deleteConversation.mutateAsync(conversationId);
+        router.replace('/mesajlar');
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Sohbet silinemedi';
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Hata', msg);
+      }
+    };
+    if (Platform.OS === 'web') {
+      showConfirm('Sohbeti Sil', 'Tüm mesajlar kalıcı olarak silinecek. Emin misiniz?', doDelete);
+    } else {
+      Alert.alert('Sohbeti Sil', 'Tüm mesajlar kalıcı olarak silinecek. Emin misiniz?', [
+        { text: 'İptal', style: 'cancel' },
+        { text: 'Sil', style: 'destructive', onPress: () => void doDelete() },
+      ]);
     }
   };
 
@@ -104,7 +151,11 @@ function ChatContent() {
     const isMine = item.senderId === profile?.id;
     const otherAvatar = conversation?.otherUser;
     return (
-      <View style={[styles.msgRow, isMine ? styles.msgRowMine : styles.msgRowTheir]}>
+      <Pressable
+        style={[styles.msgRow, isMine ? styles.msgRowMine : styles.msgRowTheir]}
+        onLongPress={isMine ? () => handleDeleteMessage(item.id) : undefined}
+        delayLongPress={400}
+      >
         {!isMine && otherAvatar && (
           <UserAvatar name={otherAvatar.name} avatar={otherAvatar.avatar} size={28} />
         )}
@@ -116,12 +167,23 @@ function ChatContent() {
           ]}
         >
           <Text style={{ color: isMine ? '#FFF' : colors.foreground, fontSize: 15 }}>{item.content}</Text>
-          <Text style={[styles.time, { color: isMine ? 'rgba(255,255,255,0.7)' : colors.mutedForeground }]}>
-            {new Date(item.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-            {isMine && (item.isRead ? ' · Okundu' : item.deliveredAt ? ' · İletildi' : ' · Gönderildi')}
-          </Text>
+          <View style={styles.bubbleFooter}>
+            <Text style={[styles.time, { color: isMine ? 'rgba(255,255,255,0.7)' : colors.mutedForeground }]}>
+              {new Date(item.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+              {isMine && (item.isRead ? ' · Okundu' : item.deliveredAt ? ' · İletildi' : ' · Gönderildi')}
+            </Text>
+            {isMine && (
+              <Pressable
+                onPress={() => handleDeleteMessage(item.id)}
+                hitSlop={8}
+                style={styles.deleteBtn}
+              >
+                <Ionicons name="trash-outline" size={14} color={isMine ? 'rgba(255,255,255,0.8)' : colors.mutedForeground} />
+              </Pressable>
+            )}
+          </View>
         </View>
-      </View>
+      </Pressable>
     );
   };
 
@@ -175,6 +237,13 @@ function ChatContent() {
           </Text>
         </View>
         <View style={styles.headerSpacer} />
+        <Pressable onPress={handleDeleteConversation} hitSlop={12} disabled={deleteConversation.isPending}>
+          {deleteConversation.isPending ? (
+            <ActivityIndicator size="small" color={colors.mutedForeground} />
+          ) : (
+            <Ionicons name="trash-outline" size={22} color="#C62828" />
+          )}
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -204,7 +273,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerSpacer: { width: 28 },
+  headerSpacer: { width: 0 },
   headerTitle: { fontSize: 16, fontWeight: '700', textAlign: 'center' },
   headerSub: { fontSize: 11, textAlign: 'center', marginTop: 2 },
   listContent: { padding: 16, paddingBottom: 88, flexGrow: 1 },
@@ -214,7 +283,9 @@ const styles = StyleSheet.create({
   bubble: { padding: 12, borderRadius: 16, maxWidth: '100%' },
   myBubble: { borderBottomRightRadius: 4 },
   theirBubble: { borderBottomLeftRadius: 4 },
-  time: { fontSize: 10, marginTop: 4, alignSelf: 'flex-end' },
+  bubbleFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 4 },
+  time: { fontSize: 10 },
+  deleteBtn: { padding: 2 },
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, borderTopWidth: 1, gap: 8 },
   input: {
     flex: 1,

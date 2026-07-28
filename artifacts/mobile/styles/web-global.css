@@ -160,6 +160,16 @@ body {
     gap: 16px !important;
   }
 
+  /* Kategori nav — mobilde gizle (anasayfada zaten var) */
+  #pz-header-nav {
+    display: none !important;
+  }
+
+  /* Güven bandı — mobilde gizle */
+  #pz-trust-bar {
+    display: none !important;
+  }
+
   /* Yatay taşmayı engelle */
   html, body, #root {
     overflow-x: hidden !important;

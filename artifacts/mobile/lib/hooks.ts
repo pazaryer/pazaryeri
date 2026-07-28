@@ -258,6 +258,7 @@ export function useDeleteListing() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['listings'] });
       qc.invalidateQueries({ queryKey: ['my-listings'] });
+      qc.invalidateQueries({ queryKey: ['conversations'] });
     },
   });
 }
@@ -375,6 +376,32 @@ export function useStartConversation() {
         method: 'POST',
         body: JSON.stringify({ listingId, message }),
       }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}
+
+export function useDeleteMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ messageId, conversationId }: { messageId: string; conversationId: string }) =>
+      apiFetch<{ success: boolean }>(`/messages/${messageId}`, { method: 'DELETE' }).then((r) => ({
+        ...r,
+        conversationId,
+      })),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ['messages', result.conversationId] });
+      qc.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}
+
+export function useDeleteConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      apiFetch<{ success: boolean }>(`/conversations/${conversationId}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['conversations'] });
     },

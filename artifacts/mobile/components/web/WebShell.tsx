@@ -128,24 +128,23 @@ export function WebShell({
             </View>
           )}
 
-          {!mobileWeb && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.navRow}
-              style={styles.navScroll}
-            >
-              {HEADER_CATEGORIES.map((cat) => (
-                <Link key={cat.label} href={cat.href as any} asChild>
-                  <Pressable style={styles.navChip}>
-                    <Text style={styles.navChipText}>
-                      {cat.icon} {cat.label}
-                    </Text>
-                  </Pressable>
-                </Link>
-              ))}
-            </ScrollView>
-          )}
+          <ScrollView
+            nativeID="pz-header-nav"
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.navRow}
+            style={styles.navScroll}
+          >
+            {HEADER_CATEGORIES.map((cat) => (
+              <Link key={cat.label} href={cat.href as any} asChild>
+                <Pressable style={styles.navChip}>
+                  <Text style={styles.navChipText}>
+                    {cat.icon} {cat.label}
+                  </Text>
+                </Pressable>
+              </Link>
+            ))}
+          </ScrollView>
         </View>
       </View>
 

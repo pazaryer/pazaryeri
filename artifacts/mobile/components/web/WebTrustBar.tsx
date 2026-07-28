@@ -43,7 +43,7 @@ export function WebTrustBar() {
   const wide = width >= 768;
 
   return (
-    <View style={[styles.wrap, mobileWeb && styles.wrapMobile]}>
+    <View nativeID="pz-trust-bar" style={[styles.wrap, mobileWeb && styles.wrapMobile]}>
       <View style={[styles.bar, wide && styles.barWide, mobileWeb && styles.barMobile]}>
         <CubeIcon small={mobileWeb} />
         <View style={styles.textBlock}>

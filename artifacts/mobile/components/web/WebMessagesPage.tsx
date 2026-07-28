@@ -1,14 +1,29 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Image, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { WebShell } from './WebShell';
 import { WebPage } from './WebPage';
-import { useConversations, formatLastActive } from '@/lib/hooks';
+import { useConversations, useDeleteConversation, formatLastActive } from '@/lib/hooks';
+import { showConfirm } from '@/lib/web-alert';
 
 export function WebMessagesPage() {
   const router = useRouter();
   const { data, isLoading } = useConversations();
+  const deleteConversation = useDeleteConversation();
   const messages = data?.items ?? [];
+
+  const handleDeleteConversation = (conversationId: string) => {
+    const doDelete = async () => {
+      try {
+        await deleteConversation.mutateAsync(conversationId);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Sohbet silinemedi';
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Hata', msg);
+      }
+    };
+    showConfirm('Sohbeti Sil', 'Tüm mesajlar kalıcı olarak silinecek. Emin misiniz?', doDelete);
+  };
 
   return (
     <WebShell hideFooter>
@@ -29,11 +44,11 @@ export function WebMessagesPage() {
             </View>
           ) : (
             messages.map((item, index) => (
-              <Pressable
+              <View
                 key={item.id}
                 style={[styles.row, index < messages.length - 1 && styles.rowBorder]}
-                onPress={() => router.push(`/chat/${item.id}`)}
               >
+                <Pressable style={styles.rowPress} onPress={() => router.push(`/chat/${item.id}`)}>
                 {item.listingImage ? (
                   <Image source={{ uri: item.listingImage }} style={styles.listingThumb} />
                 ) : null}
@@ -81,7 +96,15 @@ export function WebMessagesPage() {
                   </View>
                 </View>
                 <Text style={styles.chevron}>›</Text>
-              </Pressable>
+                </Pressable>
+                <Pressable
+                  style={styles.deleteBtn}
+                  onPress={() => handleDeleteConversation(item.id)}
+                  disabled={deleteConversation.isPending}
+                >
+                  <Text style={styles.deleteIcon}>🗑️</Text>
+                </Pressable>
+              </View>
             ))
           )}
         </View>
@@ -115,9 +138,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    gap: 12,
+    gap: 8,
     width: '100%',
   },
+  rowPress: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  deleteBtn: { padding: 8, justifyContent: 'center', alignItems: 'center' },
+  deleteIcon: { fontSize: 18 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: '#F0EBF8' },
   listingThumb: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#EDE8F5' },
   avatarWrap: { position: 'relative' },

@@ -8,6 +8,7 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -15,7 +16,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
-import { useConversations, formatLastActive } from '@/lib/hooks';
+import { useConversations, useDeleteConversation, formatLastActive } from '@/lib/hooks';
+import { showConfirm } from '@/lib/web-alert';
 
 export default function MessagesScreen() {
   const colors = useColors();
@@ -25,14 +27,33 @@ export default function MessagesScreen() {
   const paddingTop = isWeb ? 67 : insets.top;
 
   const { data, isLoading, refetch, isRefetching } = useConversations();
+  const deleteConversation = useDeleteConversation();
   const messages = data?.items ?? [];
   const totalUnread = useMemo(() => messages.reduce((s, m) => s + m.unreadCount, 0), [messages]);
 
+  const handleDeleteConversation = (conversationId: string) => {
+    const doDelete = async () => {
+      try {
+        await deleteConversation.mutateAsync(conversationId);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Sohbet silinemedi';
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Hata', msg);
+      }
+    };
+    if (Platform.OS === 'web') {
+      showConfirm('Sohbeti Sil', 'Tüm mesajlar kalıcı olarak silinecek. Emin misiniz?', doDelete);
+    } else {
+      Alert.alert('Sohbeti Sil', 'Tüm mesajlar kalıcı olarak silinecek. Emin misiniz?', [
+        { text: 'İptal', style: 'cancel' },
+        { text: 'Sil', style: 'destructive', onPress: () => void doDelete() },
+      ]);
+    }
+  };
+
   const renderItem = ({ item }: { item: (typeof messages)[0] }) => (
-    <Pressable
-      style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
-      onPress={() => router.push(`/chat/${item.id}`)}
-    >
+    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Pressable style={styles.rowPress} onPress={() => router.push(`/chat/${item.id}`)}>
       <View style={styles.thumbWrap}>
         {item.listingImage ? (
           <Image source={{ uri: item.listingImage }} style={styles.thumb} contentFit="cover" />
@@ -82,7 +103,16 @@ export default function MessagesScreen() {
           {formatLastActive(item.otherUser.lastActiveAt, item.otherUser.isOnline)}
         </Text>
       </View>
-    </Pressable>
+      </Pressable>
+      <Pressable
+        style={styles.deleteBtn}
+        onPress={() => handleDeleteConversation(item.id)}
+        hitSlop={8}
+        disabled={deleteConversation.isPending}
+      >
+        <Ionicons name="trash-outline" size={20} color="#C62828" />
+      </Pressable>
+    </View>
   );
 
   return (
@@ -132,7 +162,9 @@ const styles = StyleSheet.create({
   heroTitle: { fontSize: 26, fontWeight: '800', color: '#FFF' },
   heroBadge: { backgroundColor: '#C9A84C', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   heroBadgeText: { color: '#1A0A2E', fontSize: 12, fontWeight: '700' },
-  row: { flexDirection: 'row', padding: 12, borderRadius: 14, borderWidth: 1, gap: 12 },
+  row: { flexDirection: 'row', padding: 12, borderRadius: 14, borderWidth: 1, gap: 8, alignItems: 'center' },
+  rowPress: { flex: 1, flexDirection: 'row', gap: 12 },
+  deleteBtn: { padding: 8, justifyContent: 'center', alignItems: 'center' },
   thumbWrap: { position: 'relative' },
   thumb: { width: 52, height: 52, borderRadius: 10 },
   thumbPlaceholder: { alignItems: 'center', justifyContent: 'center' },

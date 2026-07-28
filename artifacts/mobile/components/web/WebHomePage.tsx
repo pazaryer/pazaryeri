@@ -48,7 +48,7 @@ export function WebHomePage() {
   return (
     <WebShell searchQuery={search} onSearchChange={setSearch} onSearchSubmit={handleSearch}>
       <PageBody {...bodyProps}>
-        {!mobileWeb && <WebTrustBar />}
+        <WebTrustBar />
         <View nativeID="pz-filter-section" style={[styles.filterSection, mobileWeb && styles.filterSectionMobile]}>
           <Text style={styles.filterLabel}>Kategoriler</Text>
           <CategoryFilter

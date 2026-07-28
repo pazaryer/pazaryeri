@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "../lib/supabase-db";
 import { logger } from "../lib/logger";
+import { purgeListingCompletely } from "../lib/purge-listing";
 
 const SOLD_RETENTION_DAYS = 2;
 const INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 saatte bir
@@ -10,20 +11,28 @@ export async function purgeSoldListings(): Promise<number> {
   const sb = getSupabaseAdmin();
   const { data, error } = await sb
     .from("listings")
-    .update({ status: "deleted", updated_at: new Date().toISOString() })
+    .select("id")
     .eq("status", "sold")
     .not("sold_at", "is", null)
-    .lt("sold_at", cutoff)
-    .select("id");
+    .lt("sold_at", cutoff);
 
   if (error) {
     logger.error({ err: error.message }, "purgeSoldListings failed");
     return 0;
   }
 
-  const count = data?.length ?? 0;
+  let count = 0;
+  for (const row of data ?? []) {
+    try {
+      await purgeListingCompletely(row.id);
+      count++;
+    } catch (err) {
+      logger.error({ err, listingId: row.id }, "purgeSoldListings item failed");
+    }
+  }
+
   if (count > 0) {
-    logger.info({ count, cutoff }, "Purged sold listings older than 2 days");
+    logger.info({ count, cutoff }, "Hard-deleted sold listings older than 2 days");
   }
   return count;
 }
@@ -35,8 +44,7 @@ export function startSoldListingPurgeScheduler(): void {
     });
   };
 
-  // İlk çalıştırma: sunucu ayağa kalktıktan 60 sn sonra
   setTimeout(run, 60_000);
   setInterval(run, INTERVAL_MS);
-  logger.info("Sold listing purge scheduler started (every 6h, 2-day retention)");
+  logger.info("Sold listing purge scheduler started (every 6h, 2-day retention, hard delete)");
 }

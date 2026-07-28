@@ -9,10 +9,12 @@ import reviewsRouter from "./reviews";
 import miscRouter from "./misc";
 import uploadRouter from "./upload";
 import authRouter from "./auth";
+import sitemapRouter from "./sitemap";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(sitemapRouter);
 router.use(uploadRouter);
 router.use(authRouter);
 router.use(usersRouter);
