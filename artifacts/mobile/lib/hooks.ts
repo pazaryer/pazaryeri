@@ -494,8 +494,21 @@ export function useNotifications() {
 export function useMarkAllNotificationsRead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => apiFetch('/notifications/read-all', { method: 'PATCH' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+    mutationFn: () => apiFetch<{ success: boolean }>('/notifications/read-all', { method: 'PATCH' }),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['notifications'] });
+      const prev = qc.getQueryData<{ items: AppNotification[] }>(['notifications']);
+      if (prev) {
+        qc.setQueryData(['notifications'], {
+          items: prev.items.map((n) => ({ ...n, isRead: true })),
+        });
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['notifications'], ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 }
 

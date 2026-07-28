@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
@@ -11,6 +11,12 @@ import Animated, {
 import { ANNOUNCEMENTS } from '@/lib/categories';
 
 const MARQUEE_TEXT = ANNOUNCEMENTS.join('   •   ') + '   •   ';
+
+type Props = {
+  /** Anasayfa liste içinde — yuvarlatılmış kart stili */
+  embedded?: boolean;
+  style?: ViewStyle;
+};
 
 function WebMarquee() {
   return (
@@ -50,13 +56,20 @@ function MobileMarquee() {
   );
 }
 
-export function AnnouncementBanner() {
+export function AnnouncementBanner({ embedded, style }: Props) {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === 'web' ? 0 : insets.top;
+  const topPad = !embedded && Platform.OS !== 'web' ? insets.top : 0;
 
   return (
-    <View style={[styles.wrap, topPad > 0 && { paddingTop: topPad, height: 38 + topPad }]}>
-      <View style={styles.badge}>
+    <View
+      style={[
+        styles.wrap,
+        embedded && styles.wrapEmbedded,
+        topPad > 0 && { paddingTop: topPad, height: 38 + topPad },
+        style,
+      ]}
+    >
+      <View style={[styles.badge, embedded && styles.badgeEmbedded]}>
         <Text style={styles.badgeText}>DUYURU</Text>
       </View>
       {Platform.OS === 'web' ? <WebMarquee /> : <MobileMarquee />}
@@ -75,6 +88,18 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(201,168,76,0.3)',
     height: 38,
   },
+  wrapEmbedded: {
+    borderRadius: 12,
+    borderBottomWidth: 0,
+    height: 36,
+    marginHorizontal: 14,
+    marginBottom: 12,
+    shadowColor: '#3D1A78',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
+  },
   badge: {
     backgroundColor: '#C9A84C',
     paddingHorizontal: 14,
@@ -82,6 +107,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 2,
     flexShrink: 0,
+  },
+  badgeEmbedded: {
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    paddingHorizontal: 12,
   },
   badgeText: {
     color: '#1A0A2E',

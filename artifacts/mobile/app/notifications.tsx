@@ -4,11 +4,9 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Platform,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenLayout } from '@/components/ProfileScreenLayout';
@@ -18,12 +16,15 @@ import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications 
 export default function NotificationsScreen() {
   const colors = useColors();
   const router = useRouter();
-  const isExpoGo = Constants.appOwnership === 'expo';
   const { data, isLoading } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
   const items = data?.items ?? [];
   const unread = items.filter((n) => !n.isRead).length;
+
+  const handleMarkAllRead = () => {
+    markAllRead.mutate();
+  };
 
   const handleNotificationPress = async (id: string, type: string, rawData?: string | null) => {
     if (!rawData) {
@@ -45,34 +46,26 @@ export default function NotificationsScreen() {
 
   const headerRight =
     unread > 0 ? (
-      <Pressable
-        onPress={() => markAllRead.mutate()}
-        disabled={markAllRead.isPending}
-        hitSlop={8}
-      >
+      <Pressable onPress={handleMarkAllRead} disabled={markAllRead.isPending} hitSlop={8}>
         {markAllRead.isPending ? (
           <ActivityIndicator size="small" color={colors.primary} />
         ) : (
-          <Text style={[styles.markAllText, { color: colors.primary }]}>Tümünü okundu işaretle</Text>
+          <Ionicons name="checkmark-done" size={22} color={colors.primary} />
         )}
       </Pressable>
     ) : null;
 
   return (
-    <ProfileScreenLayout title="Bildirimler" headerRight={headerRight}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 24 }}>
-        {isExpoGo && Platform.OS !== 'web' && (
-          <View style={[styles.note, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-            <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
-              Expo Go'da anlık bildirimler sınırlıdır. Tam bildirim desteği için mağaza sürümünü kullanın.
-            </Text>
-          </View>
-        )}
-
+    <ProfileScreenLayout title="Bildirimler" headerRight={headerRight} scroll={false}>
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {unread > 0 && (
           <Pressable
             style={[styles.markAllBtn, { backgroundColor: colors.secondary, borderColor: colors.primary }]}
-            onPress={() => markAllRead.mutate()}
+            onPress={handleMarkAllRead}
             disabled={markAllRead.isPending}
           >
             <Ionicons name="checkmark-done" size={18} color={colors.primary} />
@@ -125,9 +118,8 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  note: { padding: 12, borderRadius: 10, borderWidth: 1 },
-  noteText: { fontSize: 13, lineHeight: 19 },
-  markAllText: { fontSize: 11, fontWeight: '700' },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 20, gap: 12, paddingBottom: 32 },
   markAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',

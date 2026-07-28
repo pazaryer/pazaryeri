@@ -14,6 +14,10 @@ import {
 
 const router: IRouter = Router();
 
+function parseNotificationIsRead(value: unknown): boolean {
+  return value === true || value === "true";
+}
+
 router.get("/search", async (req, res, next) => {
   try {
     const q = String(req.query.q ?? "").trim();
@@ -115,7 +119,7 @@ router.get("/notifications", authMiddleware, async (req, res, next) => {
         title: n.title,
         body: n.body,
         data: n.data,
-        isRead: n.is_read === "true",
+        isRead: parseNotificationIsRead(n.is_read),
         createdAt: n.created_at,
       })),
     });
@@ -126,12 +130,23 @@ router.get("/notifications", authMiddleware, async (req, res, next) => {
 
 router.patch("/notifications/read-all", authMiddleware, async (req, res, next) => {
   try {
-    await getSupabaseAdmin()
+    const { data } = await getSupabaseAdmin()
       .from("notifications")
-      .update({ is_read: "true" })
-      .eq("user_id", req.user!.id)
-      .eq("is_read", "false");
-    res.json({ success: true });
+      .select("id, is_read")
+      .eq("user_id", req.user!.id);
+
+    const unreadIds = (data ?? [])
+      .filter((n) => !parseNotificationIsRead(n.is_read))
+      .map((n) => n.id);
+
+    if (unreadIds.length > 0) {
+      await getSupabaseAdmin()
+        .from("notifications")
+        .update({ is_read: true })
+        .in("id", unreadIds);
+    }
+
+    res.json({ success: true, updated: unreadIds.length });
   } catch (err) {
     next(err);
   }
@@ -141,7 +156,7 @@ router.patch("/notifications/:notificationId/read", authMiddleware, async (req, 
   try {
     await getSupabaseAdmin()
       .from("notifications")
-      .update({ is_read: "true" })
+      .update({ is_read: true })
       .eq("id", req.params.notificationId);
     res.json({ success: true });
   } catch (err) {

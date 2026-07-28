@@ -27,7 +27,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
-  const headerTop = isWeb ? 67 : 12;
+  const headerTop = isWeb ? 67 : insets.top;
 
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
   const [locationFilter, setLocationFilter] = useState<LocationFilterValue>({});
@@ -69,7 +69,6 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <AnnouncementBanner />
       <View style={[styles.header, { paddingTop: headerTop, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
           <View style={styles.logoRow}>
@@ -109,6 +108,7 @@ export default function HomeScreen() {
           renderItem={({ item }) => <ListingCard item={item} compact />}
           ListHeaderComponent={
             <View style={styles.listHeader}>
+              <AnnouncementBanner embedded />
               <Text style={[styles.filterTitle, { color: colors.foreground }]}>Kategoriler</Text>
               <CategoryFilter
                 categories={[...LISTING_CATEGORIES]}
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   },
   searchPlaceholder: { fontSize: 14 },
   listHeader: { paddingTop: 8, paddingBottom: 4 },
-  filterTitle: { fontSize: 13, fontWeight: '700', paddingHorizontal: 14, marginBottom: 6 },
+  filterTitle: { fontSize: 13, fontWeight: '700', paddingHorizontal: 14, marginBottom: 6, marginTop: 4 },
   row: { gap: 0 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
 });
