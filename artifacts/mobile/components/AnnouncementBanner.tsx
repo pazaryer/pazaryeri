@@ -18,12 +18,40 @@ type Props = {
   style?: ViewStyle;
 };
 
-function MarqueeTrack() {
+/** Web — CSS animasyonu (Reanimated web'de CSSStyleDeclaration hatası verir) */
+function WebMarquee() {
+  return (
+    <View style={styles.track}>
+      <View
+        // @ts-expect-error web className
+        className="pz-marquee-track"
+      >
+        <Text
+          // @ts-expect-error web className
+          className="pz-marquee-item"
+          numberOfLines={1}
+        >
+          {MARQUEE_TEXT}
+        </Text>
+        <Text
+          // @ts-expect-error web className
+          className="pz-marquee-item"
+          numberOfLines={1}
+        >
+          {MARQUEE_TEXT}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+/** Mobil — Reanimated kaydırma */
+function NativeMarquee() {
   const translateX = useSharedValue(0);
 
   useEffect(() => {
     translateX.value = withRepeat(
-      withTiming(-520, { duration: Platform.OS === 'web' ? 35000 : 18000, easing: Easing.linear }),
+      withTiming(-520, { duration: 18000, easing: Easing.linear }),
       -1,
       false,
     );
@@ -59,7 +87,7 @@ export function AnnouncementBanner({ embedded, style }: Props) {
       <View style={[styles.badge, embedded && styles.badgeEmbedded]}>
         <Text style={styles.badgeText}>DUYURU</Text>
       </View>
-      <MarqueeTrack />
+      {Platform.OS === 'web' ? <WebMarquee /> : <NativeMarquee />}
     </View>
   );
 }

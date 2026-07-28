@@ -1,32 +1,19 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Link } from 'expo-router';
 import { ListingSummary, formatPrice } from '@/lib/hooks';
-import { WebImage, resolveImageUri } from '@/components/WebImage';
+import { WebImage } from '@/components/WebImage';
 
 interface WebListingCardProps {
   item: ListingSummary;
 }
 
 export function WebListingCard({ item }: WebListingCardProps) {
-  const [failed, setFailed] = useState(false);
-  const src = failed ? resolveImageUri(null) : resolveImageUri(item.image);
-
   return (
     <Link href={`/listing/${item.id}`} asChild>
       <Pressable style={styles.card}>
         <View style={styles.imageWrap}>
-          {Platform.OS === 'web' && typeof document !== 'undefined' ? (
-            // eslint-disable-next-line jsx-a11y/alt-text
-            <img
-              src={src}
-              alt={item.title}
-              onError={() => setFailed(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          ) : (
-            <WebImage uri={item.image} alt={item.title} style={styles.image} />
-          )}
+          <WebImage uri={item.image} alt={item.title} style={styles.image} />
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{item.category}</Text>
           </View>
