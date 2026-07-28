@@ -1,5 +1,4 @@
 import * as Location from 'expo-location';
-import type { ListingSummary } from '@/lib/hooks';
 
 export type ListingCoords = {
   latitude?: number;
@@ -17,7 +16,11 @@ export function parseLocationParts(location: string): { city?: string; district?
   return {};
 }
 
-export function formatListingLocation(item: Pick<ListingSummary, 'district' | 'city' | 'location'>): string {
+export function formatListingLocation(item: {
+  district?: string | null;
+  city?: string | null;
+  location?: string | null;
+}): string {
   if (item.location?.trim()) return item.location.trim();
   return [item.district, item.city].filter(Boolean).join(', ');
 }

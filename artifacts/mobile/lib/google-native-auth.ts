@@ -14,10 +14,8 @@ const webClientId = resolveGoogleWebClientId();
 let oauthInFlight: Promise<void> | null = null;
 
 export function getNativeOAuthRedirectUri(): string {
-  // Android: özel scheme (intent filter) — exp:// boş sayfada takılı kalabiliyor
-  if (Platform.OS === 'android') {
-    return Linking.createURL('auth');
-  }
+  // Linking.createURL expo-router origin yüzünden https://.../oauth/app-return döndürür — kullanma.
+  // Expo Go: exp://.../--/auth | production: pazaryeri://auth
   return AuthSession.makeRedirectUri({
     scheme: 'pazaryeri',
     path: 'auth',
