@@ -22,6 +22,10 @@ export const THEME = {
   dangerBg: 'rgba(239, 68, 68, 0.12)',
   info: '#3B82F6',
   infoBg: 'rgba(59, 130, 246, 0.12)',
+  accent: '#EC4899',
+  accentBg: 'rgba(236, 72, 153, 0.12)',
+  accentCyan: '#22D3EE',
+  accentViolet: '#A78BFA',
 } as const;
 
 export const SPACING = {

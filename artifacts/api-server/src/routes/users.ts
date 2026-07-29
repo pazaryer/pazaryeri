@@ -8,7 +8,9 @@ import {
   dbUpdatePushToken,
   dbClearPushToken,
 } from "../lib/listings-store";
+import { deleteUserAccountCompletely } from "../lib/delete-user-account";
 import { authMiddleware } from "../middleware/auth";
+import { AppError } from "../middleware/errorHandler";
 
 const router: IRouter = Router();
 
@@ -62,6 +64,24 @@ router.put("/users/me", authMiddleware, async (req, res, next) => {
     const body = updateUserSchema.parse(req.body);
     const user = await dbUpdateUser(req.user!.id, body);
     res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/users/me", authMiddleware, async (req, res, next) => {
+  try {
+    const body = z
+      .object({ confirm: z.literal("DELETE") })
+      .parse(req.body ?? {});
+
+    void body;
+    const userId = req.user!.id;
+    await deleteUserAccountCompletely(userId);
+    res.json({
+      success: true,
+      message: "Hesabınız ve tüm verileriniz kalıcı olarak silindi.",
+    });
   } catch (err) {
     next(err);
   }

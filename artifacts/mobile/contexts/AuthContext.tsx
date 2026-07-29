@@ -5,6 +5,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut as firebaseSignOut,
+  deleteUser as firebaseDeleteUser,
   GoogleAuthProvider,
   signInWithCredential,
   signInWithRedirect,
@@ -50,6 +51,7 @@ interface AuthContextType {
   signInWithGoogleRedirect: () => Promise<void>;
   signInWithGooglePopup: () => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   patchProfile: (patch: Partial<UserProfile>) => void;
 }
@@ -289,6 +291,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
   };
 
+  const deleteAccount = async () => {
+    const auth = getFirebaseAuth();
+    const current = auth.currentUser;
+    if (!current) throw new Error('Oturum bulunamadı');
+
+    try {
+      if (Platform.OS === 'web') {
+        const { unregisterWebPush } = await import('@/lib/web-push');
+        await unregisterWebPush();
+      } else {
+        const { unregisterPushToken } = await import('@/lib/notifications');
+        await unregisterPushToken();
+      }
+    } catch {
+      /* ignore */
+    }
+
+    await apiFetch('/users/me', {
+      method: 'DELETE',
+      body: JSON.stringify({ confirm: 'DELETE' }),
+    });
+
+    try {
+      await firebaseDeleteUser(current);
+    } catch {
+      await firebaseSignOut(auth);
+    }
+    setProfile(null);
+  };
+
   const refreshProfile = async () => {
     if (!user) return;
     await user.reload();
@@ -319,6 +351,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGoogleRedirect,
         signInWithGooglePopup,
         signOut,
+        deleteAccount,
         refreshProfile,
         patchProfile,
       }}

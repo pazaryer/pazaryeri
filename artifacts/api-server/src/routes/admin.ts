@@ -2,8 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { adminMiddleware, superAdminMiddleware } from "../middleware/adminAuth";
 import { AppError } from "../middleware/errorHandler";
-import { getSupabaseAdmin } from "../lib/supabase-db";
-import { logAdminAction } from "../lib/admin-audit";
+import { getSupabaseAdmin, ensureUser } from "../lib/supabase-db";
 import {
   getAppConfig,
   setAppConfig,
@@ -16,6 +15,7 @@ import { storeListingImage } from "../lib/image-storage";
 import { purgeListingCompletely } from "../lib/purge-listing";
 import { dbBuildListingDetail } from "../lib/listings-store";
 import { getLiveAnalytics } from "../lib/presence";
+import { resetLiveAnalytics, getAnalyticsResetAt } from "../lib/analytics-reset";
 
 const router: IRouter = Router();
 
@@ -97,6 +97,7 @@ router.get("/admin/stats", adminMiddleware, async (_req, res, next) => {
         bannedUsers: bannedUsers.count ?? 0,
       },
       live,
+      analyticsResetAt: await getAnalyticsResetAt(),
       recentUsers: recentUsers ?? [],
       recentListings: (recentListings ?? []).map((l) => ({
         id: l.id,
@@ -106,6 +107,42 @@ router.get("/admin/stats", adminMiddleware, async (_req, res, next) => {
         createdAt: l.created_at,
         sellerName: (l.users as { name?: string } | null)?.name ?? "—",
       })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/admin/stats/reset", superAdminMiddleware, async (req, res, next) => {
+  try {
+    const { resetAt } = await resetLiveAnalytics(req.user!.id);
+    invalidateAppConfigCache();
+    await logAdminAction(req.user!.id, "analytics.reset", {
+      targetType: "analytics",
+      details: { resetAt },
+      ip: clientIp(req),
+    });
+    res.json({
+      success: true,
+      resetAt,
+      message: "Canlı istatistikler sıfırlandı. Kullanıcı verileri korundu.",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/admin/publish", superAdminMiddleware, async (req, res, next) => {
+  try {
+    invalidateAppConfigCache();
+    await logAdminAction(req.user!.id, "site.publish", {
+      targetType: "site",
+      ip: clientIp(req),
+    });
+    res.json({
+      success: true,
+      publishedAt: new Date().toISOString(),
+      message: "Tüm ayarlar yayınlandı. Web ve mobil ~60 saniye içinde güncellenir.",
     });
   } catch (err) {
     next(err);
@@ -399,15 +436,19 @@ router.post("/admin/comments", adminMiddleware, async (req, res, next) => {
       .object({
         listingId: z.string().uuid(),
         content: z.string().min(2).max(1000),
+        userId: z.string().uuid().optional(),
       })
       .parse(req.body);
+
+    const authorId = body.userId ?? req.user!.id;
+    if (body.userId) await ensureUser(body.userId);
 
     const sb = getSupabaseAdmin();
     const { data: comment, error } = await sb
       .from("listing_comments")
       .insert({
         listing_id: body.listingId,
-        user_id: req.user!.id,
+        user_id: authorId,
         content: body.content.trim(),
       })
       .select("*, users(id, name, avatar)")
@@ -418,11 +459,87 @@ router.post("/admin/comments", adminMiddleware, async (req, res, next) => {
     await logAdminAction(req.user!.id, "comment.create", {
       targetType: "comment",
       targetId: comment.id,
-      details: { listingId: body.listingId },
+      details: { listingId: body.listingId, asUserId: body.userId ?? null },
       ip: clientIp(req),
     });
 
     res.status(201).json(comment);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/admin/reviews", adminMiddleware, async (req, res, next) => {
+  try {
+    const body = z
+      .object({
+        reviewerId: z.string().uuid(),
+        revieweeId: z.string().uuid(),
+        listingId: z.string().uuid().optional(),
+        rating: z.number().int().min(1).max(5),
+        comment: z.string().max(1000).default(""),
+      })
+      .parse(req.body);
+
+    if (body.reviewerId === body.revieweeId) {
+      throw new AppError("Değerlendiren ve satıcı aynı olamaz", 400);
+    }
+
+    await ensureUser(body.reviewerId);
+    await ensureUser(body.revieweeId);
+
+    const sb = getSupabaseAdmin();
+
+    if (body.listingId) {
+      const { data: listing } = await sb.from("listings").select("seller_id").eq("id", body.listingId).single();
+      if (!listing) throw new AppError("İlan bulunamadı", 404);
+      if (listing.seller_id !== body.revieweeId) throw new AppError("İlan bu satıcıya ait değil", 400);
+    }
+
+    let reviewQuery = sb.from("reviews").select("id").eq("reviewer_id", body.reviewerId);
+    if (body.listingId) {
+      reviewQuery = reviewQuery.eq("listing_id", body.listingId);
+    } else {
+      reviewQuery = reviewQuery.is("listing_id", null).eq("reviewee_id", body.revieweeId);
+    }
+    const { data: existing } = await reviewQuery.limit(1);
+
+    if (existing?.length) {
+      await sb
+        .from("reviews")
+        .update({ rating: body.rating, comment: body.comment, created_at: new Date().toISOString() })
+        .eq("id", existing[0]!.id);
+    } else {
+      const { error } = await sb.from("reviews").insert({
+        reviewer_id: body.reviewerId,
+        reviewee_id: body.revieweeId,
+        listing_id: body.listingId ?? null,
+        rating: body.rating,
+        comment: body.comment,
+      });
+      if (error) throw new AppError(error.message, 400);
+    }
+
+    const { data: allReviews } = await sb.from("reviews").select("rating").eq("reviewee_id", body.revieweeId);
+    const ratings = (allReviews ?? []).map((r) => r.rating as number);
+    const avg = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+    await sb
+      .from("users")
+      .update({
+        rating: Math.round(avg * 10) / 10,
+        total_sales: ratings.length,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", body.revieweeId);
+
+    await logAdminAction(req.user!.id, "review.create", {
+      targetType: "review",
+      targetId: body.revieweeId,
+      details: { reviewerId: body.reviewerId, rating: body.rating },
+      ip: clientIp(req),
+    });
+
+    res.status(201).json({ success: true });
   } catch (err) {
     next(err);
   }

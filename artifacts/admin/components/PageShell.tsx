@@ -30,7 +30,7 @@ export function PageShell({
 
   const header = (
     <LinearGradient
-      colors={['rgba(139, 92, 246, 0.12)', 'transparent']}
+      colors={['rgba(139, 92, 246, 0.18)', 'rgba(236, 72, 153, 0.08)', 'transparent']}
       style={styles.headerGradient}
     >
       <View style={styles.headerRow}>

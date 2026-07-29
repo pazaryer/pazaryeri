@@ -180,6 +180,7 @@ export default function BrandingScreen() {
       const res = await adminFetch<{ message: string; publishedAt: string }>('/admin/branding/publish', {
         method: 'POST',
       });
+      await adminFetch('/admin/publish', { method: 'POST' });
       Alert.alert('Yayınlandı', res.message);
       refetch();
     } catch (e) {

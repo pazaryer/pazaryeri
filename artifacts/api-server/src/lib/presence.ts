@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "./supabase-db";
+import { getAnalyticsResetAt, effectiveSince } from "./analytics-reset";
 
 export async function upsertDevicePresence(
   deviceId: string,
@@ -51,6 +52,11 @@ export async function getLiveAnalytics(): Promise<LiveAnalytics> {
   const liveCutoff = new Date(now - 5 * 60 * 1000).toISOString();
   const dayCutoff = new Date(now - 24 * 60 * 60 * 1000).toISOString();
   const todayStart = startOfTodayIso();
+  const resetAt = await getAnalyticsResetAt();
+  const usersDaySince = effectiveSince(resetAt, dayCutoff);
+  const usersTodaySince = effectiveSince(resetAt, todayStart);
+  const listingsDaySince = effectiveSince(resetAt, dayCutoff);
+  const listingsTodaySince = effectiveSince(resetAt, todayStart);
 
   const [
     usersTotal,
@@ -65,14 +71,14 @@ export async function getLiveAnalytics(): Promise<LiveAnalytics> {
     marqueeRes,
   ] = await Promise.all([
     sb.from("users").select("id", { count: "exact", head: true }),
-    sb.from("users").select("id", { count: "exact", head: true }).gte("created_at", todayStart),
+    sb.from("users").select("id", { count: "exact", head: true }).gte("created_at", usersTodaySince),
     sb.from("listings").select("id", { count: "exact", head: true }).neq("status", "deleted"),
     sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "active"),
-    sb.from("listings").select("id", { count: "exact", head: true }).gte("created_at", todayStart).neq("status", "deleted"),
+    sb.from("listings").select("id", { count: "exact", head: true }).gte("created_at", listingsTodaySince).neq("status", "deleted"),
     sb.from("device_presence").select("device_id, user_id, platform, last_ping_at").gte("last_ping_at", liveCutoff).order("last_ping_at", { ascending: false }).limit(100),
-    sb.from("device_presence").select("device_id", { count: "exact", head: true }).gte("last_ping_at", dayCutoff),
+    sb.from("device_presence").select("device_id", { count: "exact", head: true }).gte("last_ping_at", usersDaySince),
     sb.from("listing_views").select("listing_id").gte("last_viewed_at", liveCutoff),
-    sb.from("listing_views").select("listing_id").gte("last_viewed_at", dayCutoff),
+    sb.from("listing_views").select("listing_id").gte("last_viewed_at", listingsDaySince),
     sb.from("marquee_items").select("id", { count: "exact", head: true }).eq("enabled", true),
   ]);
 

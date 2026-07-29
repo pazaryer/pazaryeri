@@ -12,7 +12,13 @@ export default function MoreScreen() {
       title="Diğer"
       subtitle={`${profile?.name ?? 'Admin'} · Yönetim araçları`}
     >
-      <Section title="Marka & Kimlik">
+      <Section title="Kontrol Merkezi">
+        <MenuCard
+          icon="🎛️"
+          title="Site Kontrol Merkezi"
+          subtitle="Marka, CMS, duyurular — tek hub"
+          onPress={() => router.push('/(tabs)/cms')}
+        />
         <MenuCard
           icon="✨"
           title="Marka & Kimlik"

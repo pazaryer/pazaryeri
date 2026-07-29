@@ -18,7 +18,7 @@ import { pickImages } from '@/lib/storage';
 
 export default function SettingsScreen() {
   const colors = useColors();
-  const { profile, user, patchProfile } = useAuth();
+  const { profile, user, patchProfile, deleteAccount } = useAuth();
   const updateProfile = useUpdateProfile();
 
   const display = profile ?? (user ? { name: user.displayName ?? '', email: user.email, bio: null, city: null, phone: null, avatar: user.photoURL } : null);
@@ -30,6 +30,7 @@ export default function SettingsScreen() {
   const [avatar, setAvatar] = useState(display?.avatar ?? '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   React.useEffect(() => {
     if (display) {
@@ -80,6 +81,45 @@ export default function SettingsScreen() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Hesabı Kalıcı Sil',
+      'Tüm ilanlarınız, mesajlarınız, yorumlarınız ve profiliniz kalıcı olarak silinecek. Bu işlem geri alınamaz. Google Play ve gizlilik kurallarına uygun şekilde verileriniz sunucudan kaldırılır.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Hesabımı Sil',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Emin misiniz?', 'Son kez onaylayın — hesap tamamen silinecek.', [
+              { text: 'İptal', style: 'cancel' },
+              {
+                text: 'Evet, Sil',
+                style: 'destructive',
+                onPress: async () => {
+                  setDeleting(true);
+                  try {
+                    await deleteAccount();
+                    Alert.alert('Hesap Silindi', 'Hesabınız ve verileriniz kaldırıldı.');
+                  } catch (e: unknown) {
+                    Alert.alert(
+                      'Hata',
+                      e instanceof Error
+                        ? e.message
+                        : 'Hesap silinemedi. Son girişinizden çok zaman geçtiyse çıkış yapıp tekrar giriş yapın.',
+                    );
+                  } finally {
+                    setDeleting(false);
+                  }
+                },
+              },
+            ]);
+          },
+        },
+      ],
+    );
   };
 
   const avatarUri =
@@ -148,6 +188,24 @@ export default function SettingsScreen() {
       <Pressable style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleSave} disabled={saving}>
         {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Kaydet</Text>}
       </Pressable>
+
+      <View style={[styles.dangerZone, { borderColor: colors.destructive }]}>
+        <Text style={[styles.dangerTitle, { color: colors.destructive }]}>Tehlikeli Bölge</Text>
+        <Text style={[styles.dangerHint, { color: colors.mutedForeground }]}>
+          Hesabınızı silerseniz ilanlar, mesajlar ve tüm kişisel veriler kalıcı olarak kaldırılır.
+        </Text>
+        <Pressable
+          style={[styles.deleteBtn, { borderColor: colors.destructive }]}
+          onPress={handleDeleteAccount}
+          disabled={deleting}
+        >
+          {deleting ? (
+            <ActivityIndicator color={colors.destructive} />
+          ) : (
+            <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>Hesabımı Kalıcı Sil</Text>
+          )}
+        </Pressable>
+      </View>
     </ProfileScreenLayout>
   );
 }
@@ -174,4 +232,22 @@ const styles = StyleSheet.create({
   bio: { height: 96, textAlignVertical: 'top', paddingTop: 12 },
   button: { height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 24 },
   buttonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  dangerZone: {
+    marginTop: 40,
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    backgroundColor: 'rgba(180, 35, 24, 0.06)',
+  },
+  dangerTitle: { fontSize: 16, fontWeight: '800', marginBottom: 8 },
+  dangerHint: { fontSize: 13, lineHeight: 20, marginBottom: 14 },
+  deleteBtn: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBtnText: { fontSize: 15, fontWeight: '700' },
 });

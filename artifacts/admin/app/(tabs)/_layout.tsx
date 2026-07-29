@@ -27,6 +27,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="marquee" options={{ href: null }} />
       <Tabs.Screen name="config" options={{ href: null }} />
       <Tabs.Screen name="branding" options={{ href: null }} />
+      <Tabs.Screen name="cms" options={{ href: null }} />
       <Tabs.Screen name="audit" options={{ href: null }} />
     </Tabs>
   );

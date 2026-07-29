@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { adminFetch } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { Badge, Btn, Loading, StatCard } from '@/components/ui';
+import { Badge, Btn, Card, Loading, StatCard } from '@/components/ui';
 import { PageShell, Section } from '@/components/PageShell';
 import { DataTable, CellText } from '@/components/DataTable';
-import { THEME, SPACING } from '@/lib/theme';
+import { THEME, SPACING, RADIUS } from '@/lib/theme';
 
 interface StatsResponse {
   counts: {
@@ -19,8 +20,14 @@ interface StatsResponse {
     conversations: number;
     bannedUsers: number;
   };
+  analyticsResetAt?: string | null;
   live: {
-    users: { live: number; last24h: number; newToday: number; liveDevices: { deviceId: string; platform: string | null; lastPingAt: string }[] };
+    users: {
+      live: number;
+      last24h: number;
+      newToday: number;
+      liveDevices: { deviceId: string; userId?: string | null; platform: string | null; lastPingAt: string }[];
+    };
     listings: { live: number; last24h: number; newToday: number };
   };
   recentUsers: { id: string; name: string; email: string | null; badge_emoji?: string | null; created_at: string }[];
@@ -36,6 +43,26 @@ export default function DashboardScreen() {
     refetchInterval: 30_000,
   });
 
+  async function resetAnalytics() {
+    Alert.alert(
+      'İstatistikleri Sıfırla',
+      'Anlık, 24 saat ve bugün sayaçları sıfırlanır. Kullanıcı ve ilan verileri silinmez. Kullanıcılar uygulamayı açınca gerçek veriler tekrar birikir.',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sıfırla',
+          style: 'destructive',
+          onPress: async () => {
+            await adminFetch('/admin/stats/reset', { method: 'POST' });
+            await adminFetch('/admin/publish', { method: 'POST' });
+            refetch();
+            Alert.alert('Tamam', 'Canlı istatistikler sıfırlandı ve yayınlandı.');
+          },
+        },
+      ],
+    );
+  }
+
   if (isLoading || !data) return <Loading />;
 
   const live = data.live;
@@ -44,30 +71,46 @@ export default function DashboardScreen() {
   return (
     <PageShell
       title="Canlı Panel"
-      subtitle={`${profile?.name} · ${roleLabel}`}
+      subtitle={`${profile?.name} · ${roleLabel} · her cihaz tek kimlik`}
       headerRight={<Btn label="Çıkış" variant="ghost" compact onPress={signOut} />}
       refreshing={isRefetching}
       onRefresh={refetch}
     >
-      <Section title="Kullanıcılar">
+      <LinearGradient
+        colors={['rgba(139, 92, 246, 0.25)', 'rgba(212, 175, 55, 0.12)', 'transparent']}
+        style={styles.hero}
+      >
+        <Text style={styles.heroTitle}>Gerçek Zamanlı Kontrol</Text>
+        <Text style={styles.heroSub}>
+          Mobil + masaüstü · cihaz başına 1 ziyaretçi · {data.analyticsResetAt
+            ? `Son sıfırlama: ${new Date(data.analyticsResetAt).toLocaleString('tr-TR')}`
+            : 'Henüz sıfırlanmadı'}
+        </Text>
+        <View style={styles.heroActions}>
+          <Btn label="İstatistik Sıfırla" variant="danger" compact onPress={resetAnalytics} />
+          <Btn label="Yenile" variant="ghost" compact onPress={() => refetch()} />
+        </View>
+      </LinearGradient>
+
+      <Section title="Canlı Kullanıcılar">
         <View style={styles.statsGrid}>
-          <StatCard icon="👥" label="Anlık Aktif (5dk)" value={live?.users?.live ?? 0} color={THEME.success} />
+          <StatCard icon="🟢" label="Anlık Aktif" value={live?.users?.live ?? 0} color={THEME.success} />
           <StatCard icon="📈" label="Son 24 Saat" value={live?.users?.last24h ?? 0} color={THEME.info} />
-          <StatCard icon="✨" label="Bugün Yeni" value={live?.users?.newToday ?? 0} color={THEME.gold} />
-          <StatCard icon="🌐" label="Toplam" value={data.counts.users} />
+          <StatCard icon="✨" label="Bugün Yeni" value={live?.users?.newToday ?? 0} color={THEME.accent} />
+          <StatCard icon="🌐" label="Toplam Üye" value={data.counts.users} color={THEME.gold} />
         </View>
       </Section>
 
-      <Section title="İlanlar">
+      <Section title="Canlı İlanlar">
         <View style={styles.statsGrid}>
           <StatCard icon="👁" label="Anlık Görüntülenen" value={live?.listings?.live ?? 0} color={THEME.success} />
           <StatCard icon="📊" label="24s Görüntülenen" value={live?.listings?.last24h ?? 0} color={THEME.info} />
-          <StatCard icon="🆕" label="Bugün Yeni İlan" value={live?.listings?.newToday ?? 0} color={THEME.gold} />
-          <StatCard icon="📦" label="Aktif İlan" value={data.counts.activeListings} />
+          <StatCard icon="🆕" label="Bugün Yeni" value={live?.listings?.newToday ?? 0} color={THEME.accent} />
+          <StatCard icon="📦" label="Aktif İlan" value={data.counts.activeListings} color={THEME.gold} />
         </View>
       </Section>
 
-      <Section title="Genel Özet">
+      <Section title="Platform Özeti">
         <View style={styles.statsGrid}>
           <StatCard icon="🚩" label="Şikayet" value={data.counts.pendingReports} color={THEME.warning} />
           <StatCard icon="🚫" label="Engelli" value={data.counts.bannedUsers} color={THEME.danger} />
@@ -76,24 +119,30 @@ export default function DashboardScreen() {
         </View>
       </Section>
 
-      {live?.users?.liveDevices?.length ? (
-        <Section title="Anlık Cihazlar">
-          <DataTable
-            columns={[
-              { key: 'device', title: 'Cihaz ID', flex: 2 },
-              { key: 'platform', title: 'Platform', width: 90 },
-              { key: 'time', title: 'Son Ping', width: 90 },
-            ]}
-            data={live.users.liveDevices.slice(0, 8)}
-            keyExtractor={(d) => d.deviceId}
-            renderCell={(d, col) => {
-              if (col.key === 'device') return <CellText bold>{d.deviceId.slice(0, 14)}…</CellText>;
-              if (col.key === 'platform') return <CellText muted>{d.platform ?? '?'}</CellText>;
-              return <CellText muted>{new Date(d.lastPingAt).toLocaleTimeString('tr-TR')}</CellText>;
-            }}
-          />
-        </Section>
-      ) : null}
+      <Section title="Anlık Cihazlar (tek kişi)">
+        <Card style={styles.deviceHint}>
+          <Text style={styles.deviceHintText}>
+            Her satır = 1 benzersiz cihaz. Aynı kullanıcı telefon + bilgisayarda 2 satır görünür.
+          </Text>
+        </Card>
+        <DataTable
+          columns={[
+            { key: 'device', title: 'Cihaz ID', flex: 2 },
+            { key: 'platform', title: 'Platform', width: 80 },
+            { key: 'user', title: 'Kullanıcı', width: 90 },
+            { key: 'time', title: 'Ping', width: 80 },
+          ]}
+          data={live?.users?.liveDevices ?? []}
+          keyExtractor={(d) => d.deviceId}
+          emptyMessage="Şu an aktif cihaz yok"
+          renderCell={(d, col) => {
+            if (col.key === 'device') return <CellText bold>{d.deviceId.slice(0, 12)}…</CellText>;
+            if (col.key === 'platform') return <CellText muted>{d.platform ?? '?'}</CellText>;
+            if (col.key === 'user') return <CellText muted>{d.userId ? 'Girişli' : 'Misafir'}</CellText>;
+            return <CellText muted>{new Date(d.lastPingAt).toLocaleTimeString('tr-TR')}</CellText>;
+          }}
+        />
+      </Section>
 
       <Section title="Son Kullanıcılar">
         <DataTable
@@ -141,5 +190,17 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+  hero: {
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  heroTitle: { fontSize: 20, fontWeight: '800', color: THEME.goldLight, marginBottom: 6 },
+  heroSub: { fontSize: 12, color: THEME.textMuted, lineHeight: 18, marginBottom: SPACING.md },
+  heroActions: { flexDirection: 'row', gap: SPACING.sm },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  deviceHint: { marginBottom: SPACING.sm, backgroundColor: THEME.infoBg },
+  deviceHintText: { fontSize: 12, color: THEME.textSoft, lineHeight: 18 },
 });
