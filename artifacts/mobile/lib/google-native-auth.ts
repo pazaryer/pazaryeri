@@ -4,7 +4,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { sitePath } from './config';
+import { buildApiUrl } from './config';
 import { getFirebaseAuth } from './firebase';
 import { resolveGoogleWebClientId } from './google-client-id';
 
@@ -14,10 +14,7 @@ const webClientId = resolveGoogleWebClientId();
 let oauthInFlight: Promise<void> | null = null;
 
 export function getNativeOAuthRedirectUri(): string {
-  return AuthSession.makeRedirectUri({
-    scheme: 'pazaryeri',
-    path: 'auth',
-  });
+  return AuthSession.makeRedirectUri({ scheme: 'pazaryeri', path: 'auth' });
 }
 
 export function getOAuthReturnUrl(): string {
@@ -52,7 +49,6 @@ export function isMobileOAuthReturnUrl(url: string): boolean {
   if (!url) return false;
   if (url.startsWith('pazaryeri://')) return true;
   if (url.startsWith('exp://')) return true;
-  if (url.includes('/oauth/app-return')) return true;
   return false;
 }
 
@@ -87,11 +83,10 @@ async function safeDismissBrowser(): Promise<void> {
 async function completeGoogleSignIn(idToken: string): Promise<void> {
   const auth = getFirebaseAuth();
   if (auth.currentUser) return;
-  const credential = GoogleAuthProvider.credential(idToken);
-  await signInWithCredential(auth, credential);
+  await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
 }
 
-function waitForSignedInUser(timeoutMs = 5000): Promise<boolean> {
+function waitForSignedInUser(timeoutMs = 6000): Promise<boolean> {
   const auth = getFirebaseAuth();
   if (auth.currentUser) return Promise.resolve(true);
   return new Promise((resolve) => {
@@ -109,9 +104,15 @@ function waitForSignedInUser(timeoutMs = 5000): Promise<boolean> {
   });
 }
 
-/** pazaryeri0.web.app — Render URL tarayıcıda görünmez */
-function buildOAuthBridgeUrl(returnUrl: string): string {
-  return `${sitePath('/oauth/start')}?return=${encodeURIComponent(returnUrl)}`;
+/** Uygulama içinden API çağrısı — tarayıcıda site açılmaz */
+async function fetchGoogleAuthUrl(returnUrl: string): Promise<string> {
+  const endpoint = `${buildApiUrl('/auth/google/url')}?return=${encodeURIComponent(returnUrl)}`;
+  const res = await fetch(endpoint);
+  const data = (await res.json()) as { url?: string; error?: string };
+  if (!res.ok || !data.url) {
+    throw new Error(data.error ?? 'Google bağlantısı kurulamadı');
+  }
+  return data.url;
 }
 
 async function finishFromUrl(url: string): Promise<boolean> {
@@ -124,36 +125,37 @@ async function finishFromUrl(url: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * Doğrudan Google hesap seçici (accounts.google.com).
+ * pazaryeri0.web.app veya onrender tarayıcıda görünmez.
+ */
 async function runGoogleOAuth(): Promise<void> {
   const auth = getFirebaseAuth();
   if (auth.currentUser) return;
 
   const returnUrl = getNativeOAuthRedirectUri();
-  const bridgeUrl = buildOAuthBridgeUrl(returnUrl);
+  const googleUrl = await fetchGoogleAuthUrl(returnUrl);
 
   if (__DEV__) {
     console.log('[Google] platform:', Platform.OS);
     console.log('[Google] return:', returnUrl);
-    console.log('[Google] bridge:', bridgeUrl);
+    console.log('[Google] google:', googleUrl.slice(0, 80));
   }
 
   let linkSub: { remove: () => void } | null = null;
-  let finished = false;
+  let done = false;
 
-  const tryFinish = async (url: string): Promise<boolean> => {
-    if (finished || auth.currentUser) return true;
-    const ok = await finishFromUrl(url);
-    if (ok) finished = true;
-    return ok;
+  const handleUrl = (url: string) => {
+    if (done) return;
+    void finishFromUrl(url)
+      .then((ok) => {
+        if (ok) done = true;
+      })
+      .catch(() => {});
   };
 
   try {
-    linkSub = Linking.addEventListener('url', ({ url }) => {
-      void tryFinish(url);
-    });
-
-    const initial = await Linking.getInitialURL();
-    if (initial && (await tryFinish(initial))) return;
+    linkSub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
 
     if (Platform.OS === 'android') {
       try {
@@ -163,7 +165,7 @@ async function runGoogleOAuth(): Promise<void> {
       }
     }
 
-    const result = await WebBrowser.openAuthSessionAsync(bridgeUrl, returnUrl, {
+    const result = await WebBrowser.openAuthSessionAsync(googleUrl, returnUrl, {
       preferEphemeralSession: false,
       showInRecents: false,
       createTask: false,
@@ -171,17 +173,21 @@ async function runGoogleOAuth(): Promise<void> {
 
     if (__DEV__) console.log('[Google] result:', result.type);
 
-    if (!finished && result.type === 'success') {
-      await tryFinish(result.url);
+    if (!done && result.type === 'success') {
+      const ok = await finishFromUrl(result.url);
+      if (ok) done = true;
     }
 
-    if (!finished && !auth.currentUser) {
-      await new Promise((r) => setTimeout(r, Platform.OS === 'android' ? 2500 : 1000));
+    if (!done && !auth.currentUser) {
+      await new Promise((r) => setTimeout(r, Platform.OS === 'android' ? 2000 : 800));
     }
 
-    if (!finished && auth.currentUser) finished = true;
-    if (!finished) await waitForSignedInUser(4000);
-    if (auth.currentUser) return;
+    if (!done && result.type === 'success') {
+      const ok = await finishFromUrl(result.url);
+      if (ok) done = true;
+    }
+
+    if (auth.currentUser || (await waitForSignedInUser(4000))) return;
 
     if (result.type === 'cancel' || result.type === 'dismiss') {
       throw new Error('Google girişi iptal edildi');
@@ -201,7 +207,6 @@ async function runGoogleOAuth(): Promise<void> {
   }
 }
 
-/** Uygulama genelinde OAuth deep link yakala (login ekranı dışında da) */
 export function useGoogleOAuthLinkHandler() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -234,9 +239,7 @@ export function useGoogleSignIn() {
 }
 
 export async function signInWithGoogleMobile(): Promise<void> {
-  if (Platform.OS === 'web') {
-    throw new Error('Web için /giris kullanın');
-  }
+  if (Platform.OS === 'web') throw new Error('Web için /giris kullanın');
   if (oauthInFlight) return oauthInFlight;
   oauthInFlight = runGoogleOAuth();
   try {
@@ -256,11 +259,5 @@ export async function completeGoogleSignInFromUrl(returnUrl: string): Promise<vo
 
 export function useNativeGoogleAuth() {
   const { signIn, ready, redirectUri } = useGoogleSignIn();
-  return {
-    request: ready,
-    response: null,
-    promptAsync: signIn,
-    redirectUri,
-    webClientId,
-  };
+  return { request: ready, response: null, promptAsync: signIn, redirectUri, webClientId };
 }
