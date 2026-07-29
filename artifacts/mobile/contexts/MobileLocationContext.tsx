@@ -1,7 +1,12 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
 import type { LocationFilterValue } from '@/components/LocationFilterBar';
-import { formatLocationLabel, loadLocationFilter, saveLocationFilter } from '@/lib/location-storage';
+import {
+  formatLocationLabel,
+  loadLocationFilter,
+  saveLocationFilter,
+  sanitizeLocationFilter,
+} from '@/lib/location-storage';
 
 async function resolveFilterCoords(v: LocationFilterValue): Promise<{ lat?: number; lon?: number }> {
   if (v.radiusKm) {
@@ -70,8 +75,12 @@ export function MobileLocationProvider({ children }: { children: React.ReactNode
 
   useEffect(() => {
     void loadLocationFilter().then(async (stored) => {
-      setFilterState(stored);
-      const next = await resolveFilterCoords(stored);
+      const sanitized = sanitizeLocationFilter(stored);
+      if (JSON.stringify(sanitized) !== JSON.stringify(stored)) {
+        await saveLocationFilter(sanitized);
+      }
+      setFilterState(sanitized);
+      const next = await resolveFilterCoords(sanitized);
       setCoords(next);
       setReady(true);
       setLocationReady(true);
@@ -79,15 +88,18 @@ export function MobileLocationProvider({ children }: { children: React.ReactNode
   }, []);
 
   const setFilter = useCallback(async (v: LocationFilterValue) => {
-    setFilterState(v);
-    await saveLocationFilter(v);
-    const next = await resolveFilterCoords(v);
+    const sanitized = sanitizeLocationFilter(v);
+    setFilterState(sanitized);
+    await saveLocationFilter(sanitized);
+    const next = await resolveFilterCoords(sanitized);
     setCoords(next);
     setLocationReady(true);
   }, []);
 
   const clearFilter = useCallback(async () => {
     setFilterState({});
+    setCoords({});
+    setLocationReady(true);
     await saveLocationFilter({});
   }, []);
 

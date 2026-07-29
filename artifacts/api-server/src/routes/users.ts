@@ -6,6 +6,7 @@ import {
   dbUpdateUser,
   dbGetUserById,
   dbUpdatePushToken,
+  dbClearPushToken,
 } from "../lib/listings-store";
 import { authMiddleware } from "../middleware/auth";
 
@@ -77,8 +78,28 @@ router.get("/users/:userId", async (req, res, next) => {
 
 router.post("/users/me/push-token", authMiddleware, async (req, res, next) => {
   try {
-    const { token } = z.object({ token: z.string() }).parse(req.body);
+    const body = z
+      .object({
+        token: z.string().min(1),
+        platform: z.enum(["ios", "android", "web"]).optional(),
+      })
+      .parse(req.body);
+
+    let token = body.token.trim();
+    if (body.platform === "web" && !token.startsWith("fcm:")) {
+      token = `fcm:${token}`;
+    }
+
     await dbUpdatePushToken(req.user!.id, token);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/users/me/push-token", authMiddleware, async (req, res, next) => {
+  try {
+    await dbClearPushToken(req.user!.id);
     res.json({ success: true });
   } catch (err) {
     next(err);

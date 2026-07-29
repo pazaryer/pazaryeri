@@ -24,11 +24,14 @@ import { initApi } from '@/lib/api';
 import { initFirebase } from '@/lib/firebase';
 import { isOnboardingComplete, isOnboardingDoneSync, subscribeOnboarding } from '@/lib/onboarding';
 import { PushNotificationHandler } from '@/components/PushNotificationHandler';
+import { WebPushHandler } from '@/components/WebPushHandler';
 import { AppNotificationWatcher } from '@/components/AppNotificationWatcher';
+import { installGlobalErrorHandlers } from '@/lib/global-error-handler';
 
 try {
   initApi();
   initFirebase();
+  installGlobalErrorHandlers();
 } catch (err) {
   console.error('[Pazaryeri] Başlatma hatası:', err);
 }
@@ -129,6 +132,7 @@ function RootLayoutNav() {
     <>
       {Platform.OS !== 'web' ? <StatusBar style="dark" /> : null}
       <PushNotificationHandler />
+      <WebPushHandler />
       <AppNotificationWatcher />
       <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="onboarding" />

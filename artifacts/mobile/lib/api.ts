@@ -7,9 +7,14 @@ import { Platform } from 'react-native';
 let initialized = false;
 
 async function getIdToken(): Promise<string | null> {
-  const user = getFirebaseAuth().currentUser;
-  if (!user) return null;
-  return user.getIdToken();
+  try {
+    const auth = getFirebaseAuth();
+    const user = auth.currentUser;
+    if (!user) return null;
+    return user.getIdToken();
+  } catch {
+    return null;
+  }
 }
 
 export function initApi() {

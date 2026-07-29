@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LocationFilterBar, type LocationFilterValue } from '@/components/LocationFilterBar';
+import {
+  LocationFilterBar,
+  type LocationFilterBarHandle,
+  type LocationFilterValue,
+} from '@/components/LocationFilterBar';
 import { useMobileLocation } from '@/contexts/MobileLocationContext';
 import { BRAND } from '@/constants/brand';
 
@@ -10,6 +14,7 @@ export function MobileLocationPicker() {
   const insets = useSafeAreaInsets();
   const { pickerOpen, closePicker, filter, setFilter, clearFilter, refreshCoords } = useMobileLocation();
   const [draft, setDraft] = useState<LocationFilterValue>(filter);
+  const barRef = useRef<LocationFilterBarHandle>(null);
 
   useEffect(() => {
     if (pickerOpen) {
@@ -19,7 +24,8 @@ export function MobileLocationPicker() {
   }, [pickerOpen, filter, refreshCoords]);
 
   const handleSave = async () => {
-    await setFilter(draft);
+    const next = barRef.current?.commitPending() ?? draft;
+    await setFilter(next);
     closePicker();
   };
 
@@ -46,7 +52,7 @@ export function MobileLocationPicker() {
               <Ionicons name="close" size={22} color={BRAND.textMuted} />
             </Pressable>
           </View>
-          <LocationFilterBar value={draft} onChange={setDraft} />
+          <LocationFilterBar ref={barRef} value={draft} onChange={setDraft} />
           <View style={styles.actions}>
             <Pressable style={styles.resetBtn} onPress={() => void handleReset()}>
               <Text style={styles.resetText}>Türkiye (Tümü)</Text>

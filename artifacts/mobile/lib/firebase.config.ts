@@ -8,3 +8,7 @@ export const FIREBASE_WEB_CONFIG = {
   appId: '1:445495602976:web:a9d405b30d0cab7d85f145',
   measurementId: 'G-X4KF641X5R',
 } as const;
+
+/** Firebase Web Push VAPID key (Cloud Messaging → Web configuration) */
+export const FIREBASE_VAPID_KEY =
+  'BCCbTdV1OncqfM7ophTNgoQLhjPeHQWiY5O_u_nmAnWwWTAOeOR6_rtVSs-W2IofkIU5M9uU29MLuX8XIqXqNkM';

@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import type { QueryClient } from '@tanstack/react-query';
 import { showMessageBanner } from '@/lib/message-banner-bus';
 import { showInAppToast } from '@/lib/in-app-toast-bus';
-import { getPushSoundForType } from '@/lib/notification-sounds';
+import { inAppNotificationKey, shouldShowInAppNotification } from '@/lib/notification-dedup';
 
 let handlerConfigured = false;
 
@@ -31,6 +31,16 @@ function configureNotificationHandler() {
       const isMessage = data.type === 'message' && data.conversationId;
 
       if (isMessage) {
+        const key = inAppNotificationKey('message', { conversationId: data.conversationId });
+        if (!shouldShowInAppNotification(key)) {
+          return {
+            shouldShowAlert: false,
+            shouldPlaySound: false,
+            shouldSetBadge: true,
+            shouldShowBanner: false,
+            shouldShowList: false,
+          };
+        }
         showMessageBanner({
           conversationId: data.conversationId!,
           listingId: data.listingId ?? '',
@@ -41,8 +51,21 @@ function configureNotificationHandler() {
           listingImage: data.listingImage,
         });
       } else {
+        const key = inAppNotificationKey(data.type ?? 'default', {
+          id: `push-${notification.request.identifier}`,
+          listingId: data.listingId,
+        });
+        if (!shouldShowInAppNotification(key)) {
+          return {
+            shouldShowAlert: false,
+            shouldPlaySound: false,
+            shouldSetBadge: true,
+            shouldShowBanner: false,
+            shouldShowList: false,
+          };
+        }
         showInAppToast({
-          id: `push-${Date.now()}`,
+          id: `push-${notification.request.identifier}`,
           type: data.type ?? 'default',
           title: content.title ?? 'Pazaryeri',
           body: content.body ?? '',
@@ -113,38 +136,11 @@ export function getPushNavigationPath(data: PushNavigationData): string | null {
   }
   if (data.listingId) return `/listing/${data.listingId}`;
   if (data.screen === 'favorites') return '/favorites';
-  if (data.screen === 'explore') return '/(tabs)/explore';
+  if (data.screen === 'explore') return Platform.OS === 'web' ? '/kesfet' : '/(tabs)/explore';
   if (data.screen === 'post') return '/(tabs)/post';
   if (data.screen === 'messages') return '/(tabs)/messages';
   if (data.screen === 'home') return '/(tabs)';
   return '/notifications';
-}
-
-function handleForegroundPush(
-  data: PushNavigationData,
-  content: { title?: string | null; body?: string | null; subtitle?: string | null },
-): void {
-  if (data.type === 'message' && data.conversationId) {
-    showMessageBanner({
-      conversationId: data.conversationId,
-      listingId: data.listingId ?? '',
-      senderName: data.senderName ?? content.title ?? 'Yeni mesaj',
-      listingTitle: data.listingTitle ?? content.subtitle ?? 'İlan',
-      messageText: data.messageText ?? content.body ?? '',
-      senderAvatar: data.senderAvatar,
-      listingImage: data.listingImage,
-    });
-    return;
-  }
-
-  showInAppToast({
-    id: `fg-${Date.now()}`,
-    type: data.type ?? 'default',
-    title: content.title ?? 'Pazaryeri',
-    body: content.body ?? '',
-    listingId: data.listingId,
-    subtitle: content.subtitle ?? data.listingTitle,
-  });
 }
 
 async function setupAndroidChannels(Notifications: ReturnType<typeof getNotificationsModule>): Promise<void> {
@@ -224,6 +220,15 @@ export async function registerForPushNotifications(): Promise<string | null> {
   return token;
 }
 
+export async function unregisterPushToken(): Promise<void> {
+  try {
+    const { apiFetch } = await import('./api');
+    await apiFetch('/users/me/push-token', { method: 'DELETE' });
+  } catch {
+    /* ignore */
+  }
+}
+
 export function attachPushNotificationListeners(
   queryClient: QueryClient,
   navigate: (path: string) => void,
@@ -241,9 +246,7 @@ export function attachPushNotificationListeners(
     void queryClient.invalidateQueries({ queryKey: ['favorites'] });
   };
 
-  const receivedSub = Notifications.addNotificationReceivedListener((notification) => {
-    const data = parsePushData(notification.request.content.data);
-    handleForegroundPush(data, notification.request.content);
+  const receivedSub = Notifications.addNotificationReceivedListener(() => {
     invalidateAll();
   });
 
@@ -266,6 +269,3 @@ export function attachPushNotificationListeners(
     responseSub.remove();
   };
 }
-
-// Re-export for push sound helper used elsewhere
-export { getPushSoundForType };

@@ -13,6 +13,14 @@
         "destination": "/oauth/app-return.html"
       },
       {
+        "source": "/firebase-messaging-sw.js",
+        "destination": "/firebase-messaging-sw.js"
+      },
+      {
+        "source": "/app-ads.txt",
+        "destination": "/app-ads.txt"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

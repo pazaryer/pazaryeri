@@ -17,6 +17,7 @@ import { pickImages } from '@/lib/storage';
 import { showAlert } from '@/lib/web-alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { LISTING_CATEGORIES } from '@/lib/categories';
+import { normalizeListingLocationParts } from '@/lib/listing-location';
 
 const CATEGORIES = LISTING_CATEGORIES.filter((c) => c !== 'Tümü');
 
@@ -77,15 +78,15 @@ export function WebPostPage({ editId }: WebPostPageProps) {
 
     setLoading(true);
     try {
-      const parts = location.split(',').map((s) => s.trim()).filter(Boolean);
+      const locParts = normalizeListingLocationParts(location.trim() || 'Türkiye');
       const payload = {
         title: title.trim(),
         price: parseInt(price.replace(/\D/g, ''), 10),
         category,
         description: desc.trim(),
-        city: parts[1] ?? parts[0] ?? 'Türkiye',
-        district: parts[0] ?? undefined,
-        location: location.trim() || 'Türkiye',
+        city: locParts.city ?? 'Türkiye',
+        district: locParts.district,
+        location: locParts.location || 'Türkiye',
         contactPhone: phone.trim(),
         images,
       };

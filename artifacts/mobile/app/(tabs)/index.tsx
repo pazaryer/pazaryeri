@@ -18,6 +18,7 @@ import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { useListings, useNotifications } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobileLocation } from '@/contexts/MobileLocationContext';
+import { hasActiveLocationFilter } from '@/lib/location-storage';
 import { BRAND } from '@/constants/brand';
 
 export default function HomeScreen() {
@@ -49,8 +50,8 @@ export default function HomeScreen() {
       district: filter.district,
       neighborhood: filter.neighborhood,
       radiusKm: filter.radiusKm,
-      lat: coords.lat,
-      lon: coords.lon,
+      lat: filter.radiusKm ? coords.lat : undefined,
+      lon: filter.radiusKm ? coords.lon : undefined,
     },
     { enabled: listingsEnabled },
   );
@@ -59,6 +60,8 @@ export default function HomeScreen() {
 
   const needsGps =
     filter.radiusKm != null && locationReady && (coords.lat == null || coords.lon == null);
+
+  const locationFiltered = hasActiveLocationFilter(filter);
 
   const onEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
@@ -126,10 +129,14 @@ export default function HomeScreen() {
           }
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text style={{ color: colors.mutedForeground }}>Bu konumda ilan bulunamadı</Text>
-              <Pressable onPress={openPicker} style={styles.changeLocationBtn}>
-                <Text style={styles.changeLocationText}>Konumu değiştir</Text>
-              </Pressable>
+              <Text style={{ color: colors.mutedForeground }}>
+                {locationFiltered ? 'Bu konumda ilan bulunamadı' : 'Henüz ilan bulunamadı'}
+              </Text>
+              {locationFiltered ? (
+                <Pressable onPress={openPicker} style={styles.changeLocationBtn}>
+                  <Text style={styles.changeLocationText}>Konumu değiştir</Text>
+                </Pressable>
+              ) : null}
             </View>
           }
           ListFooterComponent={

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { buildLocationFilterFromInputs } from '@/lib/location-storage';
 import { filterIller, normalizeIl } from '@/lib/turkiye-iller';
 import { useDistrictSuggestions, useNeighborhoodSuggestions } from '@/lib/hooks';
 
@@ -27,7 +28,14 @@ interface LocationFilterProps {
   onChange: (v: LocationFilterValue) => void;
 }
 
-export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
+export type LocationFilterBarHandle = {
+  commitPending: () => LocationFilterValue;
+};
+
+export const LocationFilterBar = forwardRef<LocationFilterBarHandle, LocationFilterProps>(function LocationFilterBar(
+  { value, onChange },
+  ref,
+) {
   const colors = useColors();
   const [expanded, setExpanded] = useState(false);
   const [cityQuery, setCityQuery] = useState(value.city ?? '');
@@ -46,11 +54,51 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
   const districtSuggestions = districtData?.items ?? [];
   const neighborhoodSuggestions = neighborhoodData?.items ?? [];
 
+  useEffect(() => {
+    setCityQuery(value.city ?? '');
+    setDistrictQuery(value.district ?? '');
+    setNeighborhoodQuery(value.neighborhood ?? '');
+  }, [value.city, value.district, value.neighborhood]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      commitPending: () =>
+        buildLocationFilterFromInputs(value, {
+          cityQuery,
+          districtQuery,
+          neighborhoodQuery,
+        }),
+    }),
+    [value, cityQuery, districtQuery, neighborhoodQuery],
+  );
+
+  const handleCityQueryChange = (text: string) => {
+    const prevNorm = normalizeIl(value.city ?? cityQuery);
+    const nextNorm = normalizeIl(text);
+    setCityQuery(text);
+    if (!text.trim() || (prevNorm && nextNorm && prevNorm !== nextNorm)) {
+      setDistrictQuery('');
+      setNeighborhoodQuery('');
+    }
+  };
+
+  const clearLocalQueries = () => {
+    setCityQuery('');
+    setDistrictQuery('');
+    setNeighborhoodQuery('');
+  };
+
   const pickCity = (city: string) => {
     setCityQuery(city);
     setDistrictQuery('');
     setNeighborhoodQuery('');
-    onChange({ ...value, city, district: undefined, neighborhood: undefined, radiusKm: undefined });
+    onChange({ city, district: undefined, neighborhood: undefined, radiusKm: undefined });
+  };
+
+  const clearFilter = () => {
+    clearLocalQueries();
+    onChange({});
   };
 
   return (
@@ -63,7 +111,7 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
               { borderColor: colors.border, backgroundColor: colors.card },
               !hasFilter && { borderColor: colors.primary, backgroundColor: colors.secondary },
             ]}
-            onPress={() => onChange({})}
+            onPress={clearFilter}
           >
             {useEmoji ? (
               <Text style={styles.emoji}>🌍</Text>
@@ -80,7 +128,14 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
                 { borderColor: colors.border, backgroundColor: colors.card },
                 value.radiusKm === km && { borderColor: colors.primary, backgroundColor: colors.primary },
               ]}
-              onPress={() => onChange({ ...value, radiusKm: value.radiusKm === km ? undefined : km, city: undefined, district: undefined })}
+              onPress={() => {
+                if (value.radiusKm === km) {
+                  clearFilter();
+                } else {
+                  clearLocalQueries();
+                  onChange({ radiusKm: km });
+                }
+              }}
             >
               {useEmoji ? (
                 <Text style={styles.emoji}>📍</Text>
@@ -114,7 +169,7 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
           </Pressable>
         </ScrollView>
         {hasFilter && (
-          <Pressable onPress={() => onChange({})} hitSlop={8} style={styles.clearBtn}>
+          <Pressable onPress={clearFilter} hitSlop={8} style={styles.clearBtn}>
             {useEmoji ? (
               <Text style={styles.clearEmoji}>✕</Text>
             ) : (
@@ -132,10 +187,14 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
             placeholder="Örn. İstanbul, Antalya..."
             placeholderTextColor={colors.mutedForeground}
             value={cityQuery}
-            onChangeText={setCityQuery}
+            onChangeText={handleCityQueryChange}
             onSubmitEditing={() => {
               const city = normalizeIl(cityQuery);
-              if (city) onChange({ ...value, city, radiusKm: undefined });
+              if (city) {
+                setDistrictQuery('');
+                setNeighborhoodQuery('');
+                onChange({ city, district: undefined, neighborhood: undefined, radiusKm: undefined });
+              }
             }}
           />
           {citySuggestions.length > 0 && cityQuery.length > 0 && (
@@ -157,8 +216,14 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
             editable={!!activeCity}
             onChangeText={setDistrictQuery}
             onSubmitEditing={() => {
-              if (!districtQuery.trim()) return;
-              onChange({ ...value, city: activeCity, district: districtQuery.trim(), neighborhood: undefined, radiusKm: undefined });
+              if (!districtQuery.trim() || !activeCity) return;
+              setNeighborhoodQuery('');
+              onChange({
+                city: activeCity,
+                district: districtQuery.trim(),
+                neighborhood: undefined,
+                radiusKm: undefined,
+              });
             }}
           />
           {districtSuggestions.length > 0 && districtQuery.length > 0 && (
@@ -170,7 +235,12 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
                   onPress={() => {
                     setDistrictQuery(district);
                     setNeighborhoodQuery('');
-                    onChange({ ...value, city: activeCity, district, neighborhood: undefined, radiusKm: undefined });
+                    onChange({
+                      city: activeCity,
+                      district,
+                      neighborhood: undefined,
+                      radiusKm: undefined,
+                    });
                   }}
                 >
                   <Text style={[styles.suggestionText, { color: colors.foreground }]}>{district}</Text>
@@ -195,10 +265,12 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
                   key={mahalle}
                   style={styles.suggestionRow}
                   onPress={() => {
+                    const district = districtQuery.trim() || value.district;
+                    if (!activeCity || !district) return;
                     setNeighborhoodQuery(mahalle);
                     onChange({
                       city: activeCity,
-                      district: (value.district ?? districtQuery.trim()) || undefined,
+                      district,
                       neighborhood: mahalle,
                       radiusKm: undefined,
                     });
@@ -213,13 +285,13 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
           <Pressable
             style={[styles.applyBtn, { backgroundColor: colors.primary }]}
             onPress={() => {
-              const city = normalizeIl(cityQuery);
-              onChange({
-                city,
-                district: districtQuery.trim() || value.district,
-                neighborhood: neighborhoodQuery.trim() || undefined,
-                radiusKm: undefined,
-              });
+              onChange(
+                buildLocationFilterFromInputs(value, {
+                  cityQuery,
+                  districtQuery,
+                  neighborhoodQuery,
+                }),
+              );
               setExpanded(false);
             }}
           >
@@ -229,7 +301,7 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 10, gap: 8 },

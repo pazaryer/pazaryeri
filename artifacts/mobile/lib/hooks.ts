@@ -120,9 +120,11 @@ export function useListings(
       if (params?.city) search.set('city', params.city);
       if (params?.district) search.set('district', params.district);
       if (params?.neighborhood) search.set('neighborhood', params.neighborhood);
-      if (params?.radiusKm) search.set('radiusKm', String(params.radiusKm));
-      if (params?.lat != null) search.set('lat', String(params.lat));
-      if (params?.lon != null) search.set('lon', String(params.lon));
+      if (params?.radiusKm) {
+        search.set('radiusKm', String(params.radiusKm));
+        if (params.lat != null) search.set('lat', String(params.lat));
+        if (params.lon != null) search.set('lon', String(params.lon));
+      }
       if (params?.sort) search.set('sort', params.sort);
       search.set('limit', '20');
       return apiFetch<ListResponse>(`/listings?${search}`);
@@ -412,7 +414,7 @@ export function useConversations(enabled = true) {
     queryKey: ['conversations'],
     queryFn: () => apiFetch<{ items: ConversationSummary[] }>('/conversations'),
     enabled,
-    refetchInterval: false,
+    refetchInterval: Platform.OS === 'web' ? 45_000 : 25_000,
     refetchOnWindowFocus: true,
     staleTime: 15_000,
   });
@@ -608,7 +610,7 @@ export function useNotifications(enabled = true) {
     queryKey: ['notifications'],
     queryFn: () => apiFetch<{ items: AppNotification[] }>('/notifications'),
     enabled,
-    refetchInterval: false,
+    refetchInterval: Platform.OS === 'web' ? 60_000 : 30_000,
     retry: false,
     refetchOnWindowFocus: true,
   });

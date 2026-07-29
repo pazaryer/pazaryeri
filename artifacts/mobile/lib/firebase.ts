@@ -8,7 +8,7 @@ import { getAnalytics, isSupported } from 'firebase/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { FIREBASE_WEB_CONFIG } from './firebase.config';
+import { FIREBASE_WEB_CONFIG, FIREBASE_VAPID_KEY } from './firebase.config';
 
 type FirebaseExtra = Partial<typeof FIREBASE_WEB_CONFIG>;
 
@@ -22,6 +22,13 @@ function cfg(key: keyof typeof FIREBASE_WEB_CONFIG): string {
   if (fromEnv) return fromEnv;
   const extra = getExtraFirebase();
   return extra[key] ?? FIREBASE_WEB_CONFIG[key];
+}
+
+export function getFirebaseVapidKey(): string {
+  const fromEnv = process.env.EXPO_PUBLIC_FIREBASE_VAPID_KEY;
+  if (fromEnv) return fromEnv;
+  const extra = getExtraFirebase() as { vapidKey?: string };
+  return extra.vapidKey ?? FIREBASE_VAPID_KEY;
 }
 
 const firebaseConfig = {
@@ -61,29 +68,37 @@ function initAuthInstance(firebaseApp: FirebaseApp): Auth {
   }
 }
 
-export function initFirebase(): FirebaseApp {
+export function initFirebase(): FirebaseApp | null {
   if (app && auth) return app;
 
   if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-    throw new Error('Firebase yapılandırması eksik. app.json veya .env kontrol edin.');
+    console.warn('[Pazaryeri] Firebase yapılandırması eksik');
+    return null;
   }
 
-  app = getApps().length > 0 ? getApps()[0]! : initializeApp(firebaseConfig);
-  auth = initAuthInstance(app);
+  try {
+    app = getApps().length > 0 ? getApps()[0]! : initializeApp(firebaseConfig);
+    auth = initAuthInstance(app);
 
-  if (Constants.platform?.web) {
-    isSupported().then((supported) => {
-      if (supported) getAnalytics(app!);
-    });
+    if (Constants.platform?.web) {
+      isSupported().then((supported) => {
+        if (supported && app) getAnalytics(app);
+      });
+    }
+
+    return app;
+  } catch (err) {
+    console.error('[Pazaryeri] Firebase başlatılamadı:', err);
+    return null;
   }
-
-  return app;
 }
 
 export function getFirebaseAuth(): Auth {
-  if (!auth) initFirebase();
   if (!auth) {
-    throw new Error('Firebase Auth başlatılamadı');
+    const initialized = initFirebase();
+    if (!initialized || !auth) {
+      throw new Error('Firebase Auth kullanılamıyor');
+    }
   }
   return auth;
 }

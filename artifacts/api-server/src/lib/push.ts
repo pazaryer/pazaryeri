@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from "./supabase-db";
 import { logger } from "./logger";
 import { getPushSoundForType } from "./push-sounds";
 import { parseNotificationIsRead } from "./notification-read";
+import { isFcmToken, sendFcmNotification } from "./fcm-send";
 
 async function getUnreadCount(userId: string): Promise<number> {
   const sb = getSupabaseAdmin();
@@ -42,6 +43,16 @@ export async function sendPushNotification(
     if (!token || typeof token !== "string") return;
 
     const notifType = options?.type ?? data?.type ?? "default";
+    const badge = options?.badge ?? (await getUnreadCount(userId));
+
+    if (isFcmToken(token)) {
+      const ok = await sendFcmNotification(token, title, body, data, { badge });
+      if (!ok) {
+        logger.warn({ userId }, "FCM web push gönderilemedi — FIREBASE_SERVICE_ACCOUNT_JSON kontrol edin");
+      }
+      return;
+    }
+
     const channelId =
       notifType === "engagement"
         ? "engagement"
@@ -50,7 +61,6 @@ export async function sendPushNotification(
           : notifType === "favorite" || notifType === "favorite_update"
             ? "favorites"
             : "default";
-    const badge = options?.badge ?? (await getUnreadCount(userId));
     const sound = getPushSoundForType(notifType);
 
     const payload: Record<string, unknown> = {

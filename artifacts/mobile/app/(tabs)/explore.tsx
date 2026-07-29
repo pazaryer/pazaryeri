@@ -22,6 +22,7 @@ import { CategoryTile } from '@/components/CategoryTile';
 import { MOBILE_EXPLORE_CATEGORIES } from '@/lib/categories';
 import { BRAND } from '@/constants/brand';
 import { useMobileLocation } from '@/contexts/MobileLocationContext';
+import { hasActiveLocationFilter } from '@/lib/location-storage';
 
 const { width } = Dimensions.get('window');
 const CAT_GAP = 7;
@@ -61,8 +62,8 @@ export default function ExploreScreen() {
       district: filter.district,
       neighborhood: filter.neighborhood,
       radiusKm: filter.radiusKm,
-      lat: coords.lat,
-      lon: coords.lon,
+      lat: filter.radiusKm ? coords.lat : undefined,
+      lon: filter.radiusKm ? coords.lon : undefined,
       sort,
       minPrice: parsedMin,
       maxPrice: parsedMax,
@@ -75,6 +76,8 @@ export default function ExploreScreen() {
 
   const needsGps =
     filter.radiusKm != null && locationReady && (coords.lat == null || coords.lon == null);
+
+  const locationFiltered = hasActiveLocationFilter(filter);
 
   const trending = useMemo(() => {
     const titles = allItems.slice(0, 8).map((item) => item.title.split(/\s+/).slice(0, 2).join(' '));
@@ -262,7 +265,9 @@ export default function ExploreScreen() {
           <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
         ) : (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>İlan bulunamadı</Text>
+            <Text style={styles.emptyText}>
+              {locationFiltered || selectedCategory ? 'Bu konumda ilan bulunamadı' : 'İlan bulunamadı'}
+            </Text>
           </View>
         )
       }

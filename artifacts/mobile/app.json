@@ -153,7 +153,8 @@
         "storageBucket": "pazaryeri0.firebasestorage.app",
         "messagingSenderId": "445495602976",
         "appId": "1:445495602976:web:a9d405b30d0cab7d85f145",
-        "measurementId": "G-X4KF641X5R"
+        "measurementId": "G-X4KF641X5R",
+        "vapidKey": "BCCbTdV1OncqfM7ophTNgoQLhjPeHQWiY5O_u_nmAnWwWTAOeOR6_rtVSs-W2IofkIU5M9uU29MLuX8XIqXqNkM"
       },
       "google": {
         "webClientId": "637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com"

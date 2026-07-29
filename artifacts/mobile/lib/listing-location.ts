@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { normalizeIl } from '@/lib/turkiye-iller';
 
 export type ListingCoords = {
   latitude?: number;
@@ -14,6 +15,33 @@ export function parseLocationParts(location: string): { city?: string; district?
     return { city: parts[0], district: parts[0] };
   }
   return {};
+}
+
+/** Reverse geocode sonucundan il/ilçe metni üretir. */
+export function formatGeocodedLocation(geo: Location.LocationGeocodedAddress | undefined): string {
+  if (!geo) return '';
+  const district = geo.district || geo.subregion;
+  const city = geo.region || geo.city;
+  return [district, city].filter(Boolean).join(', ');
+}
+
+/** İlan kaydı için normalize edilmiş şehir/ilçe. */
+export function normalizeListingLocationParts(location: string): {
+  city?: string;
+  district?: string;
+  location: string;
+} {
+  const parts = parseLocationParts(location);
+  const city = parts.city ? normalizeIl(parts.city) ?? parts.city : undefined;
+  let district = parts.district?.trim() || undefined;
+  if (district && city) {
+    const foldedDistrict = district.toLocaleLowerCase('tr-TR');
+    const foldedCity = city.toLocaleLowerCase('tr-TR');
+    if (foldedDistrict === foldedCity) district = undefined;
+  }
+  const loc =
+    district && city ? `${district}, ${city}` : city ?? location.trim();
+  return { city, district, location: loc };
 }
 
 export function formatListingLocation(item: {

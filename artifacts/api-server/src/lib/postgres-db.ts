@@ -9,6 +9,7 @@ import { filterByRadius, boundingBox } from "./geo";
 import { sanitizeSearchQuery, searchPattern } from "./search";
 import { resolveListingPriceForViewer } from "./listing-price";
 import { buildGeocodeQuery, geocodeText } from "./geocode";
+import { locationLikeParam, sqlLocationFieldMatch } from "./location-match.js";
 import { AppError } from "../middleware/errorHandler";
 
 const { Pool } = pg;
@@ -127,6 +128,11 @@ export async function pgUpdatePushToken(id: string, token: string): Promise<void
     token,
     id,
   ]);
+}
+
+export async function pgClearPushToken(id: string): Promise<void> {
+  const db = getPgPool();
+  await db.query("UPDATE users SET push_token = NULL, updated_at = NOW() WHERE id = $1", [id]);
 }
 
 export async function pgCreateListing(
@@ -301,16 +307,23 @@ export async function pgListListings(params: {
     where.push(`l.created_at < $${values.length}`);
   }
   if (params.city) {
-    values.push(`%${params.city.replace(/[%_]/g, "")}%`);
-    where.push(`(l.city ILIKE $${values.length} OR l.district ILIKE $${values.length} OR l.location ILIKE $${values.length})`);
+    values.push(locationLikeParam(params.city));
+    const p = values.length;
+    where.push(
+      `(${sqlLocationFieldMatch("l.city", p)} OR ${sqlLocationFieldMatch("l.district", p)} OR ${sqlLocationFieldMatch("l.location", p)})`,
+    );
   }
   if (params.district) {
-    values.push(`%${params.district.replace(/[%_]/g, "")}%`);
-    where.push(`(l.district ILIKE $${values.length} OR l.location ILIKE $${values.length})`);
+    values.push(locationLikeParam(params.district));
+    const p = values.length;
+    where.push(
+      `(${sqlLocationFieldMatch("l.district", p)} OR ${sqlLocationFieldMatch("l.location", p)})`,
+    );
   }
   if (params.neighborhood) {
-    values.push(`%${params.neighborhood.replace(/[%_]/g, "")}%`);
-    where.push(`l.location ILIKE $${values.length}`);
+    values.push(locationLikeParam(params.neighborhood));
+    const p = values.length;
+    where.push(sqlLocationFieldMatch("l.location", p));
   }
   if (params.minPrice != null) {
     values.push(params.minPrice);

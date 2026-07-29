@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, type ViewStyle } from 'react-native';
+import { View, StyleSheet, type ImageStyle, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { BRAND } from '@/constants/brand';
 
@@ -19,7 +19,7 @@ type Variant = 'app' | 'splash' | 'plain';
 type Props = {
   size?: AppIconSize;
   variant?: Variant;
-  style?: ViewStyle;
+  style?: ViewStyle | ImageStyle;
 };
 
 const ICON_SOURCE = require('@/assets/images/icon.png');

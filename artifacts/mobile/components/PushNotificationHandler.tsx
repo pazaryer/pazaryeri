@@ -21,7 +21,7 @@ export function PushNotificationHandler() {
   const badgeCount = useMemo(() => {
     const unreadNotifs = notifData?.items.filter((n) => !n.isRead).length ?? 0;
     const unreadMessages = (convoData?.items ?? []).reduce((s, c) => s + c.unreadCount, 0);
-    return Math.max(unreadNotifs, unreadMessages);
+    return unreadNotifs + unreadMessages;
   }, [notifData?.items, convoData?.items]);
 
   useEffect(() => {

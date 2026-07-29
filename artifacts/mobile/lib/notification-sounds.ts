@@ -2,12 +2,12 @@ import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-export type InAppSoundKind = 'popup' | 'favorite' | 'listing';
+export type InAppSoundKind = 'popup' | 'favorite' | 'message';
 
 const SOUND_FILES: Record<InAppSoundKind, ReturnType<typeof require>> = {
   popup: require('@/assets/sounds/pazaryeri-inapp.wav'),
-  favorite: require('@/assets/sounds/pazaryeri-inapp.wav'),
-  listing: require('@/assets/sounds/pazaryeri-inapp.wav'),
+  favorite: require('@/assets/sounds/pazaryeri-favorite.wav'),
+  message: require('@/assets/sounds/pazaryeri-message.wav'),
 };
 
 let audioModeReady = false;

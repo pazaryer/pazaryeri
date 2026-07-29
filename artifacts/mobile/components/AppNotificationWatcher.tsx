@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversations, useNotifications } from '@/lib/hooks';
 import {
@@ -8,6 +7,7 @@ import {
   type MessageBannerPayload,
 } from '@/lib/message-banner-bus';
 import { onInAppToast, showInAppToast, type InAppToastPayload } from '@/lib/in-app-toast-bus';
+import { inAppNotificationKey, shouldShowInAppNotification } from '@/lib/notification-dedup';
 import { MessageInAppBanner } from '@/components/MessageInAppBanner';
 import { InAppNotificationToast } from '@/components/InAppNotificationToast';
 
@@ -23,18 +23,12 @@ export function AppNotificationWatcher() {
   const seenNotifIdsRef = useRef<Set<string>>(new Set());
   const notifInitRef = useRef(false);
 
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    return onMessageBanner((payload) => setMessageBanner(payload));
-  }, []);
+  useEffect(() => onMessageBanner((payload) => setMessageBanner(payload)), []);
+
+  useEffect(() => onInAppToast((payload) => setToast(payload)), []);
 
   useEffect(() => {
-    if (Platform.OS === 'web') return;
-    return onInAppToast((payload) => setToast(payload));
-  }, []);
-
-  useEffect(() => {
-    if (!user || !convoData?.items || Platform.OS === 'web') return;
+    if (!user || !convoData?.items) return;
 
     if (!convoInitRef.current) {
       for (const convo of convoData.items) {
@@ -48,6 +42,8 @@ export function AppNotificationWatcher() {
       const prev = lastMessageAtRef.current.get(convo.id) ?? '';
       const current = convo.lastMessageAt ?? '';
       if (current && current !== prev && convo.unreadCount > 0) {
+        const key = inAppNotificationKey('message', { conversationId: convo.id });
+        if (!shouldShowInAppNotification(key)) continue;
         showMessageBanner({
           conversationId: convo.id,
           listingId: convo.listingId,
@@ -63,7 +59,7 @@ export function AppNotificationWatcher() {
   }, [convoData?.items, user]);
 
   useEffect(() => {
-    if (!user || !notifData?.items || Platform.OS === 'web') return;
+    if (!user || !notifData?.items) return;
 
     if (!notifInitRef.current) {
       for (const n of notifData.items) seenNotifIdsRef.current.add(n.id);
@@ -75,6 +71,9 @@ export function AppNotificationWatcher() {
       if (seenNotifIdsRef.current.has(n.id) || n.isRead) continue;
       seenNotifIdsRef.current.add(n.id);
       if (n.type === 'message') continue;
+
+      const key = inAppNotificationKey(n.type, { id: n.id });
+      if (!shouldShowInAppNotification(key)) continue;
 
       let listingId: string | undefined;
       try {
@@ -93,8 +92,6 @@ export function AppNotificationWatcher() {
       });
     }
   }, [notifData?.items, user]);
-
-  if (Platform.OS === 'web') return null;
 
   return (
     <>

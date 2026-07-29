@@ -24,8 +24,9 @@ import { pickImages, takePhoto } from '@/lib/storage';
 import { LISTING_CATEGORIES, getCategoryIcon } from '@/lib/categories';
 import { BRAND } from '@/constants/brand';
 import {
-  parseLocationParts,
   resolveListingCoords,
+  formatGeocodedLocation,
+  normalizeListingLocationParts,
   type ListingCoords,
 } from '@/lib/listing-location';
 
@@ -83,7 +84,7 @@ export default function PostScreen() {
       latitude: loc.coords.latitude,
       longitude: loc.coords.longitude,
     });
-    const locStr = [geo?.district, geo?.city].filter(Boolean).join(', ');
+    const locStr = formatGeocodedLocation(geo);
     setLocation(locStr || `${loc.coords.latitude.toFixed(4)}, ${loc.coords.longitude.toFixed(4)}`);
     setCoords({
       latitude: loc.coords.latitude,
@@ -111,7 +112,7 @@ export default function PostScreen() {
               latitude: device.latitude,
               longitude: device.longitude,
             });
-            submitLocation = [geo?.district, geo?.city].filter(Boolean).join(', ');
+            submitLocation = formatGeocodedLocation(geo);
           }
         }
       }
@@ -121,15 +122,15 @@ export default function PostScreen() {
         Alert.alert('Konum gerekli', 'İlanınızın mesafe filtresinde görünmesi için konum izni verin veya konum alanına adres yazın.');
         return;
       }
-      const parts = parseLocationParts(submitLocation);
+      const locParts = normalizeListingLocationParts(submitLocation);
       const created = await createListing.mutateAsync({
         title: title.trim(),
         price: parseInt(price.replace(/\D/g, ''), 10),
         category,
         description: desc.trim(),
-        city: parts.city,
-        district: parts.district,
-        location: submitLocation,
+        city: locParts.city,
+        district: locParts.district,
+        location: locParts.location,
         latitude: resolved.latitude,
         longitude: resolved.longitude,
         contactPhone: phone.trim(),

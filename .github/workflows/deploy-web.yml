@@ -28,7 +28,8 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: https://pazaryerim.onrender.com
           EXPO_PUBLIC_SITE_URL: https://pazaryeri0.web.app
-        run: pnpm exec expo export -p web
+          EXPO_PUBLIC_FIREBASE_VAPID_KEY: BCCbTdV1OncqfM7ophTNgoQLhjPeHQWiY5O_u_nmAnWwWTAOeOR6_rtVSs-W2IofkIU5M9uU29MLuX8XIqXqNkM
+        run: pnpm run export:web
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0

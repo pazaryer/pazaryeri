@@ -12,6 +12,7 @@ import {
 } from "./supabase-db";
 import { filterByRadius, boundingBox } from "./geo";
 import { sanitizeSearchQuery, searchPattern } from "./search";
+import { locationMatchVariants, normalizeListingCity } from "./location-match.js";
 import { buildGeocodeQuery, geocodeText } from "./geocode";
 import {
   isPostgresConfigured,
@@ -23,6 +24,7 @@ import {
   pgGetUser,
   pgUpdateUser,
   pgUpdatePushToken,
+  pgClearPushToken,
   pgUpdateListingCoords,
 } from "./postgres-db";
 import { AppError } from "../middleware/errorHandler";
@@ -142,7 +144,12 @@ export async function dbCreateListing(
   },
 ) {
   const backend = await resolveListingsBackend();
-  const resolved = await withResolvedListingCoords(body);
+  const normalized = {
+    ...body,
+    city: normalizeListingCity(body.city) ?? body.city,
+    location: body.location,
+  };
+  const resolved = await withResolvedListingCoords(normalized);
   if (backend === "postgres") {
     const id = await pgCreateListing(sellerId, resolved);
     return dbBuildListingDetail(id, sellerId);
@@ -234,16 +241,23 @@ export async function dbListListings(params: {
   if (params.sellerId) query = query.eq("seller_id", params.sellerId);
   if (!useOffset && params.cursor) query = query.lt("created_at", params.cursor);
   if (params.city) {
-    const city = params.city.replace(/[%_,]/g, "");
-    query = query.or(`city.ilike.%${city}%,district.ilike.%${city}%,location.ilike.%${city}%`);
+    const variants = locationMatchVariants(params.city);
+    const orClauses = variants.flatMap((v) => [
+      `city.ilike.%${v}%`,
+      `district.ilike.%${v}%`,
+      `location.ilike.%${v}%`,
+    ]);
+    query = query.or(orClauses.join(","));
   }
   if (params.district) {
-    const district = params.district.replace(/[%_,]/g, "");
-    query = query.or(`district.ilike.%${district}%,location.ilike.%${district}%`);
+    const variants = locationMatchVariants(params.district);
+    const orClauses = variants.flatMap((v) => [`district.ilike.%${v}%`, `location.ilike.%${v}%`]);
+    query = query.or(orClauses.join(","));
   }
   if (params.neighborhood) {
-    const neighborhood = params.neighborhood.replace(/[%_,]/g, "");
-    query = query.ilike("location", `%${neighborhood}%`);
+    const variants = locationMatchVariants(params.neighborhood);
+    const orClauses = variants.map((v) => `location.ilike.%${v}%`);
+    query = query.or(orClauses.join(","));
   }
   if (params.minPrice != null) query = query.gte("price", params.minPrice);
   if (params.maxPrice != null) query = query.lte("price", params.maxPrice);
@@ -458,5 +472,17 @@ export async function dbUpdatePushToken(id: string, token: string) {
   await getSupabaseAdmin()
     .from("users")
     .update({ push_token: token, updated_at: new Date().toISOString() })
+    .eq("id", id);
+}
+
+export async function dbClearPushToken(id: string) {
+  const backend = await resolveListingsBackend();
+  if (backend === "postgres") {
+    await pgClearPushToken(id);
+    return;
+  }
+  await getSupabaseAdmin()
+    .from("users")
+    .update({ push_token: null, updated_at: new Date().toISOString() })
     .eq("id", id);
 }

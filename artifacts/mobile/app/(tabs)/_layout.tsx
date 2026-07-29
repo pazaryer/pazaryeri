@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BRAND } from '@/constants/brand';
 import { useCompactScreen } from '@/hooks/useCompactScreen';
 import { MobileLocationPicker } from '@/components/MobileLocationPicker';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversations } from '@/lib/hooks';
 
@@ -48,6 +49,7 @@ export default function TabLayout() {
   );
 
   return (
+    <ErrorBoundary>
     <>
     <Tabs screenOptions={screenOptions}>
       <Tabs.Screen
@@ -118,5 +120,6 @@ export default function TabLayout() {
     </Tabs>
     {Platform.OS !== 'web' && <MobileLocationPicker />}
     </>
+    </ErrorBoundary>
   );
 }

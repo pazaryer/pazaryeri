@@ -50,7 +50,7 @@ export function MessageInAppBanner({ payload, onDismiss }: Props) {
 
   useEffect(() => {
     if (!payload) return;
-    void playInAppNotificationSound('popup');
+    void playInAppNotificationSound('message');
     setReply('');
     translateY.setValue(-200);
     Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 68, friction: 11 }).start();

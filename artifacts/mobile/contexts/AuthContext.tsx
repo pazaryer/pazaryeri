@@ -121,6 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { registerForPushNotifications } = await import('@/lib/notifications');
         registerForPushNotifications().catch(() => null);
       }
+
+      if (Platform.OS === 'web') {
+        const { registerWebPush } = await import('@/lib/web-push');
+        registerWebPush().catch(() => null);
+      }
     } catch {
       const base = fallbackProfile(u);
       setProfile(await applyProfileExtras(u, base));
@@ -136,7 +141,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
+    let auth;
+    try {
+      auth = getFirebaseAuth();
+    } catch (err) {
+      console.error('[Pazaryeri] Auth başlatılamadı:', err);
+      setIsLoading(false);
+      return;
+    }
+
     let settled = false;
 
     const finishLoading = () => {
@@ -246,6 +259,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const { unregisterWebPush } = await import('@/lib/web-push');
+        await unregisterWebPush();
+      } else {
+        const { unregisterPushToken } = await import('@/lib/notifications');
+        await unregisterPushToken();
+      }
+    } catch {
+      /* ignore */
+    }
     await firebaseSignOut(getFirebaseAuth());
     setProfile(null);
   };
