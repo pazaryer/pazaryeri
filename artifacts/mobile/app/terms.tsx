@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { WebLegalLayout } from '@/components/web/WebLegalLayout';
+import { SeoHead } from '@/components/SeoHead';
 import { SUPPORT_EMAIL } from '@/constants/brand';
 
 function TermsContent() {
@@ -42,9 +43,16 @@ export default function TermsScreen() {
 
   if (Platform.OS === 'web') {
     return (
-      <WebLegalLayout title="Kullanım Şartları">
-        <TermsContent />
-      </WebLegalLayout>
+      <>
+        <SeoHead
+          title="Kullanım Şartları"
+          description="Pazaryeri ikinci el alım satım platformu kullanım şartları."
+          path="/terms"
+        />
+        <WebLegalLayout title="Kullanım Şartları">
+          <TermsContent />
+        </WebLegalLayout>
+      </>
     );
   }
 

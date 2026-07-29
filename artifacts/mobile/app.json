@@ -17,6 +17,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.pazaryerim",
       "icon": "./assets/images/icon.png",
+      "associatedDomains": [
+        "applinks:pazaryeri0.web.app",
+        "applinks:pazaryeri0.firebaseapp.com"
+      ],
       "infoPlist": {
         "NSCameraUsageDescription": "İlan fotoğrafı çekmek için kamera erişimi gerekli.",
         "NSPhotoLibraryUsageDescription": "İlan fotoğrafı seçmek için galeri erişimi gerekli.",
@@ -37,6 +41,23 @@
             {
               "scheme": "pazaryeri",
               "host": "auth"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "pazaryeri0.web.app",
+              "pathPrefix": "/listing"
+            },
+            {
+              "scheme": "https",
+              "host": "pazaryeri0.web.app",
+              "pathPrefix": "/kesfet"
             }
           ]
         }
@@ -60,7 +81,14 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Pazaryeri — İkinci El Alım Satım",
+      "shortName": "Pazaryeri",
+      "description": "Ücretsiz ilan verin, ikinci el alım satım yapın. Telefon, araç, mobilya ve daha fazlası.",
+      "themeColor": "#3D1A78",
+      "backgroundColor": "#F7F5FC",
+      "lang": "tr",
+      "bundler": "metro"
     },
     "plugins": [
       [

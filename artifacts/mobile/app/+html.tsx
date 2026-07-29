@@ -1,20 +1,62 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
+const SITE_URL = 'https://pazaryeri0.web.app';
+
 export default function Root({ children }: PropsWithChildren) {
   return (
     <html lang="tr">
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <title>Pazaryeri — Türkiye'nin İkinci El Pazaryeri</title>
-        <meta name="description" content="Pazaryeri — Türkiye'nin ikinci el alım-satım platformu. Ücretsiz ilan verin, elektronik, araç, mobilya ve daha fazlasını alın veya satın." />
-        <meta property="og:title" content="Pazaryeri — Türkiye'nin İkinci El Pazaryeri" />
-        <meta property="og:description" content="Ücretsiz ilan verin. Güvenli mesajlaşma ile alım-satım yapın." />
-        <meta property="og:url" content="https://pazaryeri0.web.app" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+        />
+        <title>Pazaryeri — İkinci El Alım Satım | Ücretsiz İlan Ver</title>
+        <meta
+          name="description"
+          content="Pazaryeri ile ücretsiz ilan verin, ikinci el alım satım yapın. Telefon, araç, mobilya, elektronik ve binlerce kategoride güvenli ikinci el alışveriş."
+        />
+        <meta
+          name="keywords"
+          content="pazaryeri, ikinci el, alım satım, ücretsiz ilan, ikinci el telefon, ikinci el araba, ikinci el mobilya, ilan sitesi, güvenli alışveriş, türkiye pazaryeri"
+        />
+        <meta name="author" content="Pazaryeri" />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <meta name="googlebot" content="index, follow" />
+        <meta httpEquiv="content-language" content="tr" />
+        <link rel="canonical" href={SITE_URL} />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/og-image.png" />
+
+        <meta property="og:site_name" content="Pazaryeri" />
+        <meta property="og:title" content="Pazaryeri — İkinci El Alım Satım | Ücretsiz İlan Ver" />
+        <meta
+          property="og:description"
+          content="Ücretsiz ilan verin. Güvenli mesajlaşma ile ikinci el alım satım yapın. Telefon, araç, mobilya ve daha fazlası."
+        />
+        <meta property="og:url" content={SITE_URL} />
         <meta property="og:type" content="website" />
+        <meta property="og:locale" content="tr_TR" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Pazaryeri — İkinci El Alım Satım" />
+        <meta
+          name="twitter:description"
+          content="Ücretsiz ilan verin. Güvenli ikinci el alışveriş platformu."
+        />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+
         <meta name="theme-color" content="#3D1A78" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Pazaryeri" />
+        <meta name="application-name" content="Pazaryeri" />
+        <meta name="format-detection" content="telephone=no" />
+
         <ScrollViewStyleReset />
         <style>{`
           html, body { height: 100%; margin: 0; padding: 0; }
@@ -23,7 +65,11 @@ export default function Root({ children }: PropsWithChildren) {
         `}</style>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://pazaryerim.onrender.com" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet"
+        />
         <script src="https://accounts.google.com/gsi/client" async defer></script>
       </head>
       <body>{children}</body>

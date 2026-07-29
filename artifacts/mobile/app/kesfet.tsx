@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Platform, View, ScrollView, StyleSheet } from 'react-native';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { WebShell } from '@/components/web/WebShell';
 import { WebListingGrid } from '@/components/web/WebListingGrid';
+import { WebSeoSection } from '@/components/web/WebSeoSection';
+import { SeoHead } from '@/components/SeoHead';
 import { useWebLocation } from '@/contexts/WebLocationContext';
 import { useIsMobileWeb } from '@/hooks/useIsMobileWeb';
 import { WEB_THEME } from '@/lib/web-theme';
+import { buildBreadcrumbJsonLd, categorySeoMeta, searchSeoMeta } from '@/lib/seo';
 
 function KesfetContent() {
   const params = useLocalSearchParams<{ q?: string; kategori?: string }>();
@@ -49,11 +52,34 @@ export default function KesfetScreen() {
     router.push(q ? `/kesfet?q=${encodeURIComponent(q)}` : '/kesfet');
   };
 
+  const seo = useMemo(() => {
+    const category = typeof params.kategori === 'string' ? params.kategori : undefined;
+    const query = typeof params.q === 'string' ? params.q : undefined;
+    if (category) return categorySeoMeta(category);
+    if (query) return searchSeoMeta(query);
+    return {
+      title: 'Tüm İkinci El İlanlar',
+      description:
+        "Pazaryeri'de binlerce ikinci el ilan. Ücretsiz ilan verin, telefon, araç, mobilya, elektronik ve daha fazlasını keşfedin.",
+      path: '/kesfet',
+    };
+  }, [params.kategori, params.q]);
+
   return (
     <WebShell searchQuery={search} onSearchChange={setSearch} onSearchSubmit={handleSearch}>
+      <SeoHead
+        title={seo.title}
+        description={seo.description}
+        path={seo.path}
+        jsonLd={buildBreadcrumbJsonLd([
+          { name: 'Ana Sayfa', path: '/' },
+          { name: typeof params.kategori === 'string' ? params.kategori : 'Keşfet', path: seo.path },
+        ])}
+      />
       {mobileWeb ? (
         <View style={styles.pageMobile}>
           <KesfetContent />
+          <WebSeoSection compact />
         </View>
       ) : (
         <ScrollView
@@ -62,6 +88,7 @@ export default function KesfetScreen() {
           showsVerticalScrollIndicator={false}
         >
           <KesfetContent />
+          <WebSeoSection compact />
         </ScrollView>
       )}
     </WebShell>

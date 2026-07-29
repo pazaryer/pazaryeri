@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://pazaryeri0.web.app/</loc>
     <lastmod>2026-07-29</lastmod>
@@ -10,13 +11,13 @@
     <loc>https://pazaryeri0.web.app/kesfet</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <priority>0.95</priority>
   </url>
   <url>
     <loc>https://pazaryeri0.web.app/giris</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.4</priority>
   </url>
   <url>
     <loc>https://pazaryeri0.web.app/kayit</loc>
@@ -35,6 +36,168 @@
     <lastmod>2026-07-29</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Elektronik</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Telefon</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Bilgisayar</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Ara%C3%A7</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Emlak</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Mobilya</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Ev%20%26%20Bah%C3%A7e</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Moda</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Spor</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Bebek</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Hobi</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=%C4%B0%C5%9F%20%26%20Ofis</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Hayvanlar</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=M%C3%BCzik</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Beyaz%20E%C5%9Fya</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Kozmetik</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?kategori=Antika</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=ikinci+el</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=al%C4%B1m+sat%C4%B1m</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=pazaryeri</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=%C3%BCcretsiz+ilan</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=ikinci+el+telefon</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=ikinci+el+araba</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=ikinci+el+mobilya</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=ikinci+el+laptop</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=sat%C4%B1l%C4%B1k</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/kesfet?q=ikinci+el+e%C5%9Fya</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
   </url>
   <url>
     <loc>https://pazaryeri0.web.app/listing/44542fa7-1a91-4d00-bdf1-f3e84c7dfbf0</loc>

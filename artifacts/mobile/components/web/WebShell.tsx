@@ -197,7 +197,7 @@ function WebShellInner({
               {!mobile && (
                 <>
                   <Text style={styles.footerSep}>·</Text>
-                  <Text style={styles.footerTagline}>Türkiye'nin ikinci el pazarı</Text>
+                  <Text style={styles.footerTagline}>İkinci el alım satım · Ücretsiz ilan</Text>
                 </>
               )}
             </View>
@@ -237,7 +237,7 @@ function WebShellInner({
             </View>
 
             {mobile && (
-              <Text style={styles.footerTaglineMobile}>Türkiye'nin ikinci el pazarı</Text>
+              <Text style={styles.footerTaglineMobile}>İkinci el alım satım · Ücretsiz ilan</Text>
             )}
 
             <Text style={styles.footerCopy}>

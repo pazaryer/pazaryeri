@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { WebLegalLayout } from '@/components/web/WebLegalLayout';
+import { SeoHead } from '@/components/SeoHead';
 import { SUPPORT_EMAIL } from '@/constants/brand';
 
 function PrivacyContent() {
@@ -46,9 +47,16 @@ export default function PrivacyScreen() {
 
   if (Platform.OS === 'web') {
     return (
-      <WebLegalLayout title="Gizlilik Politikası">
-        <PrivacyContent />
-      </WebLegalLayout>
+      <>
+        <SeoHead
+          title="Gizlilik Politikası"
+          description="Pazaryeri gizlilik politikası ve KVKK bilgilendirmesi."
+          path="/privacy"
+        />
+        <WebLegalLayout title="Gizlilik Politikası">
+          <PrivacyContent />
+        </WebLegalLayout>
+      </>
     );
   }
 

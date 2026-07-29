@@ -26,6 +26,8 @@ import { WebImage } from '@/components/WebImage';
 import { getListingContactPhone } from '@/lib/contact';
 import { showAlert } from '@/lib/web-alert';
 import { useIsMobileWeb } from '@/hooks/useIsMobileWeb';
+import { SeoHead } from '@/components/SeoHead';
+import { buildBreadcrumbJsonLd, buildProductJsonLd, listingSeoMeta } from '@/lib/seo';
 
 export function WebListingDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -69,6 +71,15 @@ export function WebListingDetailPage() {
   const isOwner = profile?.id === listing.sellerId;
   const isWide = width >= 900;
   const contactPhone = getListingContactPhone(listing);
+  const seo = listingSeoMeta({
+    id: listing.id,
+    title: listing.title,
+    description: listing.description,
+    price: listing.price,
+    city: listing.city,
+    category: listing.category,
+    image: images[0],
+  });
 
   const handleChat = async () => {
     if (!user) {
@@ -207,15 +218,41 @@ export function WebListingDetailPage() {
   );
 
   return (
-    <WebShell hideFooter>
-      <ScrollView
-        style={styles.page}
-        contentContainerStyle={[styles.pageContent, mobileWeb && styles.pageContentMobile]}
-        showsVerticalScrollIndicator={false}
-      >
-        {content}
-      </ScrollView>
-    </WebShell>
+    <>
+      <SeoHead
+        title={seo.title}
+        description={seo.description}
+        path={seo.path}
+        image={seo.image}
+        type="product"
+        jsonLd={[
+          buildProductJsonLd({
+            id: listing.id,
+            title: listing.title,
+            description: listing.description,
+            price: listing.price,
+            images,
+            city: listing.city,
+            status: listing.status,
+            createdAt: listing.createdAt,
+          }),
+          buildBreadcrumbJsonLd([
+            { name: 'Ana Sayfa', path: '/' },
+            { name: 'Keşfet', path: '/kesfet' },
+            { name: listing.title, path: seo.path },
+          ]),
+        ]}
+      />
+      <WebShell hideFooter>
+        <ScrollView
+          style={styles.page}
+          contentContainerStyle={[styles.pageContent, mobileWeb && styles.pageContentMobile]}
+          showsVerticalScrollIndicator={false}
+        >
+          {content}
+        </ScrollView>
+      </WebShell>
+    </>
   );
 }
 

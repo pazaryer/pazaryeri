@@ -1,0 +1,30 @@
+{
+  "name": "Pazaryeri — İkinci El Alım Satım",
+  "short_name": "Pazaryeri",
+  "description": "Ücretsiz ilan verin, ikinci el alım satım yapın. Telefon, araç, mobilya ve daha fazlası.",
+  "lang": "tr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F5FC",
+  "theme_color": "#3D1A78",
+  "orientation": "portrait-primary",
+  "categories": ["shopping", "business", "lifestyle"],
+  "icons": [
+    {
+      "src": "/og-image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

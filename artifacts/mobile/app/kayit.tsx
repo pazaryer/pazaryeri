@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { WebShell } from '@/components/web/WebShell';
 import { WebGoogleLoginButton } from '@/components/web/WebGoogleLoginButton';
 import { AppIcon } from '@/components/AppIcon';
+import { SeoHead } from '@/components/SeoHead';
 
 export default function KayitScreen() {
   const router = useRouter();
@@ -64,7 +65,13 @@ export default function KayitScreen() {
   }
 
   return (
-    <WebShell hideFooter>
+    <>
+      <SeoHead
+        title="Ücretsiz Kayıt Ol"
+        description="Pazaryeri'ne ücretsiz kayıt olun, ikinci el ilan verin ve alım satım yapın."
+        path="/kayit"
+      />
+      <WebShell hideFooter>
       <View style={styles.page}>
         <View style={styles.card}>
           <LinearGradient colors={['#3D1A78', '#1A0A2E']} style={styles.cardHeader}>
@@ -105,6 +112,7 @@ export default function KayitScreen() {
         </View>
       </View>
     </WebShell>
+    </>
   );
 }
 

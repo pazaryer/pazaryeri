@@ -5,6 +5,14 @@ import { WebShell } from './WebShell';
 import { WebListingGrid } from './WebListingGrid';
 import { WebHeroBanner } from './WebHeroBanner';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
+import { WebSeoSection } from '@/components/web/WebSeoSection';
+import { SeoHead } from '@/components/SeoHead';
+import {
+  buildFaqJsonLd,
+  buildOrganizationJsonLd,
+  buildWebSiteJsonLd,
+  DEFAULT_SEO,
+} from '@/lib/seo';
 import { useWebLocation } from '@/contexts/WebLocationContext';
 import { useIsMobileWeb } from '@/hooks/useIsMobileWeb';
 import { WEB_THEME } from '@/lib/web-theme';
@@ -22,6 +30,7 @@ function WebHomeContent() {
         lat={coords.lat}
         lon={coords.lon}
       />
+      <WebSeoSection />
     </View>
   );
 }
@@ -38,6 +47,11 @@ export function WebHomePage() {
 
   return (
     <WebShell searchQuery={search} onSearchChange={setSearch} onSearchSubmit={handleSearch}>
+      <SeoHead
+        description={DEFAULT_SEO.description}
+        path="/"
+        jsonLd={[buildOrganizationJsonLd(), buildWebSiteJsonLd(), buildFaqJsonLd()]}
+      />
       {mobileWeb ? (
         <WebHomeContent />
       ) : (

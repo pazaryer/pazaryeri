@@ -1,8 +1,23 @@
+# Pazaryeri — https://pazaryeri0.web.app
 User-agent: *
 Allow: /
+Allow: /kesfet
+Allow: /listing/
 Disallow: /hesabim
 Disallow: /mesajlar
 Disallow: /ilan-ver
+Disallow: /ilan-duzenle/
 Disallow: /chat/
+Disallow: /notifications
+Disallow: /favorilerim
+Disallow: /oauth/
+Disallow: /auth
+Disallow: /settings
+Disallow: /(tabs)/
+
+User-agent: Googlebot
+Allow: /
+Allow: /kesfet
+Allow: /listing/
 
 Sitemap: https://pazaryeri0.web.app/sitemap.xml

@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { WebShell } from '@/components/web/WebShell';
 import { WebGoogleLoginButton } from '@/components/web/WebGoogleLoginButton';
 import { AppIcon } from '@/components/AppIcon';
+import { SeoHead } from '@/components/SeoHead';
 
 export default function GirisScreen() {
   const router = useRouter();
@@ -65,7 +66,9 @@ export default function GirisScreen() {
   }
 
   return (
-    <WebShell hideFooter>
+    <>
+      <SeoHead title="Giriş Yap" description="Pazaryeri hesabınıza giriş yapın." path="/giris" noindex />
+      <WebShell hideFooter>
       <View style={styles.page}>
         <View style={styles.card}>
           <LinearGradient colors={['#3D1A78', '#1A0A2E']} style={styles.cardHeader}>
@@ -110,6 +113,7 @@ export default function GirisScreen() {
         </View>
       </View>
     </WebShell>
+    </>
   );
 }
 
