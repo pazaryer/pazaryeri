@@ -15,9 +15,10 @@ import {
 
 const router: IRouter = Router();
 
-function parseNotificationIsRead(value: unknown): boolean {
-  return value === true || value === "true";
-}
+import {
+  NOTIFICATION_READ_TRUE,
+  parseNotificationIsRead,
+} from "../lib/notification-read";
 
 router.get("/search", async (req, res, next) => {
   try {
@@ -171,7 +172,7 @@ router.patch("/notifications/read-all", authMiddleware, async (req, res, next) =
     if (unreadIds.length > 0) {
       await getSupabaseAdmin()
         .from("notifications")
-        .update({ is_read: "true" })
+        .update({ is_read: NOTIFICATION_READ_TRUE })
         .in("id", unreadIds);
     }
 
@@ -214,7 +215,7 @@ router.patch("/notifications/:notificationId/read", authMiddleware, async (req, 
   try {
     const { data } = await getSupabaseAdmin()
       .from("notifications")
-      .update({ is_read: "true" })
+      .update({ is_read: NOTIFICATION_READ_TRUE })
       .eq("id", req.params.notificationId)
       .eq("user_id", req.user!.id)
       .select("id");

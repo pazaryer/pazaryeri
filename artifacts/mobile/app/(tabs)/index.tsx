@@ -47,6 +47,7 @@ export default function HomeScreen() {
       category: selectedCategory === 'Tümü' ? undefined : selectedCategory,
       city: filter.city,
       district: filter.district,
+      neighborhood: filter.neighborhood,
       radiusKm: filter.radiusKm,
       lat: coords.lat,
       lon: coords.lon,

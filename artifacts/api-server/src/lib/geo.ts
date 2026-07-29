@@ -29,4 +29,17 @@ export function filterByRadius<T extends { latitude?: number | null; longitude?:
   });
 }
 
+/** SQL ön filtresi: milyonlarca ilanda tam tarama yerine bbox ile daraltır. */
+export function boundingBox(lat: number, lon: number, radiusKm: number) {
+  const latDelta = radiusKm / 111;
+  const cosLat = Math.cos((lat * Math.PI) / 180);
+  const lonDelta = radiusKm / (111 * Math.max(cosLat, 0.01));
+  return {
+    minLat: lat - latDelta,
+    maxLat: lat + latDelta,
+    minLon: lon - lonDelta,
+    maxLon: lon + lonDelta,
+  };
+}
+
 export { calcDistance };

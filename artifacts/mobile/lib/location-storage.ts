@@ -4,6 +4,7 @@ import type { LocationFilterValue } from '@/components/LocationFilterBar';
 const STORAGE_KEY = 'pz_location_v1';
 
 export function formatLocationLabel(v: LocationFilterValue): string {
+  if (v.neighborhood && v.district && v.city) return `${v.neighborhood}, ${v.district}, ${v.city}`;
   if (v.district && v.city) return `${v.district}, ${v.city}`;
   if (v.city) return v.city;
   if (v.radiusKm) return `${v.radiusKm} km yakınında`;

@@ -1,17 +1,19 @@
 import { getSupabaseAdmin } from "./supabase-db";
 import { logger } from "./logger";
 import { getPushSoundForType } from "./push-sounds";
-
-function parseNotificationIsRead(value: unknown): boolean {
-  return value === true || value === "true";
-}
+import { parseNotificationIsRead } from "./notification-read";
 
 async function getUnreadCount(userId: string): Promise<number> {
-  const { data } = await getSupabaseAdmin()
+  const sb = getSupabaseAdmin();
+  const { count, error } = await sb
     .from("notifications")
-    .select("is_read")
-    .eq("user_id", userId);
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("is_read", false);
 
+  if (!error && count != null) return count;
+
+  const { data } = await sb.from("notifications").select("is_read").eq("user_id", userId).limit(500);
   return (data ?? []).filter((n) => !parseNotificationIsRead(n.is_read)).length;
 }
 

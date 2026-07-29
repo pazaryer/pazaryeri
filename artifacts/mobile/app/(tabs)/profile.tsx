@@ -35,7 +35,7 @@ export default function ProfileScreen() {
   const updateProfile = useUpdateProfile();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  const { data, isLoading, refetch, isRefetching } = useMyListings();
+  const { data, isLoading, refetch, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyListings();
   const userListings = data?.pages.flatMap((p) => p.items) ?? [];
   const totalViews = userListings.reduce((s, l) => s + (l.views ?? 0), 0);
 
@@ -173,11 +173,26 @@ export default function ProfileScreen() {
             <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>İlk ilanınızı verin</Text>
           </View>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.listingsRow}>
-            {userListings.map((item) => (
-              <ProfileListingCard key={item.id} item={item} colors={colors} />
-            ))}
-          </ScrollView>
+          <>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.listingsRow}>
+              {userListings.map((item) => (
+                <ProfileListingCard key={item.id} item={item} colors={colors} />
+              ))}
+            </ScrollView>
+            {hasNextPage ? (
+              <Pressable
+                style={[styles.loadMoreBtn, { borderColor: colors.border }]}
+                onPress={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <Text style={[styles.loadMoreText, { color: colors.primary }]}>Daha fazla ilan yükle</Text>
+                )}
+              </Pressable>
+            ) : null}
+          </>
         )}
       </View>
 
@@ -323,6 +338,15 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: '800' },
   sectionLink: { fontSize: 14, fontWeight: '700' },
   listingsRow: { gap: 10 },
+  loadMoreBtn: {
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreText: { fontSize: 14, fontWeight: '700' },
   listingCard: { width: LISTING_CARD_WIDTH, borderRadius: 14, overflow: 'hidden', borderWidth: 1 },
   listingImage: { width: '100%', height: 100 },
   listingBody: { padding: 10, gap: 4 },

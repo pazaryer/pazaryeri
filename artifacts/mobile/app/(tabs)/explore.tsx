@@ -59,6 +59,7 @@ export default function ExploreScreen() {
       q: searchQuery.length >= 2 ? searchQuery : undefined,
       city: filter.city,
       district: filter.district,
+      neighborhood: filter.neighborhood,
       radiusKm: filter.radiusKm,
       lat: coords.lat,
       lon: coords.lon,

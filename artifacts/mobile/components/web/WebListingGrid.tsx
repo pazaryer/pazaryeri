@@ -36,6 +36,7 @@ export function WebListingGrid({ category, query, title, location, lat, lon }: W
     q: query,
     city: location?.city,
     district: location?.district,
+    neighborhood: location?.neighborhood,
     radiusKm: location?.radiusKm,
     lat,
     lon,

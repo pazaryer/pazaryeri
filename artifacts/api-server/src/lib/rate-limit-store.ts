@@ -1,9 +1,24 @@
 import { getSupabaseAdmin } from "./supabase-db";
 
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS = 120;
+const MAX_REQUESTS = 180;
 
 const memoryHits = new Map<string, { count: number; resetAt: number }>();
+
+async function checkSupabaseRpc(key: string): Promise<boolean | null> {
+  try {
+    const sb = getSupabaseAdmin();
+    const { data, error } = await sb.rpc("consume_rate_limit", {
+      p_key: key,
+      p_window_ms: WINDOW_MS,
+      p_max: MAX_REQUESTS,
+    });
+    if (error) return null;
+    return data === true;
+  } catch {
+    return null;
+  }
+}
 
 async function checkSupabaseBucket(key: string): Promise<boolean | null> {
   try {
@@ -53,6 +68,8 @@ function checkMemoryBucket(key: string): boolean {
 }
 
 export async function consumeRateLimit(key: string): Promise<boolean> {
+  const rpcResult = await checkSupabaseRpc(key);
+  if (rpcResult !== null) return rpcResult;
   const dbResult = await checkSupabaseBucket(key);
   if (dbResult !== null) return dbResult;
   return checkMemoryBucket(key);

@@ -11,10 +11,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { filterIller, normalizeIl } from '@/lib/turkiye-iller';
+import { useDistrictSuggestions, useNeighborhoodSuggestions } from '@/lib/hooks';
 
 export type LocationFilterValue = {
   city?: string;
   district?: string;
+  neighborhood?: string;
   radiusKm?: number;
 };
 
@@ -29,13 +31,26 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
   const colors = useColors();
   const [expanded, setExpanded] = useState(false);
   const [cityQuery, setCityQuery] = useState(value.city ?? '');
-  const hasFilter = !!(value.radiusKm || value.city || value.district);
+  const [districtQuery, setDistrictQuery] = useState(value.district ?? '');
+  const [neighborhoodQuery, setNeighborhoodQuery] = useState(value.neighborhood ?? '');
+  const hasFilter = !!(value.radiusKm || value.city || value.district || value.neighborhood);
   const useEmoji = Platform.OS === 'web';
   const citySuggestions = useMemo(() => filterIller(cityQuery, 8), [cityQuery]);
+  const activeCity = normalizeIl(value.city ?? cityQuery) ?? value.city;
+  const { data: districtData } = useDistrictSuggestions(activeCity ?? '', districtQuery);
+  const { data: neighborhoodData } = useNeighborhoodSuggestions(
+    activeCity ?? '',
+    value.district ?? districtQuery,
+    neighborhoodQuery,
+  );
+  const districtSuggestions = districtData?.items ?? [];
+  const neighborhoodSuggestions = neighborhoodData?.items ?? [];
 
   const pickCity = (city: string) => {
     setCityQuery(city);
-    onChange({ ...value, city, radiusKm: undefined });
+    setDistrictQuery('');
+    setNeighborhoodQuery('');
+    onChange({ ...value, city, district: undefined, neighborhood: undefined, radiusKm: undefined });
   };
 
   return (
@@ -133,20 +148,78 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
             </View>
           )}
 
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 10 }]}>İlçe / Mahalle (isteğe bağlı)</Text>
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 10 }]}>İlçe</Text>
           <TextInput
             style={[styles.fieldInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-            placeholder="Örn. Kadıköy, Muratpaşa..."
+            placeholder={activeCity ? 'Örn. Kadıköy, Muratpaşa...' : 'Önce il seçin'}
             placeholderTextColor={colors.mutedForeground}
-            value={value.district ?? ''}
-            onChangeText={(district) => onChange({ ...value, district: district || undefined, radiusKm: undefined })}
+            value={districtQuery}
+            editable={!!activeCity}
+            onChangeText={setDistrictQuery}
+            onSubmitEditing={() => {
+              if (!districtQuery.trim()) return;
+              onChange({ ...value, city: activeCity, district: districtQuery.trim(), neighborhood: undefined, radiusKm: undefined });
+            }}
           />
+          {districtSuggestions.length > 0 && districtQuery.length > 0 && (
+            <View style={[styles.suggestions, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              {districtSuggestions.map((district) => (
+                <Pressable
+                  key={district}
+                  style={styles.suggestionRow}
+                  onPress={() => {
+                    setDistrictQuery(district);
+                    setNeighborhoodQuery('');
+                    onChange({ ...value, city: activeCity, district, neighborhood: undefined, radiusKm: undefined });
+                  }}
+                >
+                  <Text style={[styles.suggestionText, { color: colors.foreground }]}>{district}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 10 }]}>Mahalle</Text>
+          <TextInput
+            style={[styles.fieldInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+            placeholder={value.district || districtQuery ? 'Mahalle ara...' : 'Önce ilçe seçin'}
+            placeholderTextColor={colors.mutedForeground}
+            value={neighborhoodQuery}
+            editable={!!(value.district || districtQuery)}
+            onChangeText={setNeighborhoodQuery}
+          />
+          {neighborhoodSuggestions.length > 0 && neighborhoodQuery.length > 0 && (
+            <View style={[styles.suggestions, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              {neighborhoodSuggestions.slice(0, 12).map((mahalle) => (
+                <Pressable
+                  key={mahalle}
+                  style={styles.suggestionRow}
+                  onPress={() => {
+                    setNeighborhoodQuery(mahalle);
+                    onChange({
+                      city: activeCity,
+                      district: value.district ?? districtQuery.trim() || undefined,
+                      neighborhood: mahalle,
+                      radiusKm: undefined,
+                    });
+                  }}
+                >
+                  <Text style={[styles.suggestionText, { color: colors.foreground }]}>{mahalle}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
 
           <Pressable
             style={[styles.applyBtn, { backgroundColor: colors.primary }]}
             onPress={() => {
               const city = normalizeIl(cityQuery);
-              onChange({ city, district: value.district, radiusKm: undefined });
+              onChange({
+                city,
+                district: districtQuery.trim() || value.district,
+                neighborhood: neighborhoodQuery.trim() || undefined,
+                radiusKm: undefined,
+              });
               setExpanded(false);
             }}
           >

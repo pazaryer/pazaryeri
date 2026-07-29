@@ -95,6 +95,7 @@ export function useListings(
     maxPrice?: number;
     city?: string;
     district?: string;
+    neighborhood?: string;
     radiusKm?: number;
     lat?: number;
     lon?: number;
@@ -118,6 +119,7 @@ export function useListings(
       if (params?.maxPrice) search.set('maxPrice', String(params.maxPrice));
       if (params?.city) search.set('city', params.city);
       if (params?.district) search.set('district', params.district);
+      if (params?.neighborhood) search.set('neighborhood', params.neighborhood);
       if (params?.radiusKm) search.set('radiusKm', String(params.radiusKm));
       if (params?.lat != null) search.set('lat', String(params.lat));
       if (params?.lon != null) search.set('lon', String(params.lon));
@@ -180,10 +182,36 @@ export function useMyListings() {
     queryFn: async ({ pageParam }) => {
       const search = new URLSearchParams();
       if (pageParam) search.set('cursor', pageParam);
+      search.set('limit', '20');
       return apiFetch<ListResponse>(`/listings/me?${search}`);
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
+    staleTime: 30_000,
+  });
+}
+
+export function useDistrictSuggestions(province: string, query: string) {
+  return useQuery({
+    queryKey: ['district-suggest', province, query],
+    queryFn: () =>
+      apiFetch<{ items: string[] }>(
+        `/locations/suggest/districts?province=${encodeURIComponent(province)}&q=${encodeURIComponent(query)}`,
+      ),
+    enabled: province.trim().length > 0,
+    staleTime: 86_400_000,
+  });
+}
+
+export function useNeighborhoodSuggestions(province: string, district: string, query: string) {
+  return useQuery({
+    queryKey: ['neighborhood-suggest', province, district, query],
+    queryFn: () =>
+      apiFetch<{ items: string[] }>(
+        `/locations/neighborhoods?province=${encodeURIComponent(province)}&district=${encodeURIComponent(district)}&q=${encodeURIComponent(query)}&limit=40`,
+      ),
+    enabled: province.trim().length > 0 && district.trim().length > 0,
+    staleTime: 3_600_000,
   });
 }
 

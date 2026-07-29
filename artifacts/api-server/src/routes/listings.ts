@@ -51,6 +51,7 @@ router.get("/listings", optionalAuth, async (req, res, next) => {
       userId: req.user?.id,
       city: req.query.city as string | undefined,
       district: req.query.district as string | undefined,
+      neighborhood: req.query.neighborhood as string | undefined,
       minPrice: req.query.minPrice ? Number(req.query.minPrice) : undefined,
       maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : undefined,
       radiusKm: req.query.radiusKm ? Number(req.query.radiusKm) : undefined,
@@ -73,8 +74,9 @@ router.get("/listings/me", authMiddleware, async (req, res, next) => {
       sellerId: req.user!.id,
       userId: req.user!.id,
       includeNonActive: true,
+      cursor: req.query.cursor as string | undefined,
     });
-    res.json({ ...result, hasMore: false, nextCursor: null });
+    res.json(result);
   } catch (err) {
     next(err);
   }

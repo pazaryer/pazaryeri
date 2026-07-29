@@ -20,7 +20,7 @@ import { pickImages } from '@/lib/storage';
 export function WebProfilePage() {
   const router = useRouter();
   const { profile, user, signOut, refreshProfile, patchProfile, isLoading: authLoading } = useAuth();
-  const { data, isLoading } = useMyListings();
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyListings();
   const updateProfile = useUpdateProfile();
   const userListings = data?.pages.flatMap((p) => p.items) ?? [];
 
@@ -265,6 +265,7 @@ export function WebProfilePage() {
                   </Pressable>
                 </View>
               ) : (
+                <>
                 <View nativeID="pz-profile-grid" style={styles.listingGrid}>
                   {userListings.map((item) => (
                     <Pressable
@@ -295,6 +296,20 @@ export function WebProfilePage() {
                     </Pressable>
                   ))}
                 </View>
+                {hasNextPage ? (
+                  <Pressable
+                    style={styles.loadMoreBtn}
+                    onPress={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                  >
+                    {isFetchingNextPage ? (
+                      <ActivityIndicator color="#3D1A78" />
+                    ) : (
+                      <Text style={styles.loadMoreText}>Daha fazla ilan yükle</Text>
+                    )}
+                  </Pressable>
+                ) : null}
+                </>
               )}
             </View>
           </View>
@@ -449,6 +464,15 @@ const styles = StyleSheet.create({
   },
   emptyBtnText: { color: '#FFFFFF', fontWeight: '700' },
   listingGrid: { width: '100%' },
+  loadMoreBtn: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    alignItems: 'center',
+  },
+  loadMoreText: { color: '#3D1A78', fontWeight: '700', fontSize: 14 },
   listingCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,

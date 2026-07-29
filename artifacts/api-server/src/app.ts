@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { rateLimit } from "./middleware/rateLimit";
+import { responseCache } from "./middleware/responseCache";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app: Express = express();
@@ -41,6 +42,16 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimit);
+app.use(
+  responseCache(8_000, (req) => {
+    const pathOnly = req.originalUrl.split("?")[0] ?? "";
+    return (
+      pathOnly === "/api/listings" ||
+      pathOnly.startsWith("/api/locations") ||
+      pathOnly === "/api/search"
+    );
+  }),
+);
 
 app.get("/", (_req, res) => {
   res.json({

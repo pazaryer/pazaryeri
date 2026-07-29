@@ -10,7 +10,8 @@ import {
   type DbListing,
   type DbUser,
 } from "./supabase-db";
-import { filterByRadius } from "./geo";
+import { filterByRadius, boundingBox } from "./geo";
+import { sanitizeSearchQuery, searchPattern } from "./search";
 import { buildGeocodeQuery, geocodeText } from "./geocode";
 import {
   isPostgresConfigured,
@@ -188,6 +189,7 @@ export async function dbListListings(params: {
   includeNonActive?: boolean;
   city?: string;
   district?: string;
+  neighborhood?: string;
   minPrice?: number;
   maxPrice?: number;
   radiusKm?: number;
@@ -222,7 +224,13 @@ export async function dbListListings(params: {
   else query = query.neq("status", "deleted");
 
   if (params.category && params.category !== "Tümü") query = query.eq("category", params.category);
-  if (params.q) query = query.ilike("title", `%${params.q}%`);
+  if (params.q) {
+    const q = sanitizeSearchQuery(params.q);
+    if (q) {
+      const pattern = searchPattern(q);
+      query = query.or(`title.ilike.${pattern},description.ilike.${pattern},category.ilike.${pattern}`);
+    }
+  }
   if (params.sellerId) query = query.eq("seller_id", params.sellerId);
   if (!useOffset && params.cursor) query = query.lt("created_at", params.cursor);
   if (params.city) {
@@ -233,10 +241,25 @@ export async function dbListListings(params: {
     const district = params.district.replace(/[%_,]/g, "");
     query = query.or(`district.ilike.%${district}%,location.ilike.%${district}%`);
   }
+  if (params.neighborhood) {
+    const neighborhood = params.neighborhood.replace(/[%_,]/g, "");
+    query = query.ilike("location", `%${neighborhood}%`);
+  }
   if (params.minPrice != null) query = query.gte("price", params.minPrice);
   if (params.maxPrice != null) query = query.lte("price", params.maxPrice);
 
-  const fetchLimit = params.radiusKm ? Math.min(limit * 20, 500) : limit + 1;
+  if (params.radiusKm && params.lat != null && params.lon != null) {
+    const box = boundingBox(params.lat, params.lon, params.radiusKm);
+    query = query
+      .gte("latitude", box.minLat)
+      .lte("latitude", box.maxLat)
+      .gte("longitude", box.minLon)
+      .lte("longitude", box.maxLon)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null);
+  }
+
+  const fetchLimit = params.radiusKm ? Math.min(limit * 5, 120) : limit + 1;
   const rangeFrom = useOffset ? (params.offset ?? 0) : 0;
   const rangeTo = useOffset ? rangeFrom + fetchLimit - 1 : fetchLimit - 1;
   query = query.range(rangeFrom, rangeTo);

@@ -5,7 +5,8 @@ import {
   formatListingSummary,
   formatUser,
 } from "./supabase-db";
-import { filterByRadius } from "./geo";
+import { filterByRadius, boundingBox } from "./geo";
+import { sanitizeSearchQuery, searchPattern } from "./search";
 import { resolveListingPriceForViewer } from "./listing-price";
 import { buildGeocodeQuery, geocodeText } from "./geocode";
 import { AppError } from "../middleware/errorHandler";
@@ -261,11 +262,14 @@ export async function pgListListings(params: {
   includeNonActive?: boolean;
   city?: string;
   district?: string;
+  neighborhood?: string;
   minPrice?: number;
   maxPrice?: number;
   radiusKm?: number;
   lat?: number;
   lon?: number;
+  sort?: "date_desc" | "date_asc" | "price_asc" | "price_desc";
+  offset?: number;
 }) {
   const db = getPgPool();
   const limit = params.limit;
@@ -280,8 +284,13 @@ export async function pgListListings(params: {
     where.push(`l.category = $${values.length}`);
   }
   if (params.q) {
-    values.push(`%${params.q}%`);
-    where.push(`l.title ILIKE $${values.length}`);
+    const q = sanitizeSearchQuery(params.q);
+    if (q) {
+      values.push(searchPattern(q));
+      where.push(
+        `(l.title ILIKE $${values.length} OR l.description ILIKE $${values.length} OR l.category ILIKE $${values.length})`,
+      );
+    }
   }
   if (params.sellerId) {
     values.push(params.sellerId);
@@ -299,6 +308,10 @@ export async function pgListListings(params: {
     values.push(`%${params.district.replace(/[%_]/g, "")}%`);
     where.push(`(l.district ILIKE $${values.length} OR l.location ILIKE $${values.length})`);
   }
+  if (params.neighborhood) {
+    values.push(`%${params.neighborhood.replace(/[%_]/g, "")}%`);
+    where.push(`l.location ILIKE $${values.length}`);
+  }
   if (params.minPrice != null) {
     values.push(params.minPrice);
     where.push(`l.price >= $${values.length}`);
@@ -308,14 +321,33 @@ export async function pgListListings(params: {
     where.push(`l.price <= $${values.length}`);
   }
 
-  const fetchLimit = params.radiusKm ? Math.min(limit * 20, 500) : limit + 1;
+  if (params.radiusKm && params.lat != null && params.lon != null) {
+    const box = boundingBox(params.lat, params.lon, params.radiusKm);
+    values.push(box.minLat, box.maxLat, box.minLon, box.maxLon);
+    const base = values.length - 3;
+    where.push(
+      `l.latitude IS NOT NULL AND l.longitude IS NOT NULL AND l.latitude >= $${base} AND l.latitude <= $${base + 1} AND l.longitude >= $${base + 2} AND l.longitude <= $${base + 3}`,
+    );
+  }
+
+  const sort = params.sort ?? "date_desc";
+  const orderBy =
+    sort === "price_asc"
+      ? "l.price ASC, l.created_at DESC"
+      : sort === "price_desc"
+        ? "l.price DESC, l.created_at DESC"
+        : sort === "date_asc"
+          ? "l.created_at ASC"
+          : "l.created_at DESC";
+
+  const fetchLimit = params.radiusKm ? Math.min(limit * 5, 120) : limit + 1;
   values.push(fetchLimit);
   const sql = `
     SELECT l.*, row_to_json(u.*) AS seller
     FROM listings l
     JOIN users u ON u.id = l.seller_id
     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-    ORDER BY l.created_at DESC
+    ORDER BY ${orderBy}
     LIMIT $${values.length}
   `;
 
