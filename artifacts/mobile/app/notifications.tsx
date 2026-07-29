@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -28,37 +29,54 @@ export default function NotificationsScreen() {
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
   const deleteAll = useDeleteAllNotifications();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const items = data?.items ?? [];
   const unread = items.filter((n) => !n.isRead).length;
+  const busy = markAllRead.isPending || deleteAll.isPending;
 
-  const handleMarkAllRead = () => {
-    markAllRead.mutate();
+  const showError = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+      return;
+    }
+    Alert.alert(title, message);
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllRead.mutateAsync();
+    } catch (err) {
+      showError('Hata', err instanceof Error ? err.message : 'Okundu işaretlenemedi');
+    }
+  };
+
+  const runDeleteAll = async () => {
+    setDeleteModalOpen(false);
+    try {
+      await deleteAll.mutateAsync();
+    } catch (err) {
+      showError('Silinemedi', err instanceof Error ? err.message : 'Bildirimler silinemedi');
+    }
   };
 
   const handleDeleteAll = () => {
-    const runDelete = () => deleteAll.mutate();
     if (Platform.OS === 'web') {
       if (
-        window.confirm(
-          'Zildeki tüm bildirimler kalıcı olarak silinecek. Devam etmek istiyor musunuz?',
-        )
+        window.confirm('Zildeki tüm bildirimler kalıcı olarak silinecek. Devam etmek istiyor musunuz?')
       ) {
-        runDelete();
+        void runDeleteAll();
       }
       return;
     }
-    Alert.alert(
-      'Tüm bildirimleri sil',
-      'Zildeki tüm bildirimler kalıcı olarak silinecek. Devam etmek istiyor musunuz?',
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Tümünü sil', style: 'destructive', onPress: runDelete },
-      ],
-    );
+    setDeleteModalOpen(true);
   };
 
   const handleNotificationPress = async (id: string, type: string, rawData?: string | null) => {
-    await markRead.mutateAsync(id);
+    try {
+      await markRead.mutateAsync(id);
+    } catch {
+      /* ignore */
+    }
     if (!rawData) return;
     try {
       const parsed = parsePushData(JSON.parse(rawData));
@@ -69,30 +87,8 @@ export default function NotificationsScreen() {
     }
   };
 
-  const headerRight =
-    items.length > 0 ? (
-      <View style={styles.headerActions}>
-        {unread > 0 && (
-          <Pressable onPress={handleMarkAllRead} disabled={markAllRead.isPending} hitSlop={8}>
-            {markAllRead.isPending ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Ionicons name="checkmark-done" size={22} color={colors.primary} />
-            )}
-          </Pressable>
-        )}
-        <Pressable onPress={handleDeleteAll} disabled={deleteAll.isPending} hitSlop={8}>
-          {deleteAll.isPending ? (
-            <ActivityIndicator size="small" color="#C0392B" />
-          ) : (
-            <Ionicons name="trash-outline" size={21} color="#C0392B" />
-          )}
-        </Pressable>
-      </View>
-    ) : null;
-
   return (
-    <ProfileScreenLayout title="Bildirimler" headerRight={headerRight} scroll={false}>
+    <ProfileScreenLayout title="Bildirimler" scroll={false}>
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -100,24 +96,34 @@ export default function NotificationsScreen() {
       >
         {items.length > 0 && (
           <View style={styles.actionRow}>
-            {unread > 0 && (
-              <Pressable
-                style={[styles.actionBtn, { backgroundColor: colors.secondary, borderColor: colors.primary }]}
-                onPress={handleMarkAllRead}
-                disabled={markAllRead.isPending}
-              >
-                <Ionicons name="checkmark-done" size={16} color={colors.primary} />
-                <Text style={[styles.actionBtnText, { color: colors.primary }]}>
-                  Tümünü okundu işaretle ({unread})
-                </Text>
-              </Pressable>
-            )}
             <Pressable
-              style={[styles.actionBtn, styles.deleteBtn]}
-              onPress={handleDeleteAll}
-              disabled={deleteAll.isPending}
+              style={[
+                styles.actionBtn,
+                { backgroundColor: colors.secondary, borderColor: colors.primary },
+                busy && styles.actionBtnDisabled,
+              ]}
+              onPress={() => void handleMarkAllRead()}
+              disabled={busy}
             >
-              <Ionicons name="trash-outline" size={16} color="#C0392B" />
+              {markAllRead.isPending ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="checkmark-done" size={16} color={colors.primary} />
+              )}
+              <Text style={[styles.actionBtnText, { color: colors.primary }]}>
+                Tümünü okundu yap{unread > 0 ? ` (${unread})` : ''}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.actionBtn, styles.deleteBtn, busy && styles.actionBtnDisabled]}
+              onPress={handleDeleteAll}
+              disabled={busy}
+            >
+              {deleteAll.isPending ? (
+                <ActivityIndicator size="small" color="#C0392B" />
+              ) : (
+                <Ionicons name="trash-outline" size={16} color="#C0392B" />
+              )}
               <Text style={styles.deleteBtnText}>Tümünü sil</Text>
             </Pressable>
           </View>
@@ -161,6 +167,25 @@ export default function NotificationsScreen() {
           ))
         )}
       </ScrollView>
+
+      <Modal visible={deleteModalOpen} transparent animationType="fade" onRequestClose={() => setDeleteModalOpen(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setDeleteModalOpen(false)}>
+          <Pressable style={[styles.modalCard, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Tümünü sil?</Text>
+            <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
+              Zildeki tüm bildirimler kalıcı olarak silinecek.
+            </Text>
+            <View style={styles.modalActions}>
+              <Pressable style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setDeleteModalOpen(false)}>
+                <Text style={styles.modalBtnCancelText}>Vazgeç</Text>
+              </Pressable>
+              <Pressable style={[styles.modalBtn, styles.modalBtnDelete]} onPress={() => void runDeleteAll()}>
+                <Text style={styles.modalBtnDeleteText}>Tümünü sil</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ProfileScreenLayout>
   );
 }
@@ -168,26 +193,26 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 20, gap: 12, paddingBottom: 32 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  actionRow: { flexDirection: 'row', gap: 8 },
   actionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    flexGrow: 1,
-    flexBasis: '48%',
+    minHeight: 44,
   },
-  actionBtnText: { fontSize: 13, fontWeight: '700' },
+  actionBtnDisabled: { opacity: 0.6 },
+  actionBtnText: { fontSize: 12, fontWeight: '700', textAlign: 'center', flexShrink: 1 },
   deleteBtn: {
     backgroundColor: '#FFF5F5',
     borderColor: '#F5C6C6',
   },
-  deleteBtnText: { fontSize: 13, fontWeight: '700', color: '#C0392B' },
+  deleteBtnText: { fontSize: 12, fontWeight: '700', color: '#C0392B', textAlign: 'center' },
   empty: { alignItems: 'center', padding: 24, borderRadius: 14, borderWidth: 1, gap: 8 },
   emptyText: { fontSize: 14 },
   notifCard: { flexDirection: 'row', padding: 14, borderRadius: 14, borderWidth: 1, gap: 12 },
@@ -203,4 +228,32 @@ const styles = StyleSheet.create({
   notifTitle: { fontSize: 15, fontWeight: '700' },
   notifSub: { fontSize: 13, lineHeight: 18 },
   notifTime: { fontSize: 11, marginTop: 4 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 16,
+    padding: 20,
+    gap: 12,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '800' },
+  modalBody: { fontSize: 14, lineHeight: 20 },
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBtnCancel: { backgroundColor: '#F0F0F0' },
+  modalBtnCancelText: { fontWeight: '700', color: '#444' },
+  modalBtnDelete: { backgroundColor: '#C0392B' },
+  modalBtnDeleteText: { fontWeight: '700', color: '#FFF' },
 });

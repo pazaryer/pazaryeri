@@ -568,6 +568,14 @@ export function useMarkAllNotificationsRead() {
       }
       return { prev };
     },
+    onSuccess: () => {
+      const prev = qc.getQueryData<{ items: AppNotification[] }>(['notifications']);
+      if (prev) {
+        qc.setQueryData(['notifications'], {
+          items: prev.items.map((n) => ({ ...n, isRead: true })),
+        });
+      }
+    },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(['notifications'], ctx.prev);
     },
@@ -578,12 +586,25 @@ export function useMarkAllNotificationsRead() {
 export function useDeleteAllNotifications() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => apiFetch<{ success: boolean }>('/notifications/all', { method: 'DELETE' }),
+    mutationFn: async () => {
+      try {
+        return await apiFetch<{ success: boolean }>('/notifications/all', { method: 'DELETE' });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : '';
+        if (msg.includes('404') || msg.includes('405')) {
+          return apiFetch<{ success: boolean }>('/notifications/clear-all', { method: 'POST' });
+        }
+        throw err;
+      }
+    },
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ['notifications'] });
       const prev = qc.getQueryData<{ items: AppNotification[] }>(['notifications']);
       qc.setQueryData(['notifications'], { items: [] });
       return { prev };
+    },
+    onSuccess: () => {
+      qc.setQueryData(['notifications'], { items: [] });
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(['notifications'], ctx.prev);

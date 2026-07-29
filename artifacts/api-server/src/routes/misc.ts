@@ -155,7 +155,7 @@ router.patch("/notifications/read-all", authMiddleware, async (req, res, next) =
     if (unreadIds.length > 0) {
       await getSupabaseAdmin()
         .from("notifications")
-        .update({ is_read: true })
+        .update({ is_read: "true" })
         .in("id", unreadIds);
     }
 
@@ -167,11 +167,27 @@ router.patch("/notifications/read-all", authMiddleware, async (req, res, next) =
 
 router.delete("/notifications/all", authMiddleware, async (req, res, next) => {
   try {
-    const { count } = await getSupabaseAdmin()
+    const { error, count } = await getSupabaseAdmin()
       .from("notifications")
       .delete({ count: "exact" })
       .eq("user_id", req.user!.id);
 
+    if (error) throw error;
+    res.json({ success: true, deleted: count ?? 0 });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** DELETE bazı istemcilerde sorun çıkarırsa yedek */
+router.post("/notifications/clear-all", authMiddleware, async (req, res, next) => {
+  try {
+    const { error, count } = await getSupabaseAdmin()
+      .from("notifications")
+      .delete({ count: "exact" })
+      .eq("user_id", req.user!.id);
+
+    if (error) throw error;
     res.json({ success: true, deleted: count ?? 0 });
   } catch (err) {
     next(err);
@@ -182,7 +198,7 @@ router.patch("/notifications/:notificationId/read", authMiddleware, async (req, 
   try {
     const { data } = await getSupabaseAdmin()
       .from("notifications")
-      .update({ is_read: true })
+      .update({ is_read: "true" })
       .eq("id", req.params.notificationId)
       .eq("user_id", req.user!.id)
       .select("id");

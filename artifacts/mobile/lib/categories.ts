@@ -118,8 +118,10 @@ export const WEB_CATEGORIES: CategoryItem[] = [
 ];
 
 export const ANNOUNCEMENTS = [
-  'Ücretsiz ilan ver',
-  'Güvenli ikinci el alışveriş panosu',
-  'Komisyonsuz satış — doğrudan alıcıyla mesajlaş',
-  'Binlerce ilan tek tıkla keşfet',
+  'Ücretsiz ilan ver — komisyon yok, hemen sat!',
+  'Yakınındaki fırsatları kaçırma, keşfet',
+  'Mesaj ve teklifler anında cebinde',
+  'Güvenli ikinci el alışveriş — doğrudan mesajlaş',
+  'Bugün ilan ver, yarın kazan',
+  'Binlerce ilan seni bekliyor',
 ];

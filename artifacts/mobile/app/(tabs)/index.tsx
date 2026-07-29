@@ -15,7 +15,6 @@ import { useColors } from '@/hooks/useColors';
 import { ListingCard, LISTING_GRID_COLS } from '@/components/ListingCard';
 import { MobileTrendCategories } from '@/components/MobileTrendCategories';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
-import { MobileSeoFooter } from '@/components/MobileSeoFooter';
 import { useListings, useNotifications } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobileLocation } from '@/contexts/MobileLocationContext';
@@ -133,12 +132,9 @@ export default function HomeScreen() {
             </View>
           }
           ListFooterComponent={
-            <View>
-              {isFetchingNextPage ? (
-                <ActivityIndicator style={{ margin: 20 }} color={colors.primary} />
-              ) : null}
-              <MobileSeoFooter />
-            </View>
+            isFetchingNextPage ? (
+              <ActivityIndicator style={{ margin: 20 }} color={colors.primary} />
+            ) : null
           }
           onEndReached={onEndReached}
           onEndReachedThreshold={0.5}
