@@ -8,6 +8,7 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { authFetch, getBootstrapAdminEmails } from '@/lib/api';
+import { registerAdminPushNotifications } from '@/lib/notifications';
 
 export interface AdminProfile {
   id: string;
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const p = await verifyAdminAccess(u);
     setProfile(p);
     await SecureStore.setItemAsync(SESSION_KEY, '1');
+    void registerAdminPushNotifications();
   }, []);
 
   useEffect(() => {

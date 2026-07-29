@@ -22,12 +22,27 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0F0A1A"
       },
-      "permissions": ["android.permission.INTERNET", "android.permission.VIBRATE"]
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-splash-screen",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#8B5CF6",
+          "sounds": [
+            "./assets/sounds/pazaryeri-push.wav",
+            "./assets/sounds/pazaryeri-message.wav"
+          ]
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -55,6 +70,9 @@
       },
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "423cbdcd-276b-4ad2-b84d-2036eb13ab08"
       }
     },
     "owner": "pazaryeri"

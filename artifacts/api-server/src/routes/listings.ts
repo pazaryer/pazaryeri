@@ -13,6 +13,7 @@ import { trackUniqueListingView } from "../lib/views";
 import { purgeListingCompletely } from "../lib/purge-listing";
 import { authMiddleware, optionalAuth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
+import { notifyAdmins } from "../lib/notify-admins";
 
 const router: IRouter = Router();
 
@@ -115,6 +116,16 @@ router.post("/listings", authMiddleware, async (req, res, next) => {
       await dbUpdateUser(req.user!.id, { phone: body.contactPhone });
     }
     const detail = await dbCreateListing(req.user!.id, body);
+
+    const sellerName = detail.seller?.name ?? req.user!.name ?? "Satıcı";
+    void notifyAdmins({
+      type: "admin_new_listing",
+      title: "Yeni İlan",
+      subtitle: detail.title,
+      body: `${sellerName} · ${Number(detail.price).toLocaleString("tr-TR")} ₺ · ${detail.category}`,
+      data: { listingId: detail.id, screen: "listing" },
+    }).catch(() => {});
+
     res.status(201).json(detail);
   } catch (err) {
     next(err);

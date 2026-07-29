@@ -4,6 +4,7 @@ import { dbListListings } from "../lib/listings-store";
 import { authMiddleware } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { getSupabaseAdmin } from "../lib/supabase-db";
+import { notifyAdmins } from "../lib/notify-admins";
 import {
   formatListingSummary,
   getFavoriteSet,
@@ -92,15 +93,43 @@ router.post("/reports", authMiddleware, async (req, res, next) => {
 
     if (!body.listingId && !body.reportedUserId) throw new AppError("İlan veya kullanıcı belirtilmeli", 400);
 
-    await getSupabaseAdmin().from("reports").insert({
-      reporter_id: req.user!.id,
-      listing_id: body.listingId,
-      reported_user_id: body.reportedUserId,
-      reason: body.reason,
-      description: body.description,
-    });
+    const sb = getSupabaseAdmin();
+    const { data: report, error: reportError } = await sb
+      .from("reports")
+      .insert({
+        reporter_id: req.user!.id,
+        listing_id: body.listingId,
+        reported_user_id: body.reportedUserId,
+        reason: body.reason,
+        description: body.description,
+      })
+      .select("id")
+      .single();
 
-    res.status(201).json({ success: true });
+    if (reportError) throw new Error(reportError.message);
+
+    let listingTitle = "";
+    if (body.listingId) {
+      const { data: listing } = await sb.from("listings").select("title").eq("id", body.listingId).single();
+      listingTitle = listing?.title ?? "";
+    }
+
+    const { data: reporter } = await sb.from("users").select("name").eq("id", req.user!.id).single();
+    const reporterName = reporter?.name ?? "Kullanıcı";
+
+    void notifyAdmins({
+      type: "admin_new_report",
+      title: "Yeni Şikayet",
+      subtitle: body.reason,
+      body: `${reporterName}${listingTitle ? ` · ${listingTitle}` : ""}${body.description ? ` — ${body.description.slice(0, 100)}` : ""}`,
+      data: {
+        reportId: report.id,
+        listingId: body.listingId ?? "",
+        screen: "reports",
+      },
+    }).catch(() => {});
+
+    res.status(201).json({ success: true, id: report.id });
   } catch (err) {
     next(err);
   }

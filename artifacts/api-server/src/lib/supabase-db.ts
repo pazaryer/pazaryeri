@@ -1,5 +1,6 @@
 import "./node-polyfills";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { notifyAdmins } from "./notify-admins";
 
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "") ?? "";
 const serviceKey =
@@ -168,7 +169,17 @@ export async function ensureUser(
     .single();
 
   if (error) throw new Error(error.message);
-  return created as DbUser;
+  const user = created as DbUser;
+
+  void notifyAdmins({
+    type: "admin_new_user",
+    title: "Yeni Üye Kaydı",
+    subtitle: user.name,
+    body: `${user.name} platforma katıldı${user.email ? ` · ${user.email}` : ""}`,
+    data: { userId: user.id, screen: "user" },
+  }).catch(() => {});
+
+  return user;
 }
 
 export async function getListingImages(listingIds: string[]) {

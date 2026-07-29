@@ -54,13 +54,15 @@ export async function sendPushNotification(
     }
 
     const channelId =
-      notifType === "engagement"
-        ? "engagement"
-        : notifType === "message"
-          ? "messages"
-          : notifType === "favorite" || notifType === "favorite_update"
-            ? "favorites"
-            : "default";
+      notifType.startsWith("admin_")
+        ? "admin-alerts"
+        : notifType === "engagement"
+          ? "engagement"
+          : notifType === "message"
+            ? "messages"
+            : notifType === "favorite" || notifType === "favorite_update"
+              ? "favorites"
+              : "default";
     const sound = getPushSoundForType(notifType);
 
     const payload: Record<string, unknown> = {

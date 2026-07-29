@@ -5,6 +5,9 @@ const PUSH_SOUND_BY_TYPE: Record<string, string> = {
   engagement: "pazaryeri-push.wav",
   offer: "pazaryeri-push.wav",
   review: "pazaryeri-push.wav",
+  admin_new_listing: "pazaryeri-push.wav",
+  admin_new_user: "pazaryeri-push.wav",
+  admin_new_report: "pazaryeri-message.wav",
   default: "pazaryeri-push.wav",
 };
 

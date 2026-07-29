@@ -6,6 +6,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AppSplash } from '@/components/AppSplash';
+import { AdminPushNotificationHandler } from '@/components/AdminPushNotificationHandler';
+import { AdminNotificationWatcher } from '@/components/AdminNotificationWatcher';
 import { THEME } from '@/lib/theme';
 
 const queryClient = new QueryClient({
@@ -25,6 +27,8 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <StatusBar style="light" />
+            <AdminPushNotificationHandler />
+            <AdminNotificationWatcher />
             <Stack
               screenOptions={{
                 headerStyle: { backgroundColor: THEME.bg },
