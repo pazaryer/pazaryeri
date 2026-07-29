@@ -12,6 +12,7 @@ import {
 import { CONFIG_KEYS, DEFAULT_APP_CONFIG } from "../lib/app-config-defaults";
 import { mergeBrandingBundle, brandingBundleToConfigKeys, type BrandingBundle } from "../lib/branding";
 import { mergeMobilePromo, mobilePromoToConfigKeys, type MobilePromoBundle } from "../lib/mobile-promo";
+import { mergeAdMobConfig, admobToConfigKey, type AdMobConfig } from "../lib/mobile-admob";
 import { storeListingImage } from "../lib/image-storage";
 import { purgeListingCompletely } from "../lib/purge-listing";
 import { dbBuildListingDetail } from "../lib/listings-store";
@@ -813,6 +814,27 @@ router.post("/admin/upload/brand-asset", superAdminMiddleware, async (req, res, 
   }
 });
 
+const admobUnitSchema = z.object({
+  enabled: z.boolean(),
+  androidAppId: z.string().max(120),
+  iosAppId: z.string().max(120),
+  androidUnitId: z.string().max(120),
+  iosUnitId: z.string().max(120),
+});
+
+const admobSchema = z.object({
+  testMode: z.boolean(),
+  banner: admobUnitSchema,
+  interstitial: admobUnitSchema.extend({
+    thirdSessionEnabled: z.boolean(),
+    afterSecondListingEnabled: z.boolean(),
+    afterDeleteListingEnabled: z.boolean(),
+  }),
+  rewarded: admobUnitSchema.extend({
+    boostHours: z.number().min(1).max(24),
+  }),
+});
+
 const mobilePromoSchema = z.object({
   developer: z.object({
     enabled: z.boolean(),
@@ -836,13 +858,18 @@ const mobilePromoSchema = z.object({
     linkUrl: z.string().max(500).nullable(),
     altText: z.string().max(120),
   }),
+  admob: admobSchema,
 });
 
 router.get("/admin/mobile-promo", adminMiddleware, async (_req, res, next) => {
   try {
     const config = await getAppConfig();
     const promo = mergeMobilePromo(config);
-    res.json({ promo, defaults: mergeMobilePromo(DEFAULT_APP_CONFIG) });
+    const admob = mergeAdMobConfig(config);
+    res.json({
+      promo: { ...promo, admob },
+      defaults: { ...mergeMobilePromo(DEFAULT_APP_CONFIG), admob: mergeAdMobConfig(DEFAULT_APP_CONFIG) },
+    });
   } catch (err) {
     next(err);
   }
@@ -850,21 +877,27 @@ router.get("/admin/mobile-promo", adminMiddleware, async (_req, res, next) => {
 
 router.put("/admin/mobile-promo", superAdminMiddleware, async (req, res, next) => {
   try {
-    const parsed = mobilePromoSchema.parse(req.body) as MobilePromoBundle;
+    const parsed = mobilePromoSchema.parse(req.body) as MobilePromoBundle & { admob: AdMobConfig };
     const keys = mobilePromoToConfigKeys(parsed);
+    const admobKeys = admobToConfigKey(parsed.admob);
     await setAppConfig("mobile.developer", keys["mobile.developer"], req.user!.id, "Geliştirici bağlantıları");
     await setAppConfig("mobile.sponsorBanner", keys["mobile.sponsorBanner"], req.user!.id, "Sponsor banner");
+    await setAppConfig("mobile.admob", admobKeys["mobile.admob"], req.user!.id, "AdMob reklamları");
 
     await logAdminAction(req.user!.id, "mobile_promo.update", {
       targetType: "mobile_promo",
       details: {
         sponsorEnabled: parsed.sponsorBanner.enabled,
         developerEnabled: parsed.developer.enabled,
+        admobBanner: parsed.admob.banner.enabled,
+        admobInterstitial: parsed.admob.interstitial.enabled,
+        admobRewarded: parsed.admob.rewarded.enabled,
       },
       ip: clientIp(req),
     });
 
-    res.json({ success: true, promo: mergeMobilePromo(await getAppConfig()) });
+    const config = await getAppConfig();
+    res.json({ success: true, promo: { ...mergeMobilePromo(config), admob: mergeAdMobConfig(config) } });
   } catch (err) {
     next(err);
   }
@@ -873,7 +906,8 @@ router.put("/admin/mobile-promo", superAdminMiddleware, async (req, res, next) =
 router.post("/admin/mobile-promo/publish", superAdminMiddleware, async (req, res, next) => {
   try {
     invalidateAppConfigCache();
-    const promo = mergeMobilePromo(await getAppConfig());
+    const config = await getAppConfig();
+    const promo = { ...mergeMobilePromo(config), admob: mergeAdMobConfig(config) };
 
     await logAdminAction(req.user!.id, "mobile_promo.publish", {
       targetType: "mobile_promo",

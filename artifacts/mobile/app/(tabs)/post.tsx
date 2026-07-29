@@ -140,6 +140,13 @@ export default function PostScreen() {
         { text: 'İlanı Gör', onPress: () => router.push(`/listing/${created.id}`) },
         { text: 'Ana Sayfa', onPress: () => router.push('/(tabs)') },
       ]);
+      if ((created.sellerListingCount ?? 0) >= 2) {
+        setTimeout(() => {
+          void import('@/lib/admob/interstitial').then((m) =>
+            m.maybeShowListingInterstitial('second_listing'),
+          );
+        }, 600);
+      }
       setTitle('');
       setPrice('');
       setCategory('');

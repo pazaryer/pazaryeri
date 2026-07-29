@@ -86,6 +86,7 @@ export type DbListing = {
   views: number;
   accepted_buyer_id?: string | null;
   accepted_offer_price?: number | null;
+  promoted_until?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -240,6 +241,8 @@ export async function formatListingSummary(
   viewerUserId?: string | null,
 ) {
   const isOwner = Boolean(viewerUserId && viewerUserId === seller.id);
+  const promotedUntil = listing.promoted_until ?? null;
+  const isPromoted = promotedUntil ? new Date(promotedUntil).getTime() > Date.now() : false;
   return {
     id: listing.id,
     title: listing.title,
@@ -249,6 +252,8 @@ export async function formatListingSummary(
     city: listing.city,
     district: listing.district,
     location: listing.location,
+    isPromoted,
+    promotedUntil: isPromoted ? promotedUntil : null,
     ...(isOwner ? { views: listing.views } : {}),
     favoriteCount,
     isFavorite,

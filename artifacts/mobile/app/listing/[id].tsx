@@ -40,6 +40,7 @@ import { getListingContactPhone } from '@/lib/contact';
 import { useAuth } from '@/contexts/AuthContext';
 import { sitePath } from '@/lib/config';
 import { ListingOwnerActions } from '@/components/ListingOwnerActions';
+import { ListingPromoteButton } from '@/components/ListingPromoteButton';
 import { ListingInsightsPanel } from '@/components/ListingInsightsPanel';
 import { ListingOffersSection } from '@/components/ListingOffersSection';
 import { BuyerOfferSection } from '@/components/BuyerOfferSection';
@@ -476,6 +477,17 @@ function MobileListingDetailScreen() {
               Güvenliğiniz için ödemeyi ve teslimatı mümkünse yüz yüze yapın. Şüpheli durumları bize bildirin.
             </Text>
           </LinearGradient>
+
+          {isOwner && listing.status === 'active' && (
+            <View style={styles.ownerActions}>
+              <ListingPromoteButton
+                listingId={listing.id}
+                title={listing.title}
+                isPromoted={listing.isPromoted}
+                promotedUntil={listing.promotedUntil}
+              />
+            </View>
+          )}
 
           {isOwner && (
             <View style={styles.ownerActions}>

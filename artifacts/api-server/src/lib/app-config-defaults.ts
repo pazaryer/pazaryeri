@@ -88,6 +88,34 @@ export const DEFAULT_APP_CONFIG: Record<string, unknown> = {
     linkUrl: null,
     altText: "Sponsor",
   },
+  "mobile.admob": {
+    testMode: true,
+    banner: {
+      enabled: false,
+      androidAppId: "ca-app-pub-3940256099942544~3347511713",
+      iosAppId: "ca-app-pub-3940256099942544~1458002511",
+      androidUnitId: "ca-app-pub-3940256099942544/6300978111",
+      iosUnitId: "ca-app-pub-3940256099942544/2934735716",
+    },
+    interstitial: {
+      enabled: false,
+      androidAppId: "ca-app-pub-3940256099942544~3347511713",
+      iosAppId: "ca-app-pub-3940256099942544~1458002511",
+      androidUnitId: "ca-app-pub-3940256099942544/1033173712",
+      iosUnitId: "ca-app-pub-3940256099942544/4411468910",
+      thirdSessionEnabled: true,
+      afterSecondListingEnabled: true,
+      afterDeleteListingEnabled: true,
+    },
+    rewarded: {
+      enabled: false,
+      androidAppId: "ca-app-pub-3940256099942544~3347511713",
+      iosAppId: "ca-app-pub-3940256099942544~1458002511",
+      androidUnitId: "ca-app-pub-3940256099942544/5224354917",
+      iosUnitId: "ca-app-pub-3940256099942544/1712485313",
+      boostHours: 2,
+    },
+  },
 };
 
 export const CONFIG_KEYS = Object.keys(DEFAULT_APP_CONFIG);

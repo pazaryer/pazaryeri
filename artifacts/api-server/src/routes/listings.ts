@@ -6,6 +6,8 @@ import {
   dbEnsureUser,
   dbListListings,
   dbUpdateUser,
+  dbCountSellerListings,
+  dbPromoteListing,
   withResolvedListingCoords,
 } from "../lib/listings-store";
 import { getSupabaseAdmin } from "../lib/supabase-db";
@@ -116,6 +118,7 @@ router.post("/listings", authMiddleware, async (req, res, next) => {
       await dbUpdateUser(req.user!.id, { phone: body.contactPhone });
     }
     const detail = await dbCreateListing(req.user!.id, body);
+    const sellerListingCount = await dbCountSellerListings(req.user!.id);
 
     const sellerName = detail.seller?.name ?? req.user!.name ?? "Satıcı";
     void notifyAdmins({
@@ -126,7 +129,7 @@ router.post("/listings", authMiddleware, async (req, res, next) => {
       data: { listingId: detail.id, screen: "listing" },
     }).catch(() => {});
 
-    res.status(201).json(detail);
+    res.status(201).json({ ...detail, sellerListingCount });
   } catch (err) {
     next(err);
   }
@@ -211,6 +214,21 @@ router.patch("/listings/:listingId/status", authMiddleware, async (req, res, nex
     }
 
     res.json(await dbBuildListingDetail(req.params.listingId, req.user!.id));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/listings/:listingId/promote", authMiddleware, async (req, res, next) => {
+  try {
+    const listingId = Array.isArray(req.params.listingId) ? req.params.listingId[0]! : req.params.listingId;
+    const { getAppConfig } = await import("../lib/app-config");
+    const { mergeAdMobConfig } = await import("../lib/mobile-admob");
+    const admob = mergeAdMobConfig(await getAppConfig());
+    const boostHours = Math.min(Math.max(admob.rewarded.boostHours || 2, 1), 24);
+    const result = await dbPromoteListing(listingId, req.user!.id, boostHours);
+    const detail = await dbBuildListingDetail(listingId, req.user!.id);
+    res.json({ success: true, promotedUntil: result.promotedUntil, listing: detail });
   } catch (err) {
     next(err);
   }

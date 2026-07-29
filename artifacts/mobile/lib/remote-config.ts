@@ -57,6 +57,7 @@ export type RemoteAppConfig = {
     linkUrl?: string | null;
     altText?: string;
   };
+  'mobile.admob'?: import('@/lib/admob/config').AdMobRemoteConfig;
 };
 
 let cached: RemoteAppConfig | null = null;

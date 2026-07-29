@@ -19,6 +19,8 @@ export interface ListingSummary {
   distance?: string | null;
   image: string;
   createdAt: string;
+  isPromoted?: boolean;
+  promotedUntil?: string | null;
   seller: {
     id: string;
     name: string;
@@ -269,6 +271,10 @@ export function useToggleFavorite() {
   });
 }
 
+export interface CreateListingResult extends ListingDetail {
+  sellerListingCount?: number;
+}
+
 export function useCreateListing() {
   const qc = useQueryClient();
   return useMutation({
@@ -285,7 +291,7 @@ export function useCreateListing() {
       contactPhone?: string;
       images: string[];
     }) =>
-      apiFetch<ListingDetail>('/listings', {
+      apiFetch<CreateListingResult>('/listings', {
         method: 'POST',
         body: JSON.stringify(data),
       }),

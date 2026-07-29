@@ -22,6 +22,7 @@ import { pickImages } from '@/lib/storage';
 import { formatPhoneDisplay } from '@/lib/contact';
 import { BRAND } from '@/constants/brand';
 import { DeveloperActions } from '@/components/DeveloperActions';
+import { ListingPromoteButton } from '@/components/ListingPromoteButton';
 
 const { width } = Dimensions.get('window');
 const LISTING_CARD_WIDTH = width * 0.36;
@@ -197,6 +198,29 @@ export default function ProfileScreen() {
         )}
       </View>
 
+      {userListings.filter((l) => l.status === 'active').length > 0 ? (
+        <View style={[styles.promoteSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.promoteTitle, { color: colors.foreground }]}>İlanlarını Öne Çıkar</Text>
+          <Text style={[styles.promoteSub, { color: colors.mutedForeground }]}>
+            Kısa reklam izleyerek ilanını 2 saat üst sıralarda tut
+          </Text>
+          {userListings
+            .filter((l) => l.status === 'active')
+            .slice(0, 5)
+            .map((item) => (
+              <View key={item.id} style={styles.promoteItem}>
+                <ListingPromoteButton
+                  listingId={item.id}
+                  title={item.title}
+                  isPromoted={item.isPromoted}
+                  promotedUntil={item.promotedUntil}
+                  compact
+                />
+              </View>
+            ))}
+        </View>
+      ) : null}
+
       <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <MenuItem icon="heart-outline" title="Favorilerim" onPress={() => router.push('/favorites')} colors={colors} />
         <MenuItem icon="settings-outline" title="Profil Ayarları" onPress={() => router.push('/settings')} colors={colors} />
@@ -358,6 +382,17 @@ const styles = StyleSheet.create({
   emptyCard: { alignItems: 'center', padding: 28, borderRadius: 16, borderWidth: 1, gap: 8 },
   emptyTitle: { fontSize: 16, fontWeight: '700' },
   emptySub: { fontSize: 13 },
+  promoteSection: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 10,
+  },
+  promoteTitle: { fontSize: 16, fontWeight: '800' },
+  promoteSub: { fontSize: 12, lineHeight: 18 },
+  promoteItem: { marginTop: 4 },
   menuCard: { marginHorizontal: 16, marginTop: 20, borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
   menuTitle: { flex: 1, fontSize: 15, fontWeight: '600' },

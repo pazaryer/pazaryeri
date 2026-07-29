@@ -22,9 +22,11 @@ const BANNER_ASPECT = 320 / 50;
 type Props = {
   variant?: 'inline' | 'floating';
   style?: ViewStyle;
+  /** floating: tab bar üstünden px */
+  bottom?: number;
 };
 
-export function SponsorBanner({ variant = 'inline', style }: Props) {
+export function SponsorBanner({ variant = 'inline', style, bottom }: Props) {
   const colors = useColors();
   const sponsor = useSponsorBanner();
   const insets = useSafeAreaInsets();
@@ -32,6 +34,7 @@ export function SponsorBanner({ variant = 'inline', style }: Props) {
   const segments = useSegments();
   const inTabs = segments[0] === '(tabs)';
   const tabBarOffset = inTabs ? (compact ? 54 : 58) + insets.bottom : insets.bottom + 8;
+  const floatingBottom = bottom ?? tabBarOffset + 4;
 
   if (!sponsor.enabled || !sponsor.imageUrl) return null;
 
@@ -67,7 +70,7 @@ export function SponsorBanner({ variant = 'inline', style }: Props) {
     return (
       <View
         pointerEvents="box-none"
-        style={[styles.floatingWrap, { bottom: tabBarOffset + 4 }]}
+        style={[styles.floatingWrap, { bottom: floatingBottom }]}
       >
         <Pressable
           onPress={onPress}

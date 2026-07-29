@@ -218,6 +218,7 @@ export async function dbListListings(params: {
   let query = sb
     .from("listings")
     .select("*, users!listings_seller_id_fkey(*)")
+    .order("promoted_until", { ascending: false, nullsFirst: false })
     .order(
       sort === "price_asc" || sort === "price_desc" ? "price" : "created_at",
       { ascending: sort === "price_asc" || sort === "date_asc" },
@@ -485,4 +486,59 @@ export async function dbClearPushToken(id: string) {
     .from("users")
     .update({ push_token: null, updated_at: new Date().toISOString() })
     .eq("id", id);
+}
+
+export async function dbCountSellerListings(sellerId: string): Promise<number> {
+  const backend = await resolveListingsBackend();
+  if (backend === "postgres") {
+    const db = (await import("./postgres-db")).getPgPool();
+    const { rows } = await db.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM listings WHERE seller_id = $1 AND status != 'deleted'`,
+      [sellerId],
+    );
+    return Number(rows[0]?.count ?? 0);
+  }
+  const sb = getSupabaseAdmin();
+  const { count } = await sb
+    .from("listings")
+    .select("id", { count: "exact", head: true })
+    .eq("seller_id", sellerId)
+    .neq("status", "deleted");
+  return count ?? 0;
+}
+
+export async function dbPromoteListing(
+  listingId: string,
+  sellerId: string,
+  boostHours: number,
+): Promise<{ promotedUntil: string }> {
+  const backend = await resolveListingsBackend();
+  const until = new Date(Date.now() + boostHours * 60 * 60 * 1000).toISOString();
+
+  if (backend === "postgres") {
+    const db = (await import("./postgres-db")).getPgPool();
+    const { rowCount } = await db.query(
+      `UPDATE listings SET promoted_until = $1, updated_at = NOW()
+       WHERE id = $2 AND seller_id = $3 AND status = 'active'`,
+      [until, listingId, sellerId],
+    );
+    if (!rowCount) throw new AppError("İlan bulunamadı veya öne çıkarılamaz", 404);
+    return { promotedUntil: until };
+  }
+
+  const sb = getSupabaseAdmin();
+  const { data: listing } = await sb
+    .from("listings")
+    .select("id, seller_id, status")
+    .eq("id", listingId)
+    .single();
+  if (!listing || listing.seller_id !== sellerId) throw new AppError("İlan bulunamadı", 404);
+  if (listing.status !== "active") throw new AppError("Yalnızca aktif ilanlar öne çıkarılabilir", 400);
+
+  const { error } = await sb
+    .from("listings")
+    .update({ promoted_until: until, updated_at: new Date().toISOString() })
+    .eq("id", listingId);
+  if (error) throw new AppError(error.message, 500);
+  return { promotedUntil: until };
 }
