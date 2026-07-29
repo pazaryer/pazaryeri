@@ -27,6 +27,8 @@ import { PushNotificationHandler } from '@/components/PushNotificationHandler';
 import { WebPushHandler } from '@/components/WebPushHandler';
 import { AppNotificationWatcher } from '@/components/AppNotificationWatcher';
 import { installGlobalErrorHandlers } from '@/lib/global-error-handler';
+import { RemoteConfigGate } from '@/components/RemoteConfigGate';
+import { usePresencePing } from '@/lib/presence-ping';
 
 try {
   initApi();
@@ -53,6 +55,7 @@ function segmentKey(segments: string[]): string {
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
+  usePresencePing();
   const router = useRouter();
   const segments = useSegments();
   useGoogleOAuthLinkHandler();
@@ -218,6 +221,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
+              <RemoteConfigGate>
               <KeyboardShell>
                 {Platform.OS === 'web' ? (
                   <RootLayoutNav />
@@ -227,6 +231,7 @@ export default function RootLayout() {
                   </MobileLocationProvider>
                 )}
               </KeyboardShell>
+              </RemoteConfigGate>
             </GestureHandlerRootView>
           </AuthProvider>
         </QueryClientProvider>

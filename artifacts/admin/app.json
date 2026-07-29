@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "Pazaryeri Admin",
+    "slug": "pazaryeri-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "pazaryeri-admin",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F0A1A"
+    },
+    "android": {
+      "package": "com.pazaryerim.admin",
+      "icon": "./assets/images/icon.png",
+      "softwareKeyboardLayoutMode": "resize",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0F0A1A"
+      },
+      "permissions": ["android.permission.INTERNET", "android.permission.VIBRATE"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-splash-screen",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "targetSdkVersion": 35,
+            "compileSdkVersion": 35
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "https://pazaryerim.onrender.com",
+      "bootstrapAdminEmails": ["pazaryer0@gmail.com"],
+      "firebase": {
+        "apiKey": "AIzaSyB6W3BBz1_SpD-jp8dcpvFTjeBwnZlw4Dg",
+        "authDomain": "pazaryeri0.firebaseapp.com",
+        "projectId": "pazaryeri0",
+        "storageBucket": "pazaryeri0.firebasestorage.app",
+        "messagingSenderId": "445495602976",
+        "appId": "1:445495602976:web:a9d405b30d0cab7d85f145"
+      },
+      "router": {
+        "origin": false
+      }
+    },
+    "owner": "pazaryeri"
+  }
+}

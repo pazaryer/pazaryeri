@@ -108,11 +108,35 @@ router.delete("/users/me/push-token", authMiddleware, async (req, res, next) => 
 
 router.post("/users/me/heartbeat", authMiddleware, async (req, res, next) => {
   try {
+    const body = z
+      .object({
+        deviceId: z.string().min(8).max(128).optional(),
+        platform: z.enum(["ios", "android", "web"]).optional(),
+        appVersion: z.string().max(32).optional(),
+      })
+      .optional()
+      .parse(req.body ?? {});
+
     const { getSupabaseAdmin } = await import("../lib/supabase-db");
+    const { upsertDevicePresence } = await import("../lib/presence");
+    const now = new Date().toISOString();
+
     await getSupabaseAdmin()
       .from("users")
-      .update({ last_active_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({ last_active_at: now, updated_at: now })
       .eq("id", req.user!.id);
+
+    const deviceId =
+      body?.deviceId ??
+      (typeof req.headers["x-device-id"] === "string" ? req.headers["x-device-id"] : undefined);
+    if (deviceId) {
+      await upsertDevicePresence(deviceId, {
+        userId: req.user!.id,
+        platform: body?.platform,
+        appVersion: body?.appVersion,
+      });
+    }
+
     res.json({ ok: true });
   } catch (err) {
     next(err);

@@ -12,6 +12,9 @@ import miscRouter from "./misc";
 import uploadRouter from "./upload";
 import authRouter from "./auth";
 import sitemapRouter from "./sitemap";
+import configRouter from "./config";
+import adminRouter from "./admin";
+import marqueeRouter from "./marquee";
 
 const router: IRouter = Router();
 
@@ -28,5 +31,8 @@ router.use(reviewsRouter);
 router.use(listingCommentsRouter);
 router.use(locationsRouter);
 router.use(miscRouter);
+router.use(configRouter);
+router.use(marqueeRouter);
+router.use(adminRouter);
 
 export default router;

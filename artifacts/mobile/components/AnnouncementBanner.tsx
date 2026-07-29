@@ -8,22 +8,17 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { ANNOUNCEMENTS } from '@/lib/categories';
 import { WebMarquee, MarqueeSlot } from '@/components/WebMarquee';
 import { BRAND } from '@/constants/brand';
-
-const MARQUEE_TEXT = ANNOUNCEMENTS.join('   ·   ') + '   ·   ';
+import { useMarqueeText } from '@/lib/marquee';
 
 type Props = {
-  /** Anasayfa liste içinde — yuvarlatılmış kart stili */
   embedded?: boolean;
-  /** İnce, kibar anasayfa bandı */
   subtle?: boolean;
   style?: ViewStyle;
 };
 
-/** Mobil — Reanimated kaydırma */
-function NativeMarquee({ subtle }: { subtle?: boolean }) {
+function NativeMarquee({ text, subtle }: { text: string; subtle?: boolean }) {
   const translateX = useSharedValue(0);
 
   useEffect(() => {
@@ -41,8 +36,8 @@ function NativeMarquee({ subtle }: { subtle?: boolean }) {
   return (
     <MarqueeSlot>
       <Animated.View style={[styles.marqueeRow, animStyle]}>
-        <Text style={[styles.marqueeText, subtle && styles.marqueeTextSubtle]}>{MARQUEE_TEXT}</Text>
-        <Text style={[styles.marqueeText, subtle && styles.marqueeTextSubtle]}>{MARQUEE_TEXT}</Text>
+        <Text style={[styles.marqueeText, subtle && styles.marqueeTextSubtle]}>{text}</Text>
+        <Text style={[styles.marqueeText, subtle && styles.marqueeTextSubtle]}>{text}</Text>
       </Animated.View>
     </MarqueeSlot>
   );
@@ -50,8 +45,11 @@ function NativeMarquee({ subtle }: { subtle?: boolean }) {
 
 export function AnnouncementBanner({ embedded, subtle, style }: Props) {
   const insets = useSafeAreaInsets();
+  const { text, enabled, loading } = useMarqueeText();
   const topPad = !embedded && !subtle && Platform.OS !== 'web' ? insets.top : 0;
   const isSubtle = embedded || subtle;
+
+  if (!loading && (!enabled || !text)) return null;
 
   return (
     <View
@@ -70,9 +68,9 @@ export function AnnouncementBanner({ embedded, subtle, style }: Props) {
       )}
       {isSubtle && <View style={styles.subtleAccent} />}
       {Platform.OS === 'web' ? (
-        <WebMarquee text={MARQUEE_TEXT} subtle={isSubtle} />
+        <WebMarquee text={text || '...'} subtle={isSubtle} />
       ) : (
-        <NativeMarquee subtle={isSubtle} />
+        <NativeMarquee text={text || '...'} subtle={isSubtle} />
       )}
     </View>
   );

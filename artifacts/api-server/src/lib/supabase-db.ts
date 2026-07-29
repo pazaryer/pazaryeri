@@ -58,6 +58,9 @@ export type DbUser = {
   rating: number;
   total_sales: number;
   is_verified: boolean;
+  badge_emoji?: string | null;
+  badge_label?: string | null;
+  badge_color?: string | null;
   push_token: string | null;
   created_at: string;
   updated_at: string;
@@ -113,6 +116,11 @@ export function formatUser(u: DbUser) {
     rating: u.rating,
     totalSales: u.total_sales,
     isVerified: u.is_verified,
+    badge:
+      u.badge_emoji && u.badge_label
+        ? { emoji: u.badge_emoji, label: u.badge_label, color: u.badge_color ?? "#2E90FA" }
+        : null,
+    role: (u as DbUser & { role?: string }).role ?? "user",
     createdAt: u.created_at,
     ...presence,
   };
@@ -241,6 +249,10 @@ export async function formatListingSummary(
       name: seller.name,
       avatar: seller.avatar,
       isVerified: seller.is_verified,
+      badge:
+        seller.badge_emoji && seller.badge_label
+          ? { emoji: seller.badge_emoji, label: seller.badge_label, color: seller.badge_color ?? "#2E90FA" }
+          : null,
     },
   };
 }

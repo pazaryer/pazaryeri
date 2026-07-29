@@ -13,12 +13,13 @@ import {
   type User,
 } from 'firebase/auth';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { apiFetch } from '@/lib/api';
 import { loadWebProfileExtras } from '@/lib/web-profile';
 import { loadMobileProfileExtras } from '@/lib/mobile-profile';
 import { SITE_URL } from '@/lib/config';
+import { getDeviceId } from '@/lib/device-id';
+import Constants from 'expo-constants';
 import { setOnboardingComplete } from '@/lib/onboarding';
 import { requestGoogleIdToken } from '@/lib/google-web-signin';
 
@@ -188,7 +189,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    const tick = () => apiFetch('/users/me/heartbeat', { method: 'POST' }).catch(() => null);
+    const tick = async () => {
+      try {
+        const deviceId = await getDeviceId();
+        await apiFetch('/users/me/heartbeat', {
+          method: 'POST',
+          body: JSON.stringify({
+            deviceId,
+            platform: Platform.OS === 'web' ? 'web' : Platform.OS === 'ios' ? 'ios' : 'android',
+            appVersion: Constants.expoConfig?.version ?? '1.0.0',
+          }),
+        });
+      } catch {
+        /* ignore */
+      }
+    };
     tick();
     const id = setInterval(tick, 60_000);
     return () => clearInterval(id);

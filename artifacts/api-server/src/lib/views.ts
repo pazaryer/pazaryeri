@@ -14,10 +14,11 @@ export async function trackUniqueListingView(
   if (isPostgresConfigured()) {
     const db = getPgPool();
     const result = await db.query<{ inserted: boolean }>(
-      `INSERT INTO listing_views (listing_id, device_id, user_id)
-       VALUES ($1, $2, $3)
+      `INSERT INTO listing_views (listing_id, device_id, user_id, last_viewed_at)
+       VALUES ($1, $2, $3, NOW())
        ON CONFLICT (listing_id, device_id) DO UPDATE SET
-         user_id = COALESCE(EXCLUDED.user_id, listing_views.user_id)
+         user_id = COALESCE(EXCLUDED.user_id, listing_views.user_id),
+         last_viewed_at = NOW()
        RETURNING (xmax = 0) AS inserted`,
       [listingId, id, viewerId],
     );
@@ -39,7 +40,7 @@ export async function trackUniqueListingView(
       if (viewerId) {
         await sb
           .from("listing_views")
-          .update({ user_id: viewerId })
+          .update({ user_id: viewerId, last_viewed_at: new Date().toISOString() })
           .eq("listing_id", listingId)
           .eq("device_id", id)
           .is("user_id", null);

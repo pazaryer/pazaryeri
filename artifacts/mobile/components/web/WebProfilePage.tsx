@@ -188,10 +188,14 @@ export function WebProfilePage() {
                     {displayProfile.email && <Text style={styles.email}>{displayProfile.email}</Text>}
                     {displayProfile.city && <Text style={styles.city}>📍 {displayProfile.city}</Text>}
                     {displayProfile.bio && <Text style={styles.bio}>{displayProfile.bio}</Text>}
-                    {displayProfile.isVerified && (
+                    {(displayProfile as { badge?: { emoji: string; label: string; color?: string } }).badge && (
                       <View style={styles.verifiedBadge}>
-                        <Text style={styles.verifiedIcon}>✓</Text>
-                        <Text style={styles.verifiedText}>Güvenilir Satıcı</Text>
+                        <Text style={styles.verifiedIcon}>
+                          {(displayProfile as { badge?: { emoji: string } }).badge?.emoji}
+                        </Text>
+                        <Text style={styles.verifiedText}>
+                          {(displayProfile as { badge?: { label: string } }).badge?.label}
+                        </Text>
                       </View>
                     )}
                     <Pressable style={styles.editBtn} onPress={startEdit}>

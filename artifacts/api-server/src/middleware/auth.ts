@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyFirebaseToken } from "../lib/firebase-admin";
+import { getSupabaseAdmin } from "../lib/supabase-db";
 
 export interface AuthUser {
   id: string;
@@ -31,6 +32,20 @@ export async function authMiddleware(
 
   try {
     const user = await verifyFirebaseToken(token);
+    try {
+      const sb = getSupabaseAdmin();
+      const { data: row } = await sb
+        .from("users")
+        .select("is_banned")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (row?.is_banned) {
+        res.status(403).json({ error: "Hesabınız engellenmiş" });
+        return;
+      }
+    } catch {
+      // migration öncesi is_banned sütunu olmayabilir
+    }
     req.user = {
       id: user.id,
       firebaseUid: user.firebaseUid,

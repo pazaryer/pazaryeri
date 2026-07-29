@@ -35,6 +35,7 @@ app.use(
       'https://pazaryeri0.firebaseapp.com',
       'http://localhost:8081',
       'http://localhost:19006',
+      'http://localhost:8082',
     ],
     credentials: true,
   }),
