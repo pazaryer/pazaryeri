@@ -15,6 +15,7 @@ import { storeListingImage } from "../lib/image-storage";
 import { purgeListingCompletely } from "../lib/purge-listing";
 import { dbBuildListingDetail } from "../lib/listings-store";
 import { getLiveAnalytics } from "../lib/presence";
+import { getPlatformAnalytics } from "../lib/platform-analytics";
 import { resetLiveAnalytics, getAnalyticsResetAt } from "../lib/analytics-reset";
 
 const router: IRouter = Router();
@@ -871,6 +872,15 @@ router.get("/admin/live", adminMiddleware, async (_req, res, next) => {
   try {
     const live = await getLiveAnalytics();
     res.json(live);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/admin/analytics/web", adminMiddleware, async (_req, res, next) => {
+  try {
+    const data = await getPlatformAnalytics("web");
+    res.json(data);
   } catch (err) {
     next(err);
   }

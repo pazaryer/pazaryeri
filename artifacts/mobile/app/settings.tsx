@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/lib/hooks';
 import { useColors } from '@/hooks/useColors';
 import { pickImages } from '@/lib/storage';
+import { DevByAltunBadge } from '@/components/DevByAltunBadge';
 
 export default function SettingsScreen() {
   const colors = useColors();
@@ -206,6 +207,8 @@ export default function SettingsScreen() {
           )}
         </Pressable>
       </View>
+
+      <DevByAltunBadge compact />
     </ProfileScreenLayout>
   );
 }

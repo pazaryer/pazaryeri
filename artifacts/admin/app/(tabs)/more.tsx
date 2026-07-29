@@ -12,6 +12,15 @@ export default function MoreScreen() {
       title="Diğer"
       subtitle={`${profile?.name ?? 'Admin'} · Yönetim araçları`}
     >
+      <Section title="Analitik">
+        <MenuCard
+          icon="🌐"
+          title="Web Ziyaretçileri"
+          subtitle="Girişler, oturumlar ve canlı hareketler"
+          onPress={() => router.push('/(tabs)/web-analytics')}
+        />
+      </Section>
+
       <Section title="Kontrol Merkezi">
         <MenuCard
           icon="🎛️"

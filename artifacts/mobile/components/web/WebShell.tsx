@@ -18,6 +18,7 @@ import { useWebTheme } from '@/hooks/useWebTheme';
 import { useBrand } from '@/contexts/BrandContext';
 import { WEB_THEME } from '@/lib/web-theme';
 import { useNotifications, useConversations } from '@/lib/hooks';
+import { DevByAltunBadge } from '@/components/DevByAltunBadge';
 
 const NAV_CATEGORIES = WEB_CATEGORIES.filter((c) => c.label !== 'Tüm İlanlar');
 
@@ -243,6 +244,8 @@ function WebShellInner({
             {mobile && (
               <Text style={styles.footerTaglineMobile}>İkinci el alım satım · Ücretsiz ilan</Text>
             )}
+
+            <DevByAltunBadge />
 
             <Text style={styles.footerCopy}>
               © {new Date().getFullYear()} Pazaryeri

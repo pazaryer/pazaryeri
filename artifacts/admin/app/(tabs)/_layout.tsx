@@ -29,6 +29,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="branding" options={{ href: null }} />
       <Tabs.Screen name="cms" options={{ href: null }} />
       <Tabs.Screen name="audit" options={{ href: null }} />
+      <Tabs.Screen name="web-analytics" options={{ href: null }} />
     </Tabs>
   );
 }
