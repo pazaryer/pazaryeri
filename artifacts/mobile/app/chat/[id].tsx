@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { UserAvatar } from '@/components/UserAvatar';
 import { WebShell } from '@/components/web/WebShell';
 import { showConfirm } from '@/lib/web-alert';
+import { setActiveConversationId } from '@/lib/message-banner-bus';
 
 function ChatContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,6 +45,11 @@ function ChatContent() {
     heartbeat.mutate();
     const t = setInterval(() => heartbeat.mutate(), 60_000);
     return () => clearInterval(t);
+  }, [conversationId]);
+
+  useEffect(() => {
+    setActiveConversationId(conversationId ?? null);
+    return () => setActiveConversationId(null);
   }, [conversationId]);
 
   const scrollToEnd = useCallback(() => {

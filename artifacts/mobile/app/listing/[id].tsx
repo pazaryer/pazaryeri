@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,7 @@ import { getListingContactPhone } from '@/lib/contact';
 import { useAuth } from '@/contexts/AuthContext';
 import { sitePath } from '@/lib/config';
 import { ListingOwnerActions } from '@/components/ListingOwnerActions';
+import { listingHeroImageProps } from '@/lib/listing-image-props';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -63,6 +64,14 @@ function MobileListingDetailScreen() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [reviewOpen, setReviewOpen] = useState(false);
+
+  useEffect(() => {
+    if (!listing) return;
+    const imgs = listing.images.length > 0 ? listing.images : [listing.image];
+    imgs.slice(0, 5).forEach((uri) => {
+      if (uri) Image.prefetch(uri);
+    });
+  }, [listing?.id, listing?.images, listing?.image]);
 
   if (isLoading || (isFetching && !listing)) {
     return (
@@ -155,7 +164,13 @@ function MobileListingDetailScreen() {
           >
             {images.map((img, idx) => (
               <Pressable key={idx} onPress={() => openGallery(idx)}>
-                <Image source={{ uri: img }} style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 0.45 }} contentFit="cover" />
+                <Image
+                  source={{ uri: img }}
+                  style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 0.45 }}
+                  contentFit="cover"
+                  recyclingKey={`${listing.id}-${idx}`}
+                  {...listingHeroImageProps}
+                />
               </Pressable>
             ))}
           </ScrollView>

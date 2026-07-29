@@ -173,6 +173,10 @@ export default function ExploreScreen() {
       numColumns={LISTING_GRID_COLS}
       columnWrapperStyle={styles.resultsRow}
       renderItem={({ item }) => <ListingCard item={item} compact />}
+      initialNumToRender={12}
+      maxToRenderPerBatch={9}
+      windowSize={7}
+      removeClippedSubviews
       ListHeaderComponent={listHeader}
       ListEmptyComponent={
         listingsLoading ? (

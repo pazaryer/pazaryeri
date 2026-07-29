@@ -6,12 +6,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BRAND } from '@/constants/brand';
 import { useCompactScreen } from '@/hooks/useCompactScreen';
 import { MobileLocationPicker } from '@/components/MobileLocationPicker';
+import { useAuth } from '@/contexts/AuthContext';
+import { useConversations } from '@/lib/hooks';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const compact = useCompactScreen();
+  const { user } = useAuth();
+  const { data: convoData } = useConversations(!!user);
   const tabBarHeight = (compact ? 54 : 58) + insets.bottom;
   const iconSize = compact ? 22 : 24;
+
+  const unreadMessages = useMemo(
+    () => (convoData?.items ?? []).reduce((sum, item) => sum + item.unreadCount, 0),
+    [convoData?.items],
+  );
 
   const screenOptions = useMemo(
     () => ({
@@ -83,6 +92,15 @@ export default function TabLayout() {
         name="messages"
         options={{
           title: 'Mesajlar',
+          tabBarBadge: unreadMessages > 0 ? (unreadMessages > 99 ? '99+' : unreadMessages) : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: BRAND.primary,
+            fontSize: 10,
+            fontWeight: '700',
+            minWidth: 18,
+            height: 18,
+            lineHeight: 18,
+          },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'chatbubble' : 'chatbubble-outline'} size={iconSize} color={color} />
           ),

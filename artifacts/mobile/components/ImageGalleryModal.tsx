@@ -12,6 +12,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { listingGalleryImageProps } from '@/lib/listing-image-props';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -33,8 +34,9 @@ export function ImageGalleryModal({ images, initialIndex = 0, visible, onClose }
       requestAnimationFrame(() => {
         scrollRef.current?.scrollTo({ x: initialIndex * SCREEN_WIDTH, animated: false });
       });
+      images.slice(0, 6).forEach((uri) => Image.prefetch(uri));
     }
-  }, [visible, initialIndex]);
+  }, [visible, initialIndex, images]);
 
   if (!visible || images.length === 0) return null;
 
@@ -61,7 +63,13 @@ export function ImageGalleryModal({ images, initialIndex = 0, visible, onClose }
         >
           {images.map((uri, i) => (
             <View key={`${uri}-${i}`} style={styles.slide}>
-              <Image source={{ uri }} style={styles.image} contentFit="contain" />
+              <Image
+                source={{ uri }}
+                style={styles.image}
+                contentFit="contain"
+                recyclingKey={`gallery-${i}`}
+                {...listingGalleryImageProps}
+              />
             </View>
           ))}
         </ScrollView>

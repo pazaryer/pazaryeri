@@ -115,6 +115,7 @@ export function useListings(
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
     enabled: options?.enabled ?? true,
+    staleTime: 30_000,
     refetchInterval: Platform.OS === 'web' ? 300_000 : false,
     refetchOnWindowFocus: false,
   });
@@ -335,11 +336,12 @@ export function useUpdateProfile() {
   });
 }
 
-export function useConversations() {
+export function useConversations(enabled = true) {
   return useQuery({
     queryKey: ['conversations'],
     queryFn: () => apiFetch<{ items: ConversationSummary[] }>('/conversations'),
-    refetchInterval: Platform.OS === 'web' ? 10_000 : 5_000,
+    enabled,
+    refetchInterval: Platform.OS === 'web' ? 10_000 : 4_000,
     refetchOnWindowFocus: Platform.OS !== 'web',
   });
 }

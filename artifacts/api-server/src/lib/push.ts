@@ -26,7 +26,7 @@ export async function sendPushNotification(
   title: string,
   body: string,
   data?: Record<string, string>,
-  options?: { type?: string; badge?: number },
+  options?: { type?: string; badge?: number; subtitle?: string },
 ): Promise<void> {
   try {
     const { data: user } = await getSupabaseAdmin()
@@ -39,8 +39,21 @@ export async function sendPushNotification(
     if (!token || typeof token !== "string") return;
 
     const notifType = options?.type ?? data?.type ?? "default";
-    const channelId = notifType === "engagement" ? "engagement" : "default";
+    const channelId =
+      notifType === "engagement" ? "engagement" : notifType === "message" ? "messages" : "default";
     const badge = options?.badge ?? (await getUnreadCount(userId));
+
+    const payload: Record<string, unknown> = {
+      to: token,
+      title,
+      body,
+      data: data ?? {},
+      sound: "default",
+      priority: "high",
+      channelId,
+      badge,
+    };
+    if (options?.subtitle) payload.subtitle = options.subtitle;
 
     const response = await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",
@@ -48,16 +61,7 @@ export async function sendPushNotification(
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({
-        to: token,
-        title,
-        body,
-        data: data ?? {},
-        sound: "default",
-        priority: "high",
-        channelId,
-        badge,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

@@ -8,6 +8,7 @@ import { ListingSummary, formatPrice, useToggleFavorite } from '@/lib/hooks';
 import { formatListingLocation } from '@/lib/listing-location';
 import { flatStyle } from '@/lib/flat-style';
 import { BRAND } from '@/constants/brand';
+import { listingThumbImageProps } from '@/lib/listing-image-props';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 export const LISTING_GRID_COLS = 3;
@@ -21,7 +22,7 @@ interface ListingCardProps {
   compact?: boolean;
 }
 
-export function ListingCard({ item, compact = false }: ListingCardProps) {
+export const ListingCard = React.memo(function ListingCard({ item, compact = false }: ListingCardProps) {
   const colors = useColors();
   const toggleFavorite = useToggleFavorite();
 
@@ -39,8 +40,8 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
               source={{ uri: item.image }}
               style={StyleSheet.absoluteFillObject}
               contentFit="cover"
-              transition={150}
-              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+              recyclingKey={item.id}
+              {...listingThumbImageProps}
             />
             {item.status === 'sold' && (
               <View style={styles.soldOverlay}>
@@ -80,7 +81,7 @@ export function ListingCard({ item, compact = false }: ListingCardProps) {
       </Pressable>
     </Link>
   );
-}
+});
 
 const styles = StyleSheet.create({
   cardContainer: {

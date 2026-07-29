@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import type { QueryClient } from '@tanstack/react-query';
+import { showMessageBanner } from '@/lib/message-banner-bus';
 
 let handlerConfigured = false;
 
@@ -15,13 +16,31 @@ function configureNotificationHandler() {
 
   const Notifications = getNotificationsModule();
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
+    handleNotification: async (notification) => {
+      const data = parsePushData(notification.request.content.data);
+      const isMessage = data.type === 'message' && data.conversationId;
+
+      if (isMessage) {
+        const content = notification.request.content;
+        showMessageBanner({
+          conversationId: data.conversationId!,
+          listingId: data.listingId ?? '',
+          senderName: data.senderName ?? content.title ?? 'Yeni mesaj',
+          listingTitle: data.listingTitle ?? content.subtitle ?? 'İlan',
+          messageText: data.messageText ?? content.body ?? '',
+          senderAvatar: data.senderAvatar,
+          listingImage: data.listingImage,
+        });
+      }
+
+      return {
+        shouldShowAlert: !isMessage,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: !isMessage,
+        shouldShowList: !isMessage,
+      };
+    },
   });
 }
 
@@ -44,16 +63,27 @@ export type PushNavigationData = {
   listingId?: string;
   screen?: string;
   type?: string;
+  senderName?: string;
+  listingTitle?: string;
+  messageText?: string;
+  senderAvatar?: string;
+  listingImage?: string;
 };
 
 export function parsePushData(raw: unknown): PushNavigationData {
   if (!raw || typeof raw !== 'object') return {};
   const d = raw as Record<string, unknown>;
+  const str = (key: string) => (typeof d[key] === 'string' && d[key] ? String(d[key]) : undefined);
   return {
-    conversationId: typeof d.conversationId === 'string' ? d.conversationId : undefined,
-    listingId: typeof d.listingId === 'string' ? d.listingId : undefined,
-    screen: typeof d.screen === 'string' ? d.screen : undefined,
-    type: typeof d.type === 'string' ? d.type : undefined,
+    conversationId: str('conversationId'),
+    listingId: str('listingId'),
+    screen: str('screen'),
+    type: str('type'),
+    senderName: str('senderName'),
+    listingTitle: str('listingTitle'),
+    messageText: str('messageText'),
+    senderAvatar: str('senderAvatar'),
+    listingImage: str('listingImage'),
   };
 }
 
@@ -67,6 +97,22 @@ export function getPushNavigationPath(data: PushNavigationData): string | null {
   if (data.screen === 'messages') return '/(tabs)/messages';
   if (data.screen === 'home') return '/(tabs)';
   return '/notifications';
+}
+
+function pushPayloadFromNotification(
+  data: PushNavigationData,
+  content: { title?: string | null; body?: string | null; subtitle?: string | null },
+): void {
+  if (data.type !== 'message' || !data.conversationId) return;
+  showMessageBanner({
+    conversationId: data.conversationId,
+    listingId: data.listingId ?? '',
+    senderName: data.senderName ?? content.title ?? 'Yeni mesaj',
+    listingTitle: data.listingTitle ?? content.subtitle ?? 'İlan',
+    messageText: data.messageText ?? content.body ?? '',
+    senderAvatar: data.senderAvatar,
+    listingImage: data.listingImage,
+  });
 }
 
 export async function registerForPushNotifications(): Promise<string | null> {
@@ -97,6 +143,12 @@ export async function registerForPushNotifications(): Promise<string | null> {
       name: 'Pazaryeri',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#3D1A78',
+    });
+    await Notifications.setNotificationChannelAsync('messages', {
+      name: 'Mesajlar',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 200, 100, 200],
       lightColor: '#3D1A78',
     });
     await Notifications.setNotificationChannelAsync('engagement', {
@@ -137,15 +189,22 @@ export function attachPushNotificationListeners(
   configureNotificationHandler();
   const Notifications = getNotificationsModule();
 
-  const receivedSub = Notifications.addNotificationReceivedListener(() => {
+  const invalidateAll = () => {
     void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    void queryClient.invalidateQueries({ queryKey: ['conversations'] });
+  };
+
+  const receivedSub = Notifications.addNotificationReceivedListener((notification) => {
+    const data = parsePushData(notification.request.content.data);
+    pushPayloadFromNotification(data, notification.request.content);
+    invalidateAll();
   });
 
   const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
     const data = parsePushData(response.notification.request.content.data);
     const path = getPushNavigationPath(data);
     if (path) navigate(path);
-    void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    invalidateAll();
   });
 
   void Notifications.getLastNotificationResponseAsync().then((last) => {

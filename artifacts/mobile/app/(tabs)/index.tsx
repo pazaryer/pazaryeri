@@ -111,6 +111,10 @@ export default function HomeScreen() {
           numColumns={LISTING_GRID_COLS}
           columnWrapperStyle={styles.row}
           renderItem={({ item }) => <ListingCard item={item} compact />}
+          initialNumToRender={12}
+          maxToRenderPerBatch={9}
+          windowSize={7}
+          removeClippedSubviews
           ListHeaderComponent={
             <View style={styles.listHeader}>
               <MobileTrendCategories selected={selectedCategory} onSelect={setSelectedCategory} />

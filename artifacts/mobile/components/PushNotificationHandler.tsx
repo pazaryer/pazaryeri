@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,14 +8,21 @@ import {
   registerForPushNotifications,
   syncNotificationBadge,
 } from '@/lib/notifications';
-import { useNotifications } from '@/lib/hooks';
+import { useNotifications, useConversations } from '@/lib/hooks';
 
 /** Push dinleyicileri + badge senkronu */
 export function PushNotificationHandler() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { data } = useNotifications(!!user);
+  const { data: notifData } = useNotifications(!!user);
+  const { data: convoData } = useConversations(!!user);
+
+  const badgeCount = useMemo(() => {
+    const unreadNotifs = notifData?.items.filter((n) => !n.isRead).length ?? 0;
+    const unreadMessages = (convoData?.items ?? []).reduce((s, c) => s + c.unreadCount, 0);
+    return Math.max(unreadNotifs, unreadMessages);
+  }, [notifData?.items, convoData?.items]);
 
   useEffect(() => {
     if (Platform.OS === 'web' || !user) return;
@@ -31,9 +38,8 @@ export function PushNotificationHandler() {
 
   useEffect(() => {
     if (Platform.OS === 'web' || !user) return;
-    const unread = data?.items.filter((n) => !n.isRead).length ?? 0;
-    void syncNotificationBadge(unread);
-  }, [data?.items, user]);
+    void syncNotificationBadge(badgeCount);
+  }, [badgeCount, user]);
 
   return null;
 }

@@ -5,6 +5,7 @@ export async function notifyUser(params: {
   userId: string;
   type: string;
   title: string;
+  subtitle?: string;
   body: string;
   data?: Record<string, string>;
   skipPush?: boolean;
@@ -26,6 +27,7 @@ export async function notifyUser(params: {
   if (!params.skipPush) {
     await sendPushNotification(params.userId, params.title, params.body, pushData, {
       type: params.type,
+      subtitle: params.subtitle,
     });
   }
 }

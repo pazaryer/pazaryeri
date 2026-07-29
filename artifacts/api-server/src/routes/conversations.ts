@@ -4,7 +4,7 @@ import { getSupabaseAdmin, ensureUser, getListingImages, userPresence } from "..
 import { authMiddleware } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { refreshConversationPreview } from "../lib/conversation-utils";
-import { notifyUser } from "../lib/notify";
+import { notifyNewMessage } from "../lib/conversation-notify";
 
 const router: IRouter = Router();
 
@@ -115,12 +115,12 @@ router.post("/conversations", authMiddleware, async (req, res, next) => {
         updated_at: new Date().toISOString(),
       }).eq("id", convo.id);
 
-      await notifyUser({
-        userId: listing.seller_id,
-        type: "message",
-        title: "Yeni Mesaj",
-        body: body.message.slice(0, 100),
-        data: { conversationId: convo.id, listingId: body.listingId },
+      await notifyNewMessage(sb, {
+        recipientId: listing.seller_id,
+        senderId: userId,
+        conversationId: convo.id,
+        listingId: body.listingId,
+        content: body.message,
       });
     }
 
@@ -235,12 +235,12 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
     }).eq("id", convo.id);
 
     const recipientId = convo.buyer_id === userId ? convo.seller_id : convo.buyer_id;
-    await notifyUser({
-      userId: recipientId,
-      type: "message",
-      title: "Yeni Mesaj",
-      body: content.slice(0, 100),
-      data: { conversationId: convo.id, listingId: convo.listing_id },
+    await notifyNewMessage(sb, {
+      recipientId,
+      senderId: userId,
+      conversationId: convo.id,
+      listingId: convo.listing_id,
+      content,
     });
 
     res.status(201).json({
