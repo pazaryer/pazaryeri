@@ -1,7 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Platform,
+  TextInput,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { filterIller, normalizeIl } from '@/lib/turkiye-iller';
 
 export type LocationFilterValue = {
   city?: string;
@@ -10,7 +19,6 @@ export type LocationFilterValue = {
 };
 
 const RADIUS_OPTIONS = [5, 10, 20];
-const CITIES = ['Antalya', 'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Adana'];
 
 interface LocationFilterProps {
   value: LocationFilterValue;
@@ -20,8 +28,15 @@ interface LocationFilterProps {
 export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
   const colors = useColors();
   const [expanded, setExpanded] = useState(false);
-  const hasFilter = !!(value.radiusKm || value.city);
+  const [cityQuery, setCityQuery] = useState(value.city ?? '');
+  const hasFilter = !!(value.radiusKm || value.city || value.district);
   const useEmoji = Platform.OS === 'web';
+  const citySuggestions = useMemo(() => filterIller(cityQuery, 8), [cityQuery]);
+
+  const pickCity = (city: string) => {
+    setCityQuery(city);
+    onChange({ ...value, city, radiusKm: undefined });
+  };
 
   return (
     <View style={styles.wrap}>
@@ -50,7 +65,7 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
                 { borderColor: colors.border, backgroundColor: colors.card },
                 value.radiusKm === km && { borderColor: colors.primary, backgroundColor: colors.primary },
               ]}
-              onPress={() => onChange({ ...value, radiusKm: value.radiusKm === km ? undefined : km, city: undefined })}
+              onPress={() => onChange({ ...value, radiusKm: value.radiusKm === km ? undefined : km, city: undefined, district: undefined })}
             >
               {useEmoji ? (
                 <Text style={styles.emoji}>📍</Text>
@@ -75,7 +90,7 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
             ) : (
               <Ionicons name="location" size={13} color={colors.primary} />
             )}
-            <Text style={[styles.chipText, { color: colors.primary }]}>Şehir</Text>
+            <Text style={[styles.chipText, { color: colors.primary }]}>Şehir / İlçe</Text>
             {useEmoji ? (
               <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
             ) : (
@@ -95,23 +110,49 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
       </View>
 
       {expanded && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cityRow}>
-          {CITIES.map((city) => (
-            <Pressable
-              key={city}
-              style={[
-                styles.cityChip,
-                { borderColor: colors.border },
-                value.city === city && { backgroundColor: colors.secondary, borderColor: colors.primary },
-              ]}
-              onPress={() => onChange({ city: value.city === city ? undefined : city, radiusKm: undefined })}
-            >
-              <Text style={[styles.cityText, { color: value.city === city ? colors.primary : colors.foreground }]}>
-                {city}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <View style={styles.cityPanel}>
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>İl / Şehir</Text>
+          <TextInput
+            style={[styles.fieldInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+            placeholder="Örn. İstanbul, Antalya..."
+            placeholderTextColor={colors.mutedForeground}
+            value={cityQuery}
+            onChangeText={setCityQuery}
+            onSubmitEditing={() => {
+              const city = normalizeIl(cityQuery);
+              if (city) onChange({ ...value, city, radiusKm: undefined });
+            }}
+          />
+          {citySuggestions.length > 0 && cityQuery.length > 0 && (
+            <View style={[styles.suggestions, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              {citySuggestions.map((city) => (
+                <Pressable key={city} style={styles.suggestionRow} onPress={() => pickCity(city)}>
+                  <Text style={[styles.suggestionText, { color: colors.foreground }]}>{city}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 10 }]}>İlçe / Mahalle (isteğe bağlı)</Text>
+          <TextInput
+            style={[styles.fieldInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+            placeholder="Örn. Kadıköy, Muratpaşa..."
+            placeholderTextColor={colors.mutedForeground}
+            value={value.district ?? ''}
+            onChangeText={(district) => onChange({ ...value, district: district || undefined, radiusKm: undefined })}
+          />
+
+          <Pressable
+            style={[styles.applyBtn, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              const city = normalizeIl(cityQuery);
+              onChange({ city, district: value.district, radiusKm: undefined });
+              setExpanded(false);
+            }}
+          >
+            <Text style={styles.applyText}>Uygula</Text>
+          </Pressable>
+        </View>
       )}
     </View>
   );
@@ -136,7 +177,18 @@ const styles = StyleSheet.create({
   clearEmoji: { fontSize: 16, color: '#7A6B8A', fontWeight: '700' },
   chipText: { fontSize: 12, fontWeight: '600' },
   clearBtn: { paddingLeft: 4 },
-  cityRow: { paddingHorizontal: 12, gap: 6 },
-  cityChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
-  cityText: { fontSize: 12, fontWeight: '600' },
+  cityPanel: { paddingHorizontal: 12, gap: 6 },
+  fieldLabel: { fontSize: 12, fontWeight: '600' },
+  fieldInput: {
+    height: 44,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    fontSize: 14,
+  },
+  suggestions: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
+  suggestionRow: { paddingHorizontal: 12, paddingVertical: 10 },
+  suggestionText: { fontSize: 14, fontWeight: '600' },
+  applyBtn: { marginTop: 8, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
+  applyText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
 });

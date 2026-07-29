@@ -34,6 +34,8 @@ export interface ListingDetail extends ListingSummary {
   contactPhone?: string | null;
   sellerId: string;
   favoriteCount: number;
+  originalPrice?: number;
+  hasNegotiatedPrice?: boolean;
   latitude?: number | null;
   longitude?: number | null;
   seller: {
@@ -54,7 +56,10 @@ interface ListResponse {
   items: ListingSummary[];
   hasMore: boolean;
   nextCursor?: string | null;
+  nextOffset?: number | null;
 }
+
+export type ListingSort = 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc';
 
 export function formatPrice(price: number): string {
   return `₺${price.toLocaleString('tr-TR')}`;
@@ -93,6 +98,7 @@ export function useListings(
     radiusKm?: number;
     lat?: number;
     lon?: number;
+    sort?: ListingSort;
   },
   options?: { enabled?: boolean },
 ) {
@@ -100,7 +106,12 @@ export function useListings(
     queryKey: ['listings', params],
     queryFn: async ({ pageParam }) => {
       const search = new URLSearchParams();
-      if (pageParam) search.set('cursor', pageParam);
+      const isOffsetSort = params?.sort?.startsWith('price_') || params?.sort === 'date_asc';
+      if (isOffsetSort && typeof pageParam === 'number') {
+        search.set('offset', String(pageParam));
+      } else if (typeof pageParam === 'string') {
+        search.set('cursor', pageParam);
+      }
       if (params?.category) search.set('category', params.category);
       if (params?.q) search.set('q', params.q);
       if (params?.minPrice) search.set('minPrice', String(params.minPrice));
@@ -110,11 +121,15 @@ export function useListings(
       if (params?.radiusKm) search.set('radiusKm', String(params.radiusKm));
       if (params?.lat != null) search.set('lat', String(params.lat));
       if (params?.lon != null) search.set('lon', String(params.lon));
+      if (params?.sort) search.set('sort', params.sort);
       search.set('limit', '20');
       return apiFetch<ListResponse>(`/listings?${search}`);
     },
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
+    initialPageParam: undefined as string | number | undefined,
+    getNextPageParam: (last) => {
+      if (last.nextOffset != null) return last.nextOffset;
+      return last.hasMore ? last.nextCursor ?? undefined : undefined;
+    },
     enabled: options?.enabled ?? true,
     staleTime: 30_000,
     refetchInterval: Platform.OS === 'web' ? 300_000 : false,
@@ -369,8 +384,9 @@ export function useConversations(enabled = true) {
     queryKey: ['conversations'],
     queryFn: () => apiFetch<{ items: ConversationSummary[] }>('/conversations'),
     enabled,
-    refetchInterval: Platform.OS === 'web' ? 10_000 : 4_000,
-    refetchOnWindowFocus: Platform.OS !== 'web',
+    refetchInterval: false,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
   });
 }
 
@@ -382,8 +398,9 @@ export function useMessages(conversationId: string) {
         `/conversations/${conversationId}/messages`,
       ),
     enabled: !!conversationId,
-    refetchInterval: Platform.OS === 'web' ? 10_000 : 3_000,
-    refetchOnWindowFocus: Platform.OS !== 'web',
+    refetchInterval: false,
+    refetchOnWindowFocus: true,
+    staleTime: 5_000,
   });
 }
 
@@ -490,7 +507,16 @@ export function useListingOffers(listingId: string) {
     queryFn: () =>
       apiFetch<{ items: OfferSummary[]; listingTitle: string }>(`/offers/listing/${listingId}`),
     enabled: !!listingId,
-    refetchInterval: Platform.OS === 'web' ? false : 30_000,
+    refetchInterval: false,
+  });
+}
+
+export function useMyListingOffer(listingId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['offers', 'mine', listingId],
+    queryFn: () => apiFetch<{ offer: OfferSummary | null }>(`/offers/listing/${listingId}/mine`),
+    enabled: !!listingId && enabled,
+    refetchInterval: false,
   });
 }
 
@@ -510,6 +536,7 @@ export function useCreateOffer() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['offers'] });
       qc.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['listing'] });
     },
   });
 }
@@ -531,7 +558,11 @@ export function useAcceptOffer() {
   return useMutation({
     mutationFn: ({ offerId }: { offerId: string }) =>
       apiFetch(`/offers/${offerId}/accept`, { method: 'POST' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['offers'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['offers'] });
+      qc.invalidateQueries({ queryKey: ['listing'] });
+      qc.invalidateQueries({ queryKey: ['listings'] });
+    },
   });
 }
 
@@ -549,8 +580,9 @@ export function useNotifications(enabled = true) {
     queryKey: ['notifications'],
     queryFn: () => apiFetch<{ items: AppNotification[] }>('/notifications'),
     enabled,
-    refetchInterval: Platform.OS === 'web' ? false : 30_000,
+    refetchInterval: false,
     retry: false,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -654,5 +686,59 @@ export function useUserReviews(userId: string) {
         }>;
       }>(`/reviews/user/${userId}`),
     enabled: !!userId,
+  });
+}
+
+export interface ListingComment {
+  id: string;
+  listingId: string;
+  content: string;
+  createdAt: string;
+  user: { id: string; name: string; avatar?: string | null };
+}
+
+export function useListingComments(listingId: string) {
+  return useQuery({
+    queryKey: ['listing-comments', listingId],
+    queryFn: () => apiFetch<{ items: ListingComment[] }>(`/listings/${listingId}/comments`),
+    enabled: !!listingId,
+    refetchInterval: false,
+  });
+}
+
+export function useCreateListingComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ listingId, content }: { listingId: string; content: string }) =>
+      apiFetch<ListingComment>(`/listings/${listingId}/comments`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['listing-comments', vars.listingId] });
+    },
+  });
+}
+
+export function useDeleteListingComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ listingId, commentId }: { listingId: string; commentId: string }) =>
+      apiFetch(`/listings/${listingId}/comments/${commentId}`, { method: 'DELETE' }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['listing-comments', vars.listingId] });
+    },
+  });
+}
+
+export function useBlockUser() {
+  return useMutation({
+    mutationFn: (userId: string) => apiFetch(`/blocks/${userId}`, { method: 'POST' }),
+  });
+}
+
+export function useUnblockUser() {
+  return useMutation({
+    mutationFn: (userId: string) => apiFetch(`/blocks/${userId}`, { method: 'DELETE' }),
   });
 }

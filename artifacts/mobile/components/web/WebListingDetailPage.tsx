@@ -20,6 +20,10 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { ListingOwnerActions } from '@/components/ListingOwnerActions';
 import { ListingInsightsPanel } from '@/components/ListingInsightsPanel';
+import { ListingOffersSection } from '@/components/ListingOffersSection';
+import { BuyerOfferSection } from '@/components/BuyerOfferSection';
+import { ListingMapPin } from '@/components/ListingMapPin';
+import { ListingCommentsSection } from '@/components/ListingCommentsSection';
 import { ContactActions } from '@/components/ContactActions';
 import { UserAvatar } from '@/components/UserAvatar';
 import { WebImage } from '@/components/WebImage';
@@ -133,6 +137,9 @@ export function WebListingDetailPage() {
 
         <View style={[styles.info, isWide && styles.infoWide]}>
           <Text style={[styles.price, mobileWeb && styles.priceMobile]}>{formatPrice(listing.price)}</Text>
+          {listing.hasNegotiatedPrice && listing.originalPrice != null && (
+            <Text style={styles.originalPrice}>İlan fiyatı: {formatPrice(listing.originalPrice)}</Text>
+          )}
           <Text style={styles.title}>{listing.title}</Text>
 
           <View style={styles.metaRow}>
@@ -167,6 +174,36 @@ export function WebListingDetailPage() {
               </Text>
             </View>
           </View>
+
+          <ListingMapPin
+            latitude={listing.latitude}
+            longitude={listing.longitude}
+            title={listing.title}
+            city={listing.city}
+            district={listing.district}
+          />
+
+          {!isOwner && listing.status === 'active' && (
+            <BuyerOfferSection
+              listingId={listing.id}
+              listingTitle={listing.title}
+              listingPrice={listing.originalPrice ?? listing.price}
+              acceptsOffers={listing.acceptsOffers}
+              userId={profile?.id}
+            />
+          )}
+
+          {isOwner && (
+            <ListingOffersSection
+              listingId={listing.id}
+              listingTitle={listing.title}
+              listingPrice={listing.price}
+              isOwner={isOwner}
+              currentUserId={profile?.id}
+            />
+          )}
+
+          <ListingCommentsSection listingId={listing.id} sellerId={listing.sellerId} />
 
           <Text style={styles.sectionTitle}>Açıklama</Text>
           <Text style={styles.description}>{listing.description || 'Açıklama eklenmemiş.'}</Text>
@@ -288,6 +325,7 @@ const styles = StyleSheet.create({
   info: { gap: 12, width: '100%' },
   infoWide: { flex: 1, minWidth: 0, paddingTop: 4 },
   price: { fontSize: 32, fontWeight: '800', color: '#3D1A78' },
+  originalPrice: { fontSize: 14, color: '#7A6B8A', textDecorationLine: 'line-through', marginBottom: 8 },
   priceMobile: { fontSize: 26 },
   title: { fontSize: 22, fontWeight: '700', color: '#1A0A2E', lineHeight: 30 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 4 },

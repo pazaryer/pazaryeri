@@ -93,10 +93,11 @@ router.post("/reports", authMiddleware, async (req, res, next) => {
 router.post("/blocks/:userId", authMiddleware, async (req, res, next) => {
   try {
     if (req.params.userId === req.user!.id) throw new AppError("Kendinizi engelleyemezsiniz", 400);
-    await getSupabaseAdmin().from("blocks").insert({
+    const { error } = await getSupabaseAdmin().from("blocks").insert({
       blocker_id: req.user!.id,
       blocked_id: req.params.userId,
     });
+    if (error && error.code !== "23505") throw new Error(error.message);
     res.json({ success: true });
   } catch (err) {
     next(err);

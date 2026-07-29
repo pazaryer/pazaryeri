@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
-import { useListings } from '@/lib/hooks';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Pressable, TextInput, ScrollView } from 'react-native';
+import { useListings, type ListingSort } from '@/lib/hooks';
 import { WebListingCard } from './WebListingCard';
 import type { LocationFilterValue } from '@/components/LocationFilterBar';
 import { useIsMobileWeb } from '@/hooks/useIsMobileWeb';
@@ -18,6 +18,11 @@ interface WebListingGridProps {
 
 export function WebListingGrid({ category, query, title, location, lat, lon }: WebListingGridProps) {
   const mobileWeb = useIsMobileWeb();
+  const [sort, setSort] = useState<ListingSort>('date_desc');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const parsedMin = minPrice ? parseInt(minPrice.replace(/\D/g, ''), 10) : undefined;
+  const parsedMax = maxPrice ? parseInt(maxPrice.replace(/\D/g, ''), 10) : undefined;
   const {
     data,
     isLoading,
@@ -34,6 +39,9 @@ export function WebListingGrid({ category, query, title, location, lat, lon }: W
     radiusKm: location?.radiusKm,
     lat,
     lon,
+    sort,
+    minPrice: parsedMin,
+    maxPrice: parsedMax,
   });
 
   const items = data?.pages.flatMap((p) => p.items) ?? [];
@@ -56,6 +64,39 @@ export function WebListingGrid({ category, query, title, location, lat, lon }: W
           </Pressable>
         </View>
       )}
+
+      <View style={styles.filters}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortRow}>
+          {([
+            ['date_desc', 'En yeni'],
+            ['price_asc', 'Fiyat ↑'],
+            ['price_desc', 'Fiyat ↓'],
+          ] as const).map(([value, label]) => (
+            <Pressable
+              key={value}
+              style={[styles.sortChip, sort === value && styles.sortChipActive]}
+              onPress={() => setSort(value)}
+            >
+              <Text style={[styles.sortChipText, sort === value && styles.sortChipTextActive]}>{label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        <View style={styles.priceRow}>
+          <TextInput
+            style={styles.priceInput}
+            placeholder="Min ₺"
+            value={minPrice}
+            onChangeText={setMinPrice}
+          />
+          <Text style={styles.priceDash}>—</Text>
+          <TextInput
+            style={styles.priceInput}
+            placeholder="Max ₺"
+            value={maxPrice}
+            onChangeText={setMaxPrice}
+          />
+        </View>
+      </View>
 
       {isLoading ? (
         <View style={styles.center}>
@@ -115,6 +156,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   seeAllText: { color: WEB_THEME.brand, fontWeight: '700', fontSize: 13 },
+  filters: { marginBottom: 12, gap: 8 },
+  sortRow: { gap: 8 },
+  sortChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: WEB_THEME.radiusPill,
+    borderWidth: 1,
+    borderColor: WEB_THEME.border,
+    backgroundColor: WEB_THEME.surface,
+  },
+  sortChipActive: { borderColor: WEB_THEME.brand, backgroundColor: WEB_THEME.brandLight },
+  sortChipText: { fontSize: 13, fontWeight: '600', color: WEB_THEME.text },
+  sortChipTextActive: { color: WEB_THEME.brand },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  priceInput: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: WEB_THEME.border,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    backgroundColor: WEB_THEME.surface,
+  },
+  priceDash: { color: WEB_THEME.textMuted },
   grid: { width: '100%' },
   center: { padding: 48, alignItems: 'center', gap: 8 },
   empty: { color: WEB_THEME.text, fontSize: 17, fontWeight: '700' },

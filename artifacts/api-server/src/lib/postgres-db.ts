@@ -6,6 +6,7 @@ import {
   formatUser,
 } from "./supabase-db";
 import { filterByRadius } from "./geo";
+import { resolveListingPriceForViewer } from "./listing-price";
 import { buildGeocodeQuery, geocodeText } from "./geocode";
 import { AppError } from "../middleware/errorHandler";
 
@@ -410,8 +411,13 @@ export async function pgBuildListingDetail(listingId: string, userId?: string) {
     userId,
   );
 
+  const priceInfo = resolveListingPriceForViewer(listing, userId);
+
   return {
     ...summary,
+    price: priceInfo.price,
+    originalPrice: priceInfo.originalPrice,
+    hasNegotiatedPrice: priceInfo.hasNegotiatedPrice,
     description: listing.description,
     images,
     acceptsOffers: listing.accepts_offers,

@@ -4,6 +4,7 @@ import { getSupabaseAdmin, ensureUser } from "../lib/supabase-db";
 import { authMiddleware } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { notifyUser } from "../lib/notify";
+import { assertNotBlocked } from "../lib/blocks";
 
 const router: IRouter = Router();
 
@@ -43,6 +44,36 @@ async function loadUsers(sb: ReturnType<typeof getSupabaseAdmin>, buyerId: strin
   ]);
   return { buyer, seller };
 }
+
+router.get("/offers/listing/:listingId/mine", authMiddleware, async (req, res, next) => {
+  try {
+    const sb = getSupabaseAdmin();
+    const userId = req.user!.id;
+    const listingId = req.params.listingId;
+
+    const { data: offer } = await sb
+      .from("offers")
+      .select("*")
+      .eq("listing_id", listingId)
+      .eq("buyer_id", userId)
+      .in("status", ["pending", "countered", "accepted"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!offer) {
+      res.json({ offer: null });
+      return;
+    }
+
+    const users = await loadUsers(sb, offer.buyer_id, offer.seller_id);
+    res.json({
+      offer: formatOffer(offer, users.buyer ?? undefined, users.seller ?? undefined),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get("/offers/listing/:listingId", authMiddleware, async (req, res, next) => {
   try {
@@ -115,6 +146,7 @@ router.post("/offers", authMiddleware, async (req, res, next) => {
     if (listing.seller_id === userId) throw new AppError("Kendi ilanınıza teklif veremezsiniz", 400);
 
     await ensureUser(userId);
+    await assertNotBlocked(sb, userId, listing.seller_id);
 
     const { data: existing } = await sb
       .from("offers")
@@ -173,6 +205,8 @@ router.post("/offers/:offerId/counter", authMiddleware, async (req, res, next) =
     if (!isSeller && !isBuyer) throw new AppError("Yetkisiz", 403);
     if (parent.offered_by === userId) throw new AppError("Sıra karşı tarafta", 400);
 
+    await assertNotBlocked(sb, parent.buyer_id, parent.seller_id);
+
     await sb.from("offers").update({ status: "superseded", updated_at: new Date().toISOString() }).eq("id", parent.id);
 
     const { data: offer, error } = await sb
@@ -222,6 +256,22 @@ router.post("/offers/:offerId/accept", authMiddleware, async (req, res, next) =>
     if (offer.buyer_id !== userId && offer.seller_id !== userId) throw new AppError("Yetkisiz", 403);
 
     await sb.from("offers").update({ status: "accepted", updated_at: new Date().toISOString() }).eq("id", offer.id);
+
+    await sb
+      .from("listings")
+      .update({
+        accepted_buyer_id: offer.buyer_id,
+        accepted_offer_price: offer.amount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", offer.listing_id);
+
+    await sb
+      .from("offers")
+      .update({ status: "rejected", updated_at: new Date().toISOString() })
+      .eq("listing_id", offer.listing_id)
+      .neq("id", offer.id)
+      .in("status", ["pending", "countered"]);
 
     const recipientId = offer.offered_by === offer.buyer_id ? offer.seller_id : offer.buyer_id;
     const listingTitle = (offer as { listings?: { title?: string } }).listings?.title ?? "İlan";

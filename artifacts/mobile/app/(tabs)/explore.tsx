@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
-import { useListings } from '@/lib/hooks';
+import { useListings, type ListingSort } from '@/lib/hooks';
 import { ListingCard, LISTING_GRID_COLS } from '@/components/ListingCard';
 import { CategoryTile } from '@/components/CategoryTile';
 import { MOBILE_EXPLORE_CATEGORIES } from '@/lib/categories';
@@ -37,6 +37,13 @@ export default function ExploreScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sort, setSort] = useState<ListingSort>('date_desc');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+
+  const parsedMin = minPrice ? parseInt(minPrice.replace(/\D/g, ''), 10) : undefined;
+  const parsedMax = maxPrice ? parseInt(maxPrice.replace(/\D/g, ''), 10) : undefined;
 
   const listingsEnabled =
     ready && (!filter.radiusKm || (locationReady && coords.lat != null && coords.lon != null));
@@ -55,6 +62,9 @@ export default function ExploreScreen() {
       radiusKm: filter.radiusKm,
       lat: coords.lat,
       lon: coords.lon,
+      sort,
+      minPrice: parsedMin,
+      maxPrice: parsedMax,
     },
     { enabled: listingsEnabled },
   );
@@ -152,8 +162,58 @@ export default function ExploreScreen() {
         <Text style={styles.resultsTitle}>
           {showSearch ? `"${searchQuery}"` : selectedCategory ?? 'İlanlar'}
         </Text>
+        <Pressable onPress={() => setShowFilters(!showFilters)} hitSlop={8}>
+          <Ionicons name="options-outline" size={20} color={BRAND.primary} />
+        </Pressable>
         {allItems.length > 0 && <Text style={styles.resultCount}>{allItems.length}</Text>}
       </View>
+
+      {showFilters && (
+        <View style={[styles.filterPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Sıralama</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {([
+              ['date_desc', 'En yeni'],
+              ['date_asc', 'En eski'],
+              ['price_asc', 'Fiyat ↑'],
+              ['price_desc', 'Fiyat ↓'],
+            ] as const).map(([value, label]) => (
+              <Pressable
+                key={value}
+                style={[
+                  styles.chip,
+                  { backgroundColor: colors.background, borderColor: colors.border },
+                  sort === value && { borderColor: colors.primary, backgroundColor: colors.secondary },
+                ]}
+                onPress={() => setSort(value)}
+              >
+                <Text style={[styles.chipText, { color: sort === value ? colors.primary : colors.foreground }]}>
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <View style={styles.priceRow}>
+            <TextInput
+              style={[styles.priceInput, { borderColor: colors.border, color: colors.foreground }]}
+              placeholder="Min ₺"
+              placeholderTextColor={BRAND.textMuted}
+              keyboardType="numeric"
+              value={minPrice}
+              onChangeText={setMinPrice}
+            />
+            <Text style={{ color: colors.mutedForeground }}>—</Text>
+            <TextInput
+              style={[styles.priceInput, { borderColor: colors.border, color: colors.foreground }]}
+              placeholder="Max ₺"
+              placeholderTextColor={BRAND.textMuted}
+              keyboardType="numeric"
+              value={maxPrice}
+              onChangeText={setMaxPrice}
+            />
+          </View>
+        </View>
+      )}
     </>
   );
 
@@ -244,11 +304,16 @@ const styles = StyleSheet.create({
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CAT_GAP },
   resultsHeader: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
     marginTop: 14,
     marginBottom: 8,
   },
+  filterPanel: { marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 14, borderWidth: 1, gap: 8 },
+  filterLabel: { fontSize: 12, fontWeight: '600' },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  priceInput: { flex: 1, height: 40, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, fontSize: 14 },
   resultsTitle: { fontSize: 13, fontWeight: '600', color: BRAND.text },
   resultCount: { fontSize: 11, color: BRAND.textMuted, fontWeight: '500' },
   resultsRow: { justifyContent: 'space-between', gap: 7 },

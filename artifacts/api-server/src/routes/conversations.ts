@@ -5,6 +5,7 @@ import { authMiddleware } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { refreshConversationPreview } from "../lib/conversation-utils";
 import { notifyNewMessage } from "../lib/conversation-notify";
+import { assertNotBlocked } from "../lib/blocks";
 
 const router: IRouter = Router();
 
@@ -84,6 +85,7 @@ router.post("/conversations", authMiddleware, async (req, res, next) => {
     if (listing.seller_id === userId) throw new AppError("Kendi ilanınıza mesaj gönderemezsiniz", 400);
 
     await ensureUser(userId);
+    await assertNotBlocked(sb, userId, listing.seller_id);
 
     let { data: convo } = await sb
       .from("conversations")
@@ -98,8 +100,20 @@ router.post("/conversations", authMiddleware, async (req, res, next) => {
         .insert({ listing_id: body.listingId, buyer_id: userId, seller_id: listing.seller_id })
         .select()
         .single();
-      if (error) throw new Error(error.message);
-      convo = created;
+
+      if (error?.code === "23505") {
+        const { data: existing } = await sb
+          .from("conversations")
+          .select("*")
+          .eq("listing_id", body.listingId)
+          .eq("buyer_id", userId)
+          .single();
+        convo = existing;
+      } else if (error) {
+        throw new Error(error.message);
+      } else {
+        convo = created;
+      }
     }
 
     if (body.message && convo) {
@@ -220,6 +234,9 @@ router.post("/conversations/:conversationId/messages", authMiddleware, async (re
     const { data: convo } = await sb.from("conversations").select("*").eq("id", req.params.conversationId).single();
     if (!convo) throw new AppError("Sohbet bulunamadı", 404);
     if (convo.buyer_id !== userId && convo.seller_id !== userId) throw new AppError("Yetkisiz", 403);
+
+    const otherUserId = convo.buyer_id === userId ? convo.seller_id : convo.buyer_id;
+    await assertNotBlocked(sb, userId, otherUserId);
 
     const { data: msg, error } = await sb
       .from("messages")

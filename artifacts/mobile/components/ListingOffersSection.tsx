@@ -76,7 +76,7 @@ export function ListingOffersSection({
                     style={[styles.actionBtn, { backgroundColor: colors.primary }]}
                     onPress={() =>
                       acceptOffer.mutateAsync({ offerId: offer.id }).then(() =>
-                        Alert.alert('Başarılı', 'Teklif kabul edildi'),
+                        Alert.alert('Başarılı', 'Teklif kabul edildi — alıcıya özel fiyat uygulandı'),
                       )
                     }
                   >

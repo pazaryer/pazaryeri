@@ -28,6 +28,7 @@ import {
   useStartConversation,
   useCreateReport,
   useCreateReview,
+  useBlockUser,
   formatPrice,
   formatTimeAgo,
 } from '@/lib/hooks';
@@ -36,6 +37,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { sitePath } from '@/lib/config';
 import { ListingOwnerActions } from '@/components/ListingOwnerActions';
 import { ListingInsightsPanel } from '@/components/ListingInsightsPanel';
+import { ListingOffersSection } from '@/components/ListingOffersSection';
+import { BuyerOfferSection } from '@/components/BuyerOfferSection';
+import { ListingMapPin } from '@/components/ListingMapPin';
+import { ListingCommentsSection } from '@/components/ListingCommentsSection';
 import { listingHeroImageProps } from '@/lib/listing-image-props';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -60,6 +65,7 @@ function MobileListingDetailScreen() {
   const startConversation = useStartConversation();
   const createReport = useCreateReport();
   const createReview = useCreateReview();
+  const blockUser = useBlockUser();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -205,7 +211,14 @@ function MobileListingDetailScreen() {
 
         <View style={styles.content}>
           <View style={styles.priceRow}>
-            <Text style={[styles.price, { color: colors.primary }]}>{formatPrice(listing.price)}</Text>
+            <View>
+              <Text style={[styles.price, { color: colors.primary }]}>{formatPrice(listing.price)}</Text>
+              {listing.hasNegotiatedPrice && listing.originalPrice != null && (
+                <Text style={[styles.originalPrice, { color: colors.mutedForeground }]}>
+                  İlan fiyatı: {formatPrice(listing.originalPrice)}
+                </Text>
+              )}
+            </View>
             {listing.status === 'sold' && (
               <View style={[styles.badge, { backgroundColor: '#FFEBEE' }]}>
                 <Text style={[styles.badgeText, { color: '#C62828' }]}>Satıldı</Text>
@@ -267,9 +280,59 @@ function MobileListingDetailScreen() {
                 <Text style={[styles.reviewBtnText, { color: colors.primary }]}>Değerlendir</Text>
               </Pressable>
             )}
+            {!isOwner && user && (
+              <Pressable
+                onPress={() =>
+                  Alert.alert('Kullanıcıyı Engelle', `${listing.seller.name} engellensin mi?`, [
+                    { text: 'İptal', style: 'cancel' },
+                    {
+                      text: 'Engelle',
+                      style: 'destructive',
+                      onPress: () =>
+                        blockUser.mutateAsync(listing.sellerId).then(() =>
+                          Alert.alert('Engellendi', 'Bu kullanıcıyla iletişim kuramazsınız'),
+                        ),
+                    },
+                  ])
+                }
+                hitSlop={8}
+              >
+                <Ionicons name="ban-outline" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            )}
           </View>
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          <ListingMapPin
+            latitude={listing.latitude}
+            longitude={listing.longitude}
+            title={listing.title}
+            city={listing.city}
+            district={listing.district}
+          />
+
+          {!isOwner && listing.status === 'active' && (
+            <BuyerOfferSection
+              listingId={listing.id}
+              listingTitle={listing.title}
+              listingPrice={listing.originalPrice ?? listing.price}
+              acceptsOffers={listing.acceptsOffers}
+              userId={profile?.id}
+            />
+          )}
+
+          {isOwner && (
+            <ListingOffersSection
+              listingId={listing.id}
+              listingTitle={listing.title}
+              listingPrice={listing.price}
+              isOwner={isOwner}
+              currentUserId={profile?.id}
+            />
+          )}
+
+          <ListingCommentsSection listingId={listing.id} sellerId={listing.sellerId} />
 
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Açıklama</Text>
           <Text style={[styles.description, { color: colors.mutedForeground }]}>
@@ -345,6 +408,7 @@ const styles = StyleSheet.create({
   content: { padding: 20 },
   priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   price: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  originalPrice: { fontSize: 13, textDecorationLine: 'line-through', marginTop: 2 },
   badge: { backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   badgeText: { color: '#2E7D32', fontSize: 12, fontWeight: '700' },
   title: { fontSize: 20, fontWeight: '700', marginBottom: 16, lineHeight: 28 },

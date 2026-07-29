@@ -10,12 +10,13 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useColors } from '@/hooks/useColors';
-import { useMessages, useSendMessage, useDeleteMessage, useDeleteConversation, useHeartbeat, formatLastActive } from '@/lib/hooks';
+import { useMessages, useSendMessage, useDeleteMessage, useDeleteConversation, useHeartbeat, useBlockUser, formatLastActive } from '@/lib/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserAvatar } from '@/components/UserAvatar';
 import { WebShell } from '@/components/web/WebShell';
@@ -31,12 +32,22 @@ function ChatContent() {
   const { profile } = useAuth();
   const flatListRef = useRef<FlatList>(null);
 
-  const { data, isLoading } = useMessages(conversationId ?? '');
+  const { data, isLoading, refetch } = useMessages(conversationId ?? '');
   const sendMessage = useSendMessage();
   const deleteMessage = useDeleteMessage();
   const deleteConversation = useDeleteConversation();
   const heartbeat = useHeartbeat();
+  const blockUser = useBlockUser();
+  const qc = useQueryClient();
   const [text, setText] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+      const t = setInterval(() => void refetch(), 12_000);
+      return () => clearInterval(t);
+    }, [refetch]),
+  );
 
   const messages = data?.items ?? [];
   const conversation = data?.conversation;
@@ -250,6 +261,30 @@ function ChatContent() {
             <Ionicons name="trash-outline" size={22} color="#C62828" />
           )}
         </Pressable>
+        {conversation?.otherUser && (
+          <Pressable
+            onPress={() => {
+              const otherId = conversation.otherUser.id;
+              const doBlock = async () => {
+                await blockUser.mutateAsync(otherId);
+                qc.invalidateQueries({ queryKey: ['conversations'] });
+                router.replace('/mesajlar');
+              };
+              if (Platform.OS === 'web') {
+                showConfirm('Engelle', 'Bu kullanıcı engellensin mi?', doBlock);
+              } else {
+                Alert.alert('Kullanıcıyı Engelle', 'Bu kullanıcı engellensin mi?', [
+                  { text: 'İptal', style: 'cancel' },
+                  { text: 'Engelle', style: 'destructive', onPress: () => void doBlock() },
+                ]);
+              }
+            }}
+            hitSlop={12}
+            style={{ marginLeft: 10 }}
+          >
+            <Ionicons name="ban-outline" size={22} color={colors.mutedForeground} />
+          </Pressable>
+        )}
       </View>
 
       {isLoading ? (

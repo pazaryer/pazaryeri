@@ -80,6 +80,8 @@ export type DbListing = {
   contact_phone: string | null;
   sold_at: string | null;
   views: number;
+  accepted_buyer_id?: string | null;
+  accepted_offer_price?: number | null;
   created_at: string;
   updated_at: string;
 };

@@ -56,6 +56,8 @@ router.get("/listings", optionalAuth, async (req, res, next) => {
       radiusKm: req.query.radiusKm ? Number(req.query.radiusKm) : undefined,
       lat,
       lon,
+      sort: req.query.sort as "date_desc" | "date_asc" | "price_asc" | "price_desc" | undefined,
+      offset: req.query.offset ? Number(req.query.offset) : undefined,
     });
     res.json(result);
   } catch (err) {

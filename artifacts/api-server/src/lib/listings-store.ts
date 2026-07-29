@@ -25,6 +25,7 @@ import {
   pgUpdateListingCoords,
 } from "./postgres-db";
 import { AppError } from "../middleware/errorHandler";
+import { resolveListingPriceForViewer } from "./listing-price";
 
 export type ListingsBackend = "postgres" | "supabase";
 
@@ -192,6 +193,8 @@ export async function dbListListings(params: {
   radiusKm?: number;
   lat?: number;
   lon?: number;
+  sort?: "date_desc" | "date_asc" | "price_asc" | "price_desc";
+  offset?: number;
 }) {
   const backend = await resolveListingsBackend();
   if (backend === "postgres") {
@@ -200,11 +203,20 @@ export async function dbListListings(params: {
 
   const sb = getSupabaseAdmin();
   const limit = params.limit;
+  const sort = params.sort ?? "date_desc";
+  const useOffset = sort.startsWith("price_") || sort === "date_asc";
 
   let query = sb
     .from("listings")
     .select("*, users!listings_seller_id_fkey(*)")
-    .order("created_at", { ascending: false });
+    .order(
+      sort === "price_asc" || sort === "price_desc" ? "price" : "created_at",
+      { ascending: sort === "price_asc" || sort === "date_asc" },
+    );
+
+  if (sort === "price_asc" || sort === "price_desc") {
+    query = query.order("created_at", { ascending: false });
+  }
 
   if (!params.includeNonActive) query = query.eq("status", "active");
   else query = query.neq("status", "deleted");
@@ -212,14 +224,16 @@ export async function dbListListings(params: {
   if (params.category && params.category !== "Tümü") query = query.eq("category", params.category);
   if (params.q) query = query.ilike("title", `%${params.q}%`);
   if (params.sellerId) query = query.eq("seller_id", params.sellerId);
-  if (params.cursor) query = query.lt("created_at", params.cursor);
+  if (!useOffset && params.cursor) query = query.lt("created_at", params.cursor);
   if (params.city) query = query.ilike("city", `%${params.city}%`);
   if (params.district) query = query.ilike("district", `%${params.district}%`);
   if (params.minPrice != null) query = query.gte("price", params.minPrice);
   if (params.maxPrice != null) query = query.lte("price", params.maxPrice);
 
   const fetchLimit = params.radiusKm ? Math.min(limit * 20, 500) : limit + 1;
-  query = query.limit(fetchLimit);
+  const rangeFrom = useOffset ? (params.offset ?? 0) : 0;
+  const rangeTo = useOffset ? rangeFrom + fetchLimit - 1 : fetchLimit - 1;
+  query = query.range(rangeFrom, rangeTo);
   const { data: rows, error } = await query;
   if (error) throw new Error(error.message);
 
@@ -262,7 +276,8 @@ export async function dbListListings(params: {
   return {
     items,
     hasMore,
-    nextCursor: hasMore ? page[page.length - 1].created_at : null,
+    nextCursor: hasMore && !useOffset ? page[page.length - 1].created_at : null,
+    nextOffset: hasMore && useOffset ? rangeFrom + limit : null,
   };
 }
 
@@ -303,8 +318,13 @@ export async function dbBuildListingDetail(listingId: string, userId?: string) {
     userId,
   );
 
+  const priceInfo = resolveListingPriceForViewer(listing as DbListing, userId);
+
   return {
     ...summary,
+    price: priceInfo.price,
+    originalPrice: priceInfo.originalPrice,
+    hasNegotiatedPrice: priceInfo.hasNegotiatedPrice,
     description: listing.description,
     images,
     acceptsOffers: listing.accepts_offers,
