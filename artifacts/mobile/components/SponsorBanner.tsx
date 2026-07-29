@@ -11,7 +11,7 @@ import {
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSegments } from 'expo-router';
-import { getSponsorBanner } from '@/lib/remote-config';
+import { useSponsorBanner } from '@/lib/remote-config';
 import { useColors } from '@/hooks/useColors';
 import { useCompactScreen } from '@/hooks/useCompactScreen';
 import { BRAND } from '@/constants/brand';
@@ -26,7 +26,7 @@ type Props = {
 
 export function SponsorBanner({ variant = 'inline', style }: Props) {
   const colors = useColors();
-  const sponsor = getSponsorBanner();
+  const sponsor = useSponsorBanner();
   const insets = useSafeAreaInsets();
   const compact = useCompactScreen();
   const segments = useSegments();
@@ -101,17 +101,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    zIndex: 40,
+    zIndex: 999,
+    elevation: 12,
     maxWidth: 728,
     alignSelf: 'center',
     width: '100%',
     ...Platform.select({
       web: {
         position: 'fixed' as const,
-        left: '50%',
-        right: 'auto',
-        transform: [{ translateX: '-50%' }],
-        width: 'min(100% - 32px, 728px)',
+        left: 16,
+        right: 16,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        maxWidth: 728,
       } as object,
     }),
   },

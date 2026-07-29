@@ -5,6 +5,7 @@ import { applyBrandFromRemote } from '@/lib/brand-runtime';
 import { BrandProvider } from '@/contexts/BrandContext';
 import { BrandWebHead } from '@/components/BrandWebHead';
 import { useMobilePromoRefresh } from '@/hooks/useMobilePromoRefresh';
+import { AppOverlays } from '@/components/AppOverlays';
 
 export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -13,13 +14,29 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
   useMobilePromoRefresh();
 
   useEffect(() => {
-    fetchRemoteConfig()
-      .then((config) => {
+    let cancelled = false;
+
+    async function loadConfig(attempt = 0) {
+      try {
+        const config = await fetchRemoteConfig(attempt > 0);
+        if (cancelled) return;
         setBrand(applyBrandFromRemote(config));
         setMaintenance(isMaintenanceMode());
-      })
-      .catch(() => {})
-      .finally(() => setReady(true));
+        setReady(true);
+      } catch {
+        if (cancelled) return;
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+          return loadConfig(attempt + 1);
+        }
+        setReady(true);
+      }
+    }
+
+    void loadConfig();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!ready) {
@@ -43,6 +60,7 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
     <BrandProvider brand={brand}>
       {Platform.OS === 'web' ? <BrandWebHead /> : null}
       {children}
+      {Platform.OS !== 'web' ? <AppOverlays /> : null}
     </BrandProvider>
   );
 }

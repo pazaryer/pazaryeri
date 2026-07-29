@@ -189,7 +189,9 @@ function WebShellInner({
       </View>
 
       <View nativeID="pz-web-main" style={[styles.main, mobile && styles.mainMobile]}>
-        <SponsorBanner variant="inline" />
+        <View style={styles.sponsorSlot}>
+          <SponsorBanner variant="inline" />
+        </View>
         {children}
       </View>
 
@@ -415,6 +417,13 @@ const styles = StyleSheet.create({
   navLinkText: { fontSize: 12, fontWeight: '500', color: WEB_THEME.textMuted },
   main: { flex: 1, width: '100%', backgroundColor: WEB_THEME.bg },
   mainMobile: { flexGrow: 0, flexShrink: 0 },
+  sponsorSlot: {
+    width: '100%',
+    maxWidth: WEB_THEME.maxWidth,
+    alignSelf: 'center',
+    paddingHorizontal: 8,
+    paddingTop: 8,
+  },
   footer: {
     backgroundColor: WEB_THEME.surface,
     borderTopWidth: 1,

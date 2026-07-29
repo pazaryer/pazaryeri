@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { apiFetch } from './api';
 import { BRAND, SUPPORT_EMAIL } from '@/constants/brand';
 import { LISTING_CATEGORIES } from './categories';
@@ -62,6 +63,24 @@ let cached: RemoteAppConfig | null = null;
 let fetchedAt = 0;
 const TTL_MS = 60_000;
 
+const listeners = new Set<() => void>();
+
+function notifyRemoteConfigListeners(): void {
+  listeners.forEach((listener) => listener());
+}
+
+export function subscribeRemoteConfig(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** Config değişince bileşenleri yeniden render etmek için. */
+export function useRemoteConfigVersion(): number {
+  const [version, setVersion] = useState(0);
+  useEffect(() => subscribeRemoteConfig(() => setVersion((v) => v + 1)), []);
+  return version;
+}
+
 export async function fetchRemoteConfig(force = false): Promise<RemoteAppConfig> {
   const now = Date.now();
   if (!force && cached && now - fetchedAt < TTL_MS) return cached;
@@ -69,6 +88,7 @@ export async function fetchRemoteConfig(force = false): Promise<RemoteAppConfig>
     const res = await apiFetch<{ config: RemoteAppConfig }>('/config');
     cached = res.config ?? {};
     fetchedAt = now;
+    notifyRemoteConfigListeners();
     return cached;
   } catch {
     return cached ?? {};
@@ -156,4 +176,14 @@ export function getSponsorBanner() {
     linkUrl: s.linkUrl ?? DEFAULT_SPONSOR.linkUrl,
     altText: s.altText ?? DEFAULT_SPONSOR.altText,
   };
+}
+
+export function useSponsorBanner() {
+  useRemoteConfigVersion();
+  return getSponsorBanner();
+}
+
+export function useMobileDeveloper() {
+  useRemoteConfigVersion();
+  return getMobileDeveloper();
 }
