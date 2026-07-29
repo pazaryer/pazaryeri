@@ -1,15 +1,25 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Link } from 'expo-router';
-import { ListingSummary, formatPrice } from '@/lib/hooks';
+import { ListingSummary, formatPrice, useToggleFavorite } from '@/lib/hooks';
 import { WebImage } from '@/components/WebImage';
 import { WEB_THEME } from '@/lib/web-theme';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface WebListingCardProps {
   item: ListingSummary;
 }
 
-export function WebListingCard({ item }: WebListingCardProps) {
+export const WebListingCard = React.memo(function WebListingCard({ item }: WebListingCardProps) {
+  const { user } = useAuth();
+  const toggleFavorite = useToggleFavorite();
+
+  const handleFavorite = (e?: { preventDefault?: () => void }) => {
+    e?.preventDefault?.();
+    if (!user) return;
+    toggleFavorite.mutate({ listingId: item.id, isFavorite: item.isFavorite });
+  };
+
   return (
     <Link href={`/listing/${item.id}`} asChild>
       <Pressable style={styles.card}>
@@ -20,6 +30,16 @@ export function WebListingCard({ item }: WebListingCardProps) {
               <Text style={styles.soldText}>SATILDI</Text>
             </View>
           )}
+          {item.favoriteCount > 0 && (
+            <View style={styles.favBadge}>
+              <Text style={styles.favBadgeText}>❤️ {item.favoriteCount}</Text>
+            </View>
+          )}
+          {user && (
+            <Pressable style={styles.favBtn} onPress={handleFavorite} hitSlop={6}>
+              <Text style={styles.favIcon}>{item.isFavorite ? '❤️' : '🤍'}</Text>
+            </Pressable>
+          )}
         </View>
         <View style={styles.body}>
           <Text style={styles.price}>{formatPrice(item.price)}</Text>
@@ -29,11 +49,14 @@ export function WebListingCard({ item }: WebListingCardProps) {
           <Text style={styles.location} numberOfLines={1}>
             {item.city ?? item.district ?? item.location ?? 'Türkiye'}
           </Text>
+          {item.views > 0 && (
+            <Text style={styles.views}>{item.views} görüntülenme</Text>
+          )}
         </View>
       </Pressable>
     </Link>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {
@@ -58,8 +81,31 @@ const styles = StyleSheet.create({
     borderRadius: WEB_THEME.radius,
   },
   soldText: { color: '#FFF', fontWeight: '800', letterSpacing: 2, fontSize: 13 },
+  favBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  favBadgeText: { fontSize: 11, fontWeight: '700', color: WEB_THEME.textMuted },
+  favBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  favIcon: { fontSize: 16 },
   body: { paddingTop: 8, paddingBottom: 4, gap: 2 },
   price: { fontSize: 15, fontWeight: '800', color: WEB_THEME.text },
   title: { fontSize: 13, fontWeight: '500', color: WEB_THEME.textMuted, lineHeight: 17 },
   location: { fontSize: 11, color: WEB_THEME.textLight, marginTop: 2 },
+  views: { fontSize: 10, color: WEB_THEME.textLight, marginTop: 2 },
 });

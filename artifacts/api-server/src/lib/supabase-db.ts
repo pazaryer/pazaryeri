@@ -195,6 +195,19 @@ export async function getFavoriteSet(userId: string | undefined, listingIds: str
   return set;
 }
 
+export async function getFavoriteCountsMap(listingIds: string[]): Promise<Map<string, number>> {
+  const map = new Map(listingIds.map((id) => [id, 0]));
+  if (!listingIds.length) return map;
+
+  const sb = getSupabaseAdmin();
+  const { data } = await sb.from("favorites").select("listing_id").in("listing_id", listingIds);
+
+  for (const row of data ?? []) {
+    map.set(row.listing_id, (map.get(row.listing_id) ?? 0) + 1);
+  }
+  return map;
+}
+
 export async function formatListingSummary(
   listing: DbListing,
   seller: DbUser,
@@ -202,6 +215,7 @@ export async function formatListingSummary(
   isFavorite: boolean,
   userLat?: number | null,
   userLon?: number | null,
+  favoriteCount = 0,
 ) {
   return {
     id: listing.id,
@@ -213,6 +227,7 @@ export async function formatListingSummary(
     district: listing.district,
     location: listing.location,
     views: listing.views,
+    favoriteCount,
     isFavorite,
     distance: calcDistance(userLat, userLon, listing.latitude, listing.longitude),
     image,

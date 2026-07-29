@@ -225,6 +225,19 @@ async function pgGetFavoriteSet(userId: string | undefined, listingIds: string[]
   return set;
 }
 
+async function pgGetFavoriteCountsMap(listingIds: string[]): Promise<Map<string, number>> {
+  const map = new Map(listingIds.map((id) => [id, 0]));
+  if (!listingIds.length) return map;
+  const db = getPgPool();
+  const { rows } = await db.query<{ listing_id: string; count: string }>(
+    `SELECT listing_id, COUNT(*)::text AS count
+     FROM favorites WHERE listing_id = ANY($1::uuid[]) GROUP BY listing_id`,
+    [listingIds],
+  );
+  for (const row of rows) map.set(row.listing_id, Number(row.count));
+  return map;
+}
+
 export async function pgUpdateListingCoords(
   listingId: string,
   latitude: number,
@@ -325,6 +338,7 @@ export async function pgListListings(params: {
   const listingIds = page.map((r) => r.id);
   const imageMap = await pgGetListingImages(listingIds);
   const favSet = await pgGetFavoriteSet(params.userId, listingIds);
+  const favCounts = await pgGetFavoriteCountsMap(listingIds);
 
   let userLat: number | null = params.lat ?? null;
   let userLon: number | null = params.lon ?? null;
@@ -348,6 +362,7 @@ export async function pgListListings(params: {
         favSet.has(row.id),
         userLat,
         userLon,
+        favCounts.get(row.id) ?? 0,
       );
     }),
   );
@@ -369,6 +384,7 @@ export async function pgBuildListingDetail(listingId: string, userId?: string) {
   const seller = row.seller as DbUser;
   const images = row.images;
   const favSet = await pgGetFavoriteSet(userId, [listingId]);
+  const favCounts = await pgGetFavoriteCountsMap([listingId]);
 
   let userLat: number | null = null;
   let userLon: number | null = null;
@@ -389,6 +405,7 @@ export async function pgBuildListingDetail(listingId: string, userId?: string) {
     favSet.has(listingId),
     userLat,
     userLon,
+    favCounts.get(listingId) ?? 0,
   );
 
   return {

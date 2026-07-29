@@ -1,20 +1,27 @@
 import { getSupabaseAdmin } from "./supabase-db";
 import { pgIncrementViews, isPostgresConfigured, getPgPool } from "./postgres-db";
 
-export async function trackUniqueListingView(listingId: string, deviceId?: string | null) {
+export async function trackUniqueListingView(
+  listingId: string,
+  deviceId?: string | null,
+  userId?: string | null,
+) {
   const id = deviceId?.trim();
   if (!id) return;
 
+  const viewerId = userId?.trim() || null;
+
   if (isPostgresConfigured()) {
     const db = getPgPool();
-    const inserted = await db.query(
-      `INSERT INTO listing_views (listing_id, device_id)
-       VALUES ($1, $2)
-       ON CONFLICT (listing_id, device_id) DO NOTHING
-       RETURNING id`,
-      [listingId, id],
+    const result = await db.query<{ inserted: boolean }>(
+      `INSERT INTO listing_views (listing_id, device_id, user_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (listing_id, device_id) DO UPDATE SET
+         user_id = COALESCE(EXCLUDED.user_id, listing_views.user_id)
+       RETURNING (xmax = 0) AS inserted`,
+      [listingId, id, viewerId],
     );
-    if (inserted.rowCount && inserted.rowCount > 0) {
+    if (result.rows[0]?.inserted) {
       await pgIncrementViews(listingId);
     }
     return;
@@ -23,12 +30,22 @@ export async function trackUniqueListingView(listingId: string, deviceId?: strin
   const sb = getSupabaseAdmin();
   const { data, error } = await sb
     .from("listing_views")
-    .insert({ listing_id: listingId, device_id: id })
+    .insert({ listing_id: listingId, device_id: id, user_id: viewerId })
     .select("id")
     .maybeSingle();
 
   if (error) {
-    if (error.code === "23505" || error.message?.includes("duplicate")) return;
+    if (error.code === "23505" || error.message?.includes("duplicate")) {
+      if (viewerId) {
+        await sb
+          .from("listing_views")
+          .update({ user_id: viewerId })
+          .eq("listing_id", listingId)
+          .eq("device_id", id)
+          .is("user_id", null);
+      }
+      return;
+    }
     if (error.code === "42P01") {
       await sb
         .from("listings")

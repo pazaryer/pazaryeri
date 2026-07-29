@@ -48,6 +48,12 @@ export const ListingCard = React.memo(function ListingCard({ item, compact = fal
                 <Text style={styles.soldText}>SATILDI</Text>
               </View>
             )}
+            {item.favoriteCount > 0 && (
+              <View style={styles.favCountBadge}>
+                <Ionicons name="heart" size={9} color="#C62828" />
+                <Text style={styles.favCountText}>{item.favoriteCount}</Text>
+              </View>
+            )}
             <Pressable style={styles.favoriteButton} onPress={handleFavorite} hitSlop={4}>
               <Ionicons
                 name={item.isFavorite ? 'heart' : 'heart-outline'}
@@ -122,6 +128,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   soldText: { color: '#FFF', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  favCountBadge: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  favCountText: { fontSize: 9, fontWeight: '700', color: '#5C4D6E' },
   details: { padding: 8, gap: 1 },
   compactDetails: { paddingHorizontal: 6, paddingVertical: 5, gap: 0 },
   price: { fontSize: 14, fontWeight: '700' },

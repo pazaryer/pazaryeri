@@ -3,6 +3,7 @@ import {
   ensureUser,
   formatListingSummary,
   getFavoriteSet,
+  getFavoriteCountsMap,
   getListingImages,
   formatUser,
   supabaseHealthCheck,
@@ -233,6 +234,7 @@ export async function dbListListings(params: {
   const listingIds = page.map((r) => r.id);
   const imageMap = await getListingImages(listingIds);
   const favSet = await getFavoriteSet(params.userId, listingIds);
+  const favCounts = await getFavoriteCountsMap(listingIds);
 
   let userLat: number | null = params.lat ?? null;
   let userLon: number | null = params.lon ?? null;
@@ -251,6 +253,7 @@ export async function dbListListings(params: {
         favSet.has(row.id),
         userLat,
         userLon,
+        favCounts.get(row.id) ?? 0,
       ),
     ),
   );
@@ -278,6 +281,7 @@ export async function dbBuildListingDetail(listingId: string, userId?: string) {
   const imageMap = await getListingImages([listing.id]);
   const images = imageMap.get(listing.id) ?? [];
   const favSet = await getFavoriteSet(userId, [listing.id]);
+  const favCounts = await getFavoriteCountsMap([listing.id]);
 
   let userLat: number | null = null;
   let userLon: number | null = null;
@@ -294,16 +298,8 @@ export async function dbBuildListingDetail(listingId: string, userId?: string) {
     favSet.has(listing.id),
     userLat,
     userLon,
+    favCounts.get(listing.id) ?? 0,
   );
-
-  let favoriteCount: number | undefined;
-  if (userId && userId === listing.seller_id) {
-    const { count } = await sb
-      .from("favorites")
-      .select("id", { count: "exact", head: true })
-      .eq("listing_id", listing.id);
-    favoriteCount = count ?? 0;
-  }
 
   return {
     ...summary,
@@ -315,7 +311,6 @@ export async function dbBuildListingDetail(listingId: string, userId?: string) {
     latitude: listing.latitude,
     longitude: listing.longitude,
     seller: formatUser(seller as DbUser),
-    favoriteCount,
   };
 }
 

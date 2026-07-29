@@ -7,6 +7,7 @@ import { getSupabaseAdmin } from "../lib/supabase-db";
 import {
   formatListingSummary,
   getFavoriteSet,
+  getFavoriteCountsMap,
   getListingImages,
   type DbListing,
   type DbUser,
@@ -38,11 +39,22 @@ router.get("/favorites", authMiddleware, async (req, res, next) => {
       .eq("user_id", req.user!.id)
       .order("created_at", { ascending: false });
 
+    const listingIds = (favs ?? []).map((f) => (f as { listings: DbListing }).listings.id);
+    const favCounts = await getFavoriteCountsMap(listingIds);
+
     const items = await Promise.all(
       (favs ?? []).map(async (f) => {
         const listing = (f as { listings: DbListing & { users: DbUser } }).listings;
         const imageMap = await getListingImages([listing.id]);
-        return formatListingSummary(listing, listing.users, imageMap.get(listing.id)?.[0] ?? "", true);
+        return formatListingSummary(
+          listing,
+          listing.users,
+          imageMap.get(listing.id)?.[0] ?? "",
+          true,
+          null,
+          null,
+          favCounts.get(listing.id) ?? 0,
+        );
       }),
     );
 

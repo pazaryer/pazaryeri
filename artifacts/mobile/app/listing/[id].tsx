@@ -35,6 +35,7 @@ import { getListingContactPhone } from '@/lib/contact';
 import { useAuth } from '@/contexts/AuthContext';
 import { sitePath } from '@/lib/config';
 import { ListingOwnerActions } from '@/components/ListingOwnerActions';
+import { ListingInsightsPanel } from '@/components/ListingInsightsPanel';
 import { listingHeroImageProps } from '@/lib/listing-image-props';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -231,13 +232,15 @@ function MobileListingDetailScreen() {
               <Ionicons name="eye-outline" size={16} color={colors.mutedForeground} />
               <Text style={[styles.infoText, { color: colors.mutedForeground }]}>{listing.views} görüntülenme</Text>
             </View>
-            {isOwner && listing.favoriteCount !== undefined && (
-              <View style={styles.infoItem}>
-                <Ionicons name="heart" size={16} color={colors.mutedForeground} />
-                <Text style={[styles.infoText, { color: colors.mutedForeground }]}>{listing.favoriteCount} favori</Text>
-              </View>
-            )}
+            <View style={styles.infoItem}>
+              <Ionicons name="heart" size={16} color={colors.mutedForeground} />
+              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+                {listing.favoriteCount} favori
+              </Text>
+            </View>
           </View>
+
+          {isOwner && <ListingInsightsPanel listingId={listing.id} />}
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 

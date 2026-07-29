@@ -14,6 +14,7 @@ export interface ListingSummary {
   district?: string | null;
   location?: string | null;
   views: number;
+  favoriteCount: number;
   isFavorite: boolean;
   distance?: string | null;
   image: string;
@@ -32,7 +33,7 @@ export interface ListingDetail extends ListingSummary {
   acceptsOffers: boolean;
   contactPhone?: string | null;
   sellerId: string;
-  favoriteCount?: number;
+  favoriteCount: number;
   latitude?: number | null;
   longitude?: number | null;
   seller: {
@@ -131,6 +132,33 @@ export function useListing(id: string) {
   });
 }
 
+export interface ListingInsights {
+  favoriteCount: number;
+  viewCount: number;
+  favoriters: Array<{
+    userId: string;
+    name: string;
+    avatar: string | null;
+    favoritedAt: string;
+  }>;
+  viewers: Array<{
+    userId: string | null;
+    name: string;
+    avatar: string | null;
+    viewedAt: string;
+    isAnonymous: boolean;
+  }>;
+}
+
+export function useListingInsights(listingId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['listing-insights', listingId],
+    queryFn: () => apiFetch<ListingInsights>(`/listings/${listingId}/insights`),
+    enabled: enabled && !!listingId,
+    staleTime: 30_000,
+  });
+}
+
 export function useMyListings() {
   return useInfiniteQuery({
     queryKey: ['my-listings'],
@@ -176,10 +204,7 @@ export function useToggleFavorite() {
         qc.setQueryData(['listing', listingId], {
           ...prev,
           isFavorite: !isFavorite,
-          favoriteCount:
-            prev.favoriteCount !== undefined
-              ? Math.max(0, prev.favoriteCount + (isFavorite ? -1 : 1))
-              : prev.favoriteCount,
+          favoriteCount: Math.max(0, prev.favoriteCount + (isFavorite ? -1 : 1)),
         });
       }
       return { prev };
@@ -191,6 +216,7 @@ export function useToggleFavorite() {
       qc.invalidateQueries({ queryKey: ['listings'] });
       qc.invalidateQueries({ queryKey: ['favorites'] });
       qc.invalidateQueries({ queryKey: ['listing'] });
+      qc.invalidateQueries({ queryKey: ['listing-insights'] });
       qc.invalidateQueries({ queryKey: ['notifications'] });
     },
   });

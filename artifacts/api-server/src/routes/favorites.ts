@@ -11,7 +11,10 @@ router.post("/favorites/:listingId", authMiddleware, async (req, res, next) => {
     const listingId = req.params.listingId;
     const userId = req.user!.id;
 
-    const { data: listing } = await sb.from("listings").select("seller_id, title").eq("id", listingId).single();
+    const [{ data: listing }, { data: favoriter }] = await Promise.all([
+      sb.from("listings").select("seller_id, title").eq("id", listingId).single(),
+      sb.from("users").select("name, avatar").eq("id", userId).single(),
+    ]);
 
     const { data: existing } = await sb
       .from("favorites")
@@ -25,12 +28,19 @@ router.post("/favorites/:listingId", authMiddleware, async (req, res, next) => {
       if (error) throw new Error(error.message);
 
       if (listing && listing.seller_id !== userId) {
+        const favoriterName = favoriter?.name ?? "Bir kullanıcı";
         await notifyUser({
           userId: listing.seller_id,
           type: "favorite",
-          title: "İlan Favorilere Eklendi",
-          body: `"${listing.title}" ilanınız favorilere eklendi`,
-          data: { listingId },
+          title: favoriterName,
+          subtitle: listing.title,
+          body: `"${listing.title}" ilanınızı favorilere ekledi`,
+          data: {
+            listingId,
+            favoriterId: userId,
+            favoriterName,
+            listingTitle: listing.title,
+          },
         });
       }
     }

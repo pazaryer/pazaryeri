@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { WebLocationProvider, useWebLocation } from '@/contexts/WebLocationConte
 import { WebLocationPicker } from './WebLocationPicker';
 import { WEB_CATEGORIES } from '@/lib/categories';
 import { WEB_THEME } from '@/lib/web-theme';
+import { useNotifications, useConversations } from '@/lib/hooks';
 
 const NAV_CATEGORIES = WEB_CATEGORIES.filter((c) => c.label !== 'Tüm İlanlar');
 
@@ -46,8 +47,16 @@ function WebShellInner({
   const router = useRouter();
   const { user } = useAuth();
   const { label, openPicker } = useWebLocation();
+  const { data: notifData } = useNotifications(!!user);
+  const { data: convoData } = useConversations(!!user);
   const mobile = width < WEB_THEME.mobileBreakpoint;
   const tablet = width >= WEB_THEME.mobileBreakpoint && width < WEB_THEME.tabletBreakpoint;
+
+  const unreadNotifs = notifData?.items.filter((n) => !n.isRead).length ?? 0;
+  const unreadMessages = useMemo(
+    () => (convoData?.items ?? []).reduce((sum, c) => sum + c.unreadCount, 0),
+    [convoData?.items],
+  );
 
   const sellPath = user ? '/ilan-ver' : '/kayit';
 
@@ -97,8 +106,21 @@ function WebShellInner({
 
             {user ? (
               <>
+                <Pressable style={styles.iconBtn} onPress={() => router.push('/notifications')}>
+                  <Text style={styles.iconBtnText}>🔔</Text>
+                  {unreadNotifs > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{unreadNotifs > 9 ? '9+' : unreadNotifs}</Text>
+                    </View>
+                  )}
+                </Pressable>
                 <Pressable style={styles.iconBtn} onPress={() => router.push('/mesajlar')}>
                   <Text style={styles.iconBtnText}>💬</Text>
+                  {unreadMessages > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{unreadMessages > 9 ? '9+' : unreadMessages}</Text>
+                    </View>
+                  )}
                 </Pressable>
                 <Pressable style={styles.iconBtn} onPress={() => router.push('/hesabim')}>
                   <Text style={styles.iconBtnText}>👤</Text>
@@ -324,8 +346,22 @@ const styles = StyleSheet.create({
     backgroundColor: WEB_THEME.brandLight,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   iconBtnText: { fontSize: 15 },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: WEB_THEME.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: { color: '#FFF', fontSize: 9, fontWeight: '800' },
   ctaBtn: {
     flexDirection: 'row',
     alignItems: 'center',

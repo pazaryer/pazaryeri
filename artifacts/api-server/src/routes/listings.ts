@@ -78,11 +78,21 @@ router.get("/listings/me", authMiddleware, async (req, res, next) => {
   }
 });
 
+router.get("/listings/:listingId/insights", authMiddleware, async (req, res, next) => {
+  try {
+    const { getListingInsights } = await import("../lib/listing-insights");
+    const insights = await getListingInsights(req.params.listingId, req.user!.id);
+    res.json(insights);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/listings/:listingId", optionalAuth, async (req, res, next) => {
   try {
     const listingId = req.params.listingId;
     const deviceId = req.headers["x-device-id"] as string | undefined;
-    await trackUniqueListingView(listingId, deviceId);
+    await trackUniqueListingView(listingId, deviceId, req.user?.id);
     const detail = await dbBuildListingDetail(listingId, req.user?.id);
     res.json(detail);
   } catch (err) {

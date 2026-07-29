@@ -19,6 +19,7 @@ import {
 } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { ListingOwnerActions } from '@/components/ListingOwnerActions';
+import { ListingInsightsPanel } from '@/components/ListingInsightsPanel';
 import { ContactActions } from '@/components/ContactActions';
 import { UserAvatar } from '@/components/UserAvatar';
 import { WebImage } from '@/components/WebImage';
@@ -136,7 +137,13 @@ export function WebListingDetailPage() {
               <Text style={styles.metaIcon}>👁️</Text>
               <Text style={styles.metaText}>{listing.views} görüntülenme</Text>
             </View>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaIcon}>❤️</Text>
+              <Text style={styles.metaText}>{listing.favoriteCount} favori</Text>
+            </View>
           </View>
+
+          {isOwner && <ListingInsightsPanel listingId={listing.id} variant="web" />}
 
           <View style={styles.seller}>
             <UserAvatar name={listing.seller.name} avatar={listing.seller.avatar} size={48} />

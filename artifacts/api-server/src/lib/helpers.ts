@@ -110,6 +110,7 @@ export async function formatListingSummary(
   isFavorite: boolean,
   userLat?: number | null,
   userLon?: number | null,
+  favoriteCount = 0,
 ) {
   return {
     id: listing.id,
@@ -121,6 +122,7 @@ export async function formatListingSummary(
     district: listing.district,
     location: listing.location,
     views: listing.views,
+    favoriteCount,
     isFavorite,
     distance: calcDistance(userLat, userLon, listing.latitude, listing.longitude),
     image,

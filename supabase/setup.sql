@@ -127,6 +127,7 @@ CREATE TABLE IF NOT EXISTS listing_views (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   listing_id UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
   device_id TEXT NOT NULL,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(listing_id, device_id)
 );
