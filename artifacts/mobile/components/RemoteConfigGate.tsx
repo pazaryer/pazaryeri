@@ -8,7 +8,6 @@ import { useMobilePromoRefresh } from '@/hooks/useMobilePromoRefresh';
 import { AppOverlays } from '@/components/AppOverlays';
 import { WebAppDownloadFab } from '@/components/web/WebAppDownloadFab';
 import { useAdMobLifecycle } from '@/lib/admob/init';
-import { useAdMobConfig } from '@/lib/admob/config';
 
 export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -16,12 +15,6 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
   const [brand, setBrand] = useState(() => applyBrandFromRemote({}));
   useMobilePromoRefresh();
   useAdMobLifecycle();
-  const admob = useAdMobConfig();
-
-  useEffect(() => {
-    if (!ready || Platform.OS === 'web' || !admob.interstitial.enabled) return;
-    void import('@/lib/admob/interstitial').then((m) => m.preloadInterstitial());
-  }, [ready, admob.interstitial.enabled]);
 
   useEffect(() => {
     let cancelled = false;

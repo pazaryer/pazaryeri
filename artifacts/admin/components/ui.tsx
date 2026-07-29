@@ -147,7 +147,7 @@ export function Badge({
     tone === 'warning' ? THEME.warningBg :
     tone === 'danger' ? THEME.dangerBg :
     tone === 'gold' ? THEME.goldMuted :
-    'rgba(157, 139, 181, 0.12)';
+    THEME.bgSoft;
   const color =
     tone === 'success' ? THEME.success :
     tone === 'warning' ? THEME.warning :
@@ -173,7 +173,7 @@ export function EmptyState({ message }: { message: string }) {
 export function Loading() {
   return (
     <View style={styles.loading}>
-      <ActivityIndicator size="large" color={THEME.gold} />
+      <ActivityIndicator size="large" color={THEME.primary} />
       <Text style={styles.loadingText}>Yükleniyor...</Text>
     </View>
   );
@@ -227,27 +227,27 @@ const styles = StyleSheet.create({
   },
   btnCompact: { paddingVertical: 10, paddingHorizontal: 14 },
   btnDanger: { backgroundColor: THEME.danger, borderColor: 'rgba(239,68,68,0.4)' },
-  btnGhost: { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: THEME.border },
-  btnGold: { backgroundColor: THEME.goldMuted, borderColor: 'rgba(212,175,55,0.45)' },
+  btnGhost: { backgroundColor: THEME.bgSoft, borderColor: THEME.border },
+  btnGold: { backgroundColor: THEME.goldMuted, borderColor: '#FCD34D' },
   btnPressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
-  btnText: { color: THEME.text, fontWeight: '700', fontSize: 14 },
+  btnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   btnTextCompact: { fontSize: 12 },
-  btnGhostText: { color: THEME.textMuted },
+  btnGhostText: { color: THEME.textSoft },
   btnGoldText: { color: THEME.goldLight },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: RADIUS.pill,
     borderWidth: 1,
-    borderColor: THEME.borderSoft,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: THEME.border,
+    backgroundColor: THEME.surface,
   },
   chipActive: {
-    backgroundColor: THEME.goldMuted,
-    borderColor: 'rgba(212, 175, 55, 0.45)',
+    backgroundColor: THEME.primaryLight,
+    borderColor: THEME.primary,
   },
   chipText: { fontSize: 12, fontWeight: '600', color: THEME.textMuted },
-  chipTextActive: { color: THEME.goldLight },
+  chipTextActive: { color: THEME.primary },
   input: {
     backgroundColor: THEME.surfaceElevated,
     borderRadius: RADIUS.md,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     paddingHorizontal: 14,
   },
-  searchIcon: { fontSize: 18, color: THEME.gold, marginRight: 8 },
+  searchIcon: { fontSize: 18, color: THEME.primary, marginRight: 8 },
   searchInput: { flex: 1, paddingVertical: 14, color: THEME.text, fontSize: 15 },
   statCard: {
     flex: 1,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     ...SHADOW.card,
   },
   statIcon: { fontSize: 18, marginBottom: 6 },
-  statValue: { fontSize: 30, fontWeight: '800', color: THEME.gold, letterSpacing: -1 },
+  statValue: { fontSize: 30, fontWeight: '800', color: THEME.primary, letterSpacing: -1 },
   statLabel: { fontSize: 12, color: THEME.textMuted, marginTop: 6, lineHeight: 16 },
   badge: {
     alignSelf: 'flex-start',
@@ -318,15 +318,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: THEME.goldMuted,
+    backgroundColor: THEME.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(212,175,55,0.25)',
   },
   menuIcon: { fontSize: 22 },
   menuText: { flex: 1 },
   menuTitle: { fontSize: 16, fontWeight: '700', color: THEME.text },
   menuSub: { fontSize: 12, color: THEME.textMuted, marginTop: 3 },
-  menuArrow: { fontSize: 24, color: THEME.gold, fontWeight: '300' },
+  menuArrow: { fontSize: 24, color: THEME.textMuted, fontWeight: '300' },
 });

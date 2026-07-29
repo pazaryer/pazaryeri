@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   table: { minWidth: '100%' },
   headerRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(212, 175, 55, 0.08)',
+    backgroundColor: THEME.primaryLight,
     borderBottomWidth: 1,
     borderBottomColor: THEME.border,
     paddingVertical: 12,
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 11,
     fontWeight: '800',
-    color: THEME.gold,
+    color: THEME.primary,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     paddingHorizontal: 10,
@@ -134,8 +134,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: THEME.borderSoft,
   },
-  dataRowAlt: { backgroundColor: 'rgba(255,255,255,0.02)' },
-  dataRowPressed: { backgroundColor: 'rgba(139, 92, 246, 0.08)' },
+  dataRowAlt: { backgroundColor: THEME.bgSoft },
+  dataRowPressed: { backgroundColor: THEME.primaryLight },
   cell: { justifyContent: 'center' },
   empty: {
     padding: SPACING.xl,

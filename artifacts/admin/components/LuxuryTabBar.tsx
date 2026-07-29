@@ -17,7 +17,7 @@ const TABS: TabConfig[] = [
   { name: 'users', label: 'Kullanıcı', icon: 'people-outline', iconActive: 'people' },
   { name: 'listings', label: 'İlan', icon: 'pricetags-outline', iconActive: 'pricetags' },
   { name: 'comments', label: 'Yorum', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
-  { name: 'more', label: 'Diğer', icon: 'diamond-outline', iconActive: 'diamond' },
+  { name: 'more', label: 'Ayarlar', icon: 'settings-outline', iconActive: 'settings' },
 ];
 
 export function LuxuryTabBar({ state, navigation }: BottomTabBarProps) {
@@ -27,7 +27,6 @@ export function LuxuryTabBar({ state, navigation }: BottomTabBarProps) {
   return (
     <View style={[styles.wrap, { paddingBottom: bottomPad }]}>
       <View style={styles.bar}>
-        <View style={styles.goldLine} />
         {TABS.map((tab) => {
           const routeIndex = state.routes.findIndex((r) => r.name === tab.name);
           if (routeIndex < 0) return null;
@@ -44,13 +43,12 @@ export function LuxuryTabBar({ state, navigation }: BottomTabBarProps) {
                 <Ionicons
                   name={focused ? tab.iconActive : tab.icon}
                   size={20}
-                  color={focused ? THEME.gold : THEME.textMuted}
+                  color={focused ? THEME.primary : THEME.textMuted}
                 />
               </View>
               <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={1}>
                 {tab.label}
               </Text>
-              {focused && <View style={styles.activeDot} />}
             </Pressable>
           );
         })}
@@ -70,25 +68,16 @@ const styles = StyleSheet.create({
   },
   bar: {
     flexDirection: 'row',
-    backgroundColor: THEME.surfaceGlass,
+    backgroundColor: THEME.surface,
     borderRadius: RADIUS.xl,
     borderWidth: 1,
     borderColor: THEME.border,
     paddingVertical: 8,
     paddingHorizontal: 4,
-    overflow: 'hidden',
     ...SHADOW.tab,
     ...Platform.select({
-      android: { elevation: 20 },
+      android: { elevation: 12 },
     }),
-  },
-  goldLine: {
-    position: 'absolute',
-    top: 0,
-    left: 24,
-    right: 24,
-    height: 1,
-    backgroundColor: 'rgba(212, 175, 55, 0.35)',
   },
   item: {
     flex: 1,
@@ -96,7 +85,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     gap: 4,
   },
-  itemPressed: { opacity: 0.8 },
+  itemPressed: { opacity: 0.85 },
   iconWrap: {
     width: 40,
     height: 40,
@@ -106,25 +95,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   iconWrapActive: {
-    backgroundColor: THEME.goldMuted,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.35)',
+    backgroundColor: THEME.primaryLight,
   },
   label: {
     fontSize: 10,
     fontWeight: '600',
     color: THEME.textMuted,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   labelActive: {
-    color: THEME.goldLight,
+    color: THEME.primary,
     fontWeight: '700',
-  },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: THEME.gold,
-    marginTop: -2,
   },
 });

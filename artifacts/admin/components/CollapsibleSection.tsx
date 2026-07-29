@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     borderWidth: 1,
     borderColor: THEME.border,
-    backgroundColor: THEME.card,
+    backgroundColor: THEME.surface,
     overflow: 'hidden',
   },
   header: {
@@ -50,8 +50,8 @@ const styles = StyleSheet.create({
   },
   headerPressed: { opacity: 0.85 },
   headerText: { flex: 1 },
-  title: { fontSize: 15, fontWeight: '800', color: THEME.goldLight },
+  title: { fontSize: 15, fontWeight: '800', color: THEME.text },
   subtitle: { fontSize: 11, color: THEME.textMuted, marginTop: 2 },
-  chevron: { fontSize: 16, color: THEME.gold, fontWeight: '700' },
+  chevron: { fontSize: 16, color: THEME.primary, fontWeight: '700' },
   body: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.md },
 });

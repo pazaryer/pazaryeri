@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, type ViewStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME, SPACING, RADIUS } from '@/lib/theme';
 
@@ -29,10 +28,7 @@ export function PageShell({
   const padBottom = 100 + insets.bottom;
 
   const header = (
-    <LinearGradient
-      colors={['rgba(139, 92, 246, 0.18)', 'rgba(236, 72, 153, 0.08)', 'transparent']}
-      style={styles.headerGradient}
-    >
+    <View style={styles.headerCard}>
       <View style={styles.headerRow}>
         <View style={styles.headerText}>
           <Text style={styles.title}>{title}</Text>
@@ -40,7 +36,7 @@ export function PageShell({
         </View>
         {headerRight}
       </View>
-    </LinearGradient>
+    </View>
   );
 
   if (!scroll) {
@@ -59,7 +55,7 @@ export function PageShell({
         showsVerticalScrollIndicator={false}
         refreshControl={
           onRefresh ? (
-            <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={THEME.gold} />
+            <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={THEME.primary} />
           ) : undefined
         }
       >
@@ -88,12 +84,13 @@ export function FilterRow({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: THEME.bg },
-  headerGradient: {
+  headerCard: {
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: THEME.borderSoft,
+    borderColor: THEME.border,
+    backgroundColor: THEME.surface,
     overflow: 'hidden',
   },
   headerRow: {
@@ -105,10 +102,10 @@ const styles = StyleSheet.create({
   },
   headerText: { flex: 1 },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
     color: THEME.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   subtitle: {
     fontSize: 13,
@@ -120,7 +117,7 @@ const styles = StyleSheet.create({
   bodyFlex: { flex: 1 },
   section: { marginBottom: SPACING.lg },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: SPACING.md },
-  sectionLine: { width: 3, height: 18, borderRadius: 2, backgroundColor: THEME.gold },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: THEME.goldLight, letterSpacing: 0.3 },
+  sectionLine: { width: 3, height: 18, borderRadius: 2, backgroundColor: THEME.primary },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: THEME.text, letterSpacing: 0.2 },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md },
 });

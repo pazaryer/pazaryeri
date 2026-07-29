@@ -26,7 +26,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <StatusBar style="light" />
+            <StatusBar style="dark" />
             <AdminPushNotificationHandler />
             <AdminNotificationWatcher />
             <Stack

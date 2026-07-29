@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
+let initializing = false;
 let initialized = false;
 let sdkReady = false;
+let lifecycleStarted = false;
+let thirdSessionHandled = false;
 const readyListeners = new Set<() => void>();
 
 function notifyReady(): void {
@@ -30,10 +33,15 @@ function getAdsModule() {
   }
 }
 
-export async function initAdMobSdk(): Promise<void> {
-  if (Platform.OS === 'web' || initialized) return;
+export async function initAdMobSdk(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  if (sdkReady) return true;
+  if (initializing) return false;
+
   const ads = getAdsModule();
-  if (!ads) return;
+  if (!ads) return false;
+
+  initializing = true;
   try {
     await ads.default().initialize();
     initialized = true;
@@ -41,18 +49,30 @@ export async function initAdMobSdk(): Promise<void> {
     notifyReady();
     const { preloadInterstitial } = await import('./interstitial');
     preloadInterstitial();
+    return true;
   } catch {
-    /* SDK yok veya dev build değil */
+    /* Expo Go / hot reload — SDK zaten init veya native modül yok */
+    if (initialized) {
+      sdkReady = true;
+      notifyReady();
+      return true;
+    }
+    return false;
+  } finally {
+    initializing = false;
   }
 }
 
 export function useAdMobLifecycle(): void {
-  const ran = useRef(false);
   useEffect(() => {
-    if (Platform.OS === 'web' || ran.current) return;
-    ran.current = true;
-    void initAdMobSdk().then(async () => {
-      if (!sdkReady) return;
+    if (Platform.OS === 'web' || lifecycleStarted) return;
+    lifecycleStarted = true;
+
+    void initAdMobSdk().then(async (ok) => {
+      if (!ok || !sdkReady || thirdSessionHandled) return;
+      if (__DEV__) return;
+
+      thirdSessionHandled = true;
       try {
         const { maybeShowThirdSessionInterstitial } = await import('./interstitial');
         await maybeShowThirdSessionInterstitial();

@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { adminFetch } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge, Btn, Loading, StatCard } from '@/components/ui';
@@ -169,10 +168,7 @@ export default function DashboardScreen() {
       refreshing={isRefetching}
       onRefresh={refetch}
     >
-      <LinearGradient
-        colors={['rgba(139, 92, 246, 0.25)', 'rgba(212, 175, 55, 0.12)', 'transparent']}
-        style={styles.hero}
-      >
+      <View style={styles.hero}>
         <Text style={styles.heroTitle}>Gerçek Zamanlı Kontrol</Text>
         <Text style={styles.heroSub}>
           Web · mobil · admin ayrı takip · {data.analyticsResetAt
@@ -183,7 +179,7 @@ export default function DashboardScreen() {
           <Btn label="İstatistik Sıfırla" variant="danger" compact onPress={resetAnalytics} />
           <Btn label="Yenile" variant="ghost" compact onPress={() => refetch()} />
         </View>
-      </LinearGradient>
+      </View>
 
       <Section title="Özet">
         <View style={styles.statsGrid}>
@@ -261,8 +257,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
     borderWidth: 1,
     borderColor: THEME.border,
+    backgroundColor: THEME.surface,
   },
-  heroTitle: { fontSize: 20, fontWeight: '800', color: THEME.goldLight, marginBottom: 6 },
+  heroTitle: { fontSize: 20, fontWeight: '800', color: THEME.text, marginBottom: 6 },
   heroSub: { fontSize: 12, color: THEME.textMuted, lineHeight: 18, marginBottom: SPACING.md },
   heroActions: { flexDirection: 'row', gap: SPACING.sm },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },

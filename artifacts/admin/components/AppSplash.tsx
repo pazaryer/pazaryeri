@@ -1,7 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { View, Image, StyleSheet, Text } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -13,20 +12,19 @@ export function AppSplash({ onReady }: { onReady: () => void }) {
   }, [onReady]);
 
   useEffect(() => {
-    const t = setTimeout(hide, 1400);
+    const t = setTimeout(hide, 1200);
     return () => clearTimeout(t);
   }, [hide]);
 
   return (
-    <LinearGradient colors={['#0F0A1A', '#2A1260', '#0F0A1A']} style={styles.wrap}>
-      <View style={styles.glow} />
+    <View style={styles.wrap}>
       <Image source={require('@/assets/images/splash-icon.png')} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.title}>PAZARYERI</Text>
-      <Text style={styles.sub}>ADMIN PANEL</Text>
+      <Text style={styles.title}>Pazaryeri</Text>
+      <Text style={styles.sub}>Admin Panel</Text>
       <View style={styles.bar}>
         <View style={styles.barFill} />
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -37,39 +35,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: THEME.bg,
   },
-  glow: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(201,168,76,0.12)',
-    top: '28%',
-  },
-  logo: { width: 120, height: 120, marginBottom: 20 },
+  logo: { width: 100, height: 100, marginBottom: 16 },
   title: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: THEME.gold,
-    letterSpacing: 6,
+    fontSize: 28,
+    fontWeight: '800',
+    color: THEME.primary,
+    letterSpacing: 1,
   },
   sub: {
     fontSize: 13,
     color: THEME.textMuted,
-    letterSpacing: 8,
-    marginTop: 6,
-    marginBottom: 32,
+    letterSpacing: 2,
+    marginTop: 4,
+    marginBottom: 28,
+    textTransform: 'uppercase',
   },
   bar: {
-    width: 160,
+    width: 140,
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: THEME.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
   barFill: {
-    width: '70%',
+    width: '65%',
     height: '100%',
-    backgroundColor: THEME.gold,
+    backgroundColor: THEME.primary,
     borderRadius: 2,
   },
 });

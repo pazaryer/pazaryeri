@@ -1,65 +1,6 @@
-import { useRouter } from 'expo-router';
-import { PageShell, Section } from '@/components/PageShell';
-import { MenuCard } from '@/components/ui';
+import { Redirect } from 'expo-router';
 
+/** Eski CMS hub — Ayarlar sekmesine yönlendir. */
 export default function CmsScreen() {
-  const router = useRouter();
-
-  return (
-    <PageShell
-      title="Site Kontrol Merkezi"
-      subtitle="Web + mobil uygulamayı tek yerden yönetin"
-    >
-      <Section title="Marka & Görünüm">
-        <MenuCard
-          icon="✨"
-          title="Marka & Kimlik"
-          subtitle="İsim, logo, renkler, ikonlar, SEO"
-          onPress={() => router.push('/(tabs)/branding')}
-        />
-        <MenuCard
-          icon="📱"
-          title="Mobil Promosyon"
-          subtitle="Puanla, diğer uygulamalar, sponsor banner"
-          onPress={() => router.push('/(tabs)/mobile-promo')}
-        />
-        <MenuCard
-          icon="📊"
-          title="AdMob Reklamları"
-          subtitle="Banner, geçiş, ödüllü reklam kimlikleri"
-          onPress={() => router.push('/(tabs)/admob')}
-        />
-        <MenuCard
-          icon="⬇️"
-          title="Web İndirme Butonu"
-          subtitle="Yüzen mobil uygulama indirme CTA"
-          onPress={() => router.push('/(tabs)/web-app-download')}
-        />
-        <MenuCard
-          icon="📜"
-          title="Kayan Yazılar"
-          subtitle="Anasayfa duyuru bandı"
-          onPress={() => router.push('/(tabs)/marquee')}
-        />
-      </Section>
-
-      <Section title="İçerik & Özellikler">
-        <MenuCard
-          icon="📂"
-          title="Kategoriler & Özellikler"
-          subtitle="Kategori listesi, bakım modu, anahtarlar"
-          onPress={() => router.push('/(tabs)/config')}
-        />
-      </Section>
-
-      <Section title="İpucu">
-        <MenuCard
-          icon="🚀"
-          title="Kaydet ve Yayınla"
-          subtitle="Her ekranda altın buton — değişiklikler ~60 sn içinde yansır"
-          onPress={() => router.push('/(tabs)/branding')}
-        />
-      </Section>
-    </PageShell>
-  );
+  return <Redirect href="/(tabs)/more" />;
 }

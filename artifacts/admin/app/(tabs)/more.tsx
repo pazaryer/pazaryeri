@@ -1,43 +1,59 @@
 import { useRouter } from 'expo-router';
+import { Text, View, StyleSheet } from 'react-native';
 import { PageShell, Section } from '@/components/PageShell';
 import { MenuCard } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
+import { THEME, SPACING, RADIUS } from '@/lib/theme';
 
-export default function MoreScreen() {
+export default function SettingsScreen() {
   const router = useRouter();
   const { profile } = useAuth();
+  const roleLabel = profile?.role === 'admin' ? 'Süper Admin' : 'Moderatör';
 
   return (
     <PageShell
-      title="Diğer"
-      subtitle={`${profile?.name ?? 'Admin'} · Yönetim araçları`}
+      title="Ayarlar"
+      subtitle={`${profile?.name ?? 'Admin'} · ${roleLabel}`}
     >
-      <Section title="Analitik">
-        <MenuCard
-          icon="🌐"
-          title="Web Ziyaretçileri"
-          subtitle="Girişler, oturumlar ve canlı hareketler"
-          onPress={() => router.push('/(tabs)/web-analytics')}
-        />
-      </Section>
+      <View style={styles.tipCard}>
+        <Text style={styles.tipTitle}>Kaydet ve Yayınla</Text>
+        <Text style={styles.tipText}>
+          Her ayar ekranında altın butonla yayınlayın. Değişiklikler ~60 saniye içinde web ve mobilde görünür.
+        </Text>
+      </View>
 
-      <Section title="Kontrol Merkezi">
-        <MenuCard
-          icon="🎛️"
-          title="Site Kontrol Merkezi"
-          subtitle="Marka, CMS, duyurular — tek hub"
-          onPress={() => router.push('/(tabs)/cms')}
-        />
+      <Section title="Marka & Web">
         <MenuCard
           icon="✨"
           title="Marka & Kimlik"
-          subtitle="İsim, logo, renkler, SEO — tam rebrand"
+          subtitle="İsim, logo, renkler, ikonlar, SEO"
           onPress={() => router.push('/(tabs)/branding')}
         />
         <MenuCard
+          icon="📂"
+          title="Kategoriler & Sistem"
+          subtitle="Kategori listesi, bakım modu, özellik anahtarları"
+          onPress={() => router.push('/(tabs)/config')}
+        />
+        <MenuCard
+          icon="📜"
+          title="Kayan Yazılar"
+          subtitle="Anasayfa duyuru bandı"
+          onPress={() => router.push('/(tabs)/marquee')}
+        />
+        <MenuCard
+          icon="⬇️"
+          title="Web İndirme Butonu"
+          subtitle="Yüzen mobil uygulama indirme CTA"
+          onPress={() => router.push('/(tabs)/web-app-download')}
+        />
+      </Section>
+
+      <Section title="Mobil Uygulama">
+        <MenuCard
           icon="📱"
           title="Mobil Promosyon"
-          subtitle="Puanla, diğer uygulamalar, sponsor banner"
+          subtitle="Geliştirici imzası, puanla, sayfa bazlı sponsor banner"
           onPress={() => router.push('/(tabs)/mobile-promo')}
         />
         <MenuCard
@@ -46,35 +62,20 @@ export default function MoreScreen() {
           subtitle="Banner, geçiş, ödüllü — App/Unit ID tablosu"
           onPress={() => router.push('/(tabs)/admob')}
         />
-        <MenuCard
-          icon="⬇️"
-          title="Web İndirme Butonu"
-          subtitle="Yüzen uygulama indir CTA — aç/kapat, linkler"
-          onPress={() => router.push('/(tabs)/web-app-download')}
-        />
       </Section>
 
-      <Section title="İçerik & Moderasyon">
+      <Section title="Analitik & Moderasyon">
         <MenuCard
-          icon="📜"
-          title="Kayan Yazılar"
-          subtitle="Web ve mobil duyuru bandı"
-          onPress={() => router.push('/(tabs)/marquee')}
+          icon="🌐"
+          title="Web Ziyaretçileri"
+          subtitle="Oturumlar ve canlı hareketler"
+          onPress={() => router.push('/(tabs)/web-analytics')}
         />
         <MenuCard
           icon="🚩"
           title="Şikayetler"
           subtitle="Bekleyen kullanıcı şikayetleri"
           onPress={() => router.push('/(tabs)/reports')}
-        />
-      </Section>
-
-      <Section title="Sistem">
-        <MenuCard
-          icon="⚙️"
-          title="CMS Ayarları"
-          subtitle="Marka, SEO, kategoriler"
-          onPress={() => router.push('/(tabs)/config')}
         />
         <MenuCard
           icon="🛡️"
@@ -86,3 +87,16 @@ export default function MoreScreen() {
     </PageShell>
   );
 }
+
+const styles = StyleSheet.create({
+  tipCard: {
+    backgroundColor: THEME.goldMuted,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  tipTitle: { fontSize: 14, fontWeight: '800', color: THEME.goldLight, marginBottom: 4 },
+  tipText: { fontSize: 12, color: THEME.textSoft, lineHeight: 18 },
+});

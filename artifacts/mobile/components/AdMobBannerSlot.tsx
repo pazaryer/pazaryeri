@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useAdMobConfig, resolveBannerUnitId } from '@/lib/admob/config';
 import { useAdMobSdkReady } from '@/lib/admob/init';
@@ -20,6 +20,7 @@ export function AdMobBannerSlot({ bottom }: Props) {
   const unitId = resolveBannerUnitId(config);
   const sdkReady = useAdMobSdkReady();
   const { width } = useBannerLayout();
+  const [canMount, setCanMount] = useState(false);
 
   const adModule = useMemo(() => {
     if (Platform.OS === 'web') return null;
@@ -30,9 +31,21 @@ export function AdMobBannerSlot({ bottom }: Props) {
     }
   }, []);
 
+  useEffect(() => {
+    if (!sdkReady || !config.banner.enabled || !unitId) {
+      setCanMount(false);
+      return;
+    }
+    const t = setTimeout(() => setCanMount(true), __DEV__ ? 400 : 100);
+    return () => {
+      clearTimeout(t);
+      setCanMount(false);
+    };
+  }, [sdkReady, config.banner.enabled, unitId]);
+
   if (
     Platform.OS === 'web' ||
-    !sdkReady ||
+    !canMount ||
     !config.banner.enabled ||
     !unitId ||
     !adModule
