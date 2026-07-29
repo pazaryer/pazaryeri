@@ -198,7 +198,7 @@ export function LocationFilterBar({ value, onChange }: LocationFilterProps) {
                     setNeighborhoodQuery(mahalle);
                     onChange({
                       city: activeCity,
-                      district: value.district ?? districtQuery.trim() || undefined,
+                      district: (value.district ?? districtQuery.trim()) || undefined,
                       neighborhood: mahalle,
                       radiusKm: undefined,
                     });
