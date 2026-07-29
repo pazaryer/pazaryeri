@@ -88,7 +88,13 @@
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
-          "color": "#3D1A78"
+          "color": "#3D1A78",
+          "sounds": [
+            "./assets/sounds/pazaryeri-inapp.wav",
+            "./assets/sounds/pazaryeri-push.wav",
+            "./assets/sounds/pazaryeri-message.wav",
+            "./assets/sounds/pazaryeri-favorite.wav"
+          ]
         }
       ],
       [

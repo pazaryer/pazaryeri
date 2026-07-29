@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "./supabase-db";
 import { logger } from "./logger";
+import { getPushSoundForType } from "./push-sounds";
 
 function parseNotificationIsRead(value: unknown): boolean {
   return value === true || value === "true";
@@ -40,15 +41,22 @@ export async function sendPushNotification(
 
     const notifType = options?.type ?? data?.type ?? "default";
     const channelId =
-      notifType === "engagement" ? "engagement" : notifType === "message" ? "messages" : "default";
+      notifType === "engagement"
+        ? "engagement"
+        : notifType === "message"
+          ? "messages"
+          : notifType === "favorite" || notifType === "favorite_update"
+            ? "favorites"
+            : "default";
     const badge = options?.badge ?? (await getUnreadCount(userId));
+    const sound = getPushSoundForType(notifType);
 
     const payload: Record<string, unknown> = {
       to: token,
       title,
       body,
       data: data ?? {},
-      sound: "default",
+      sound,
       priority: "high",
       channelId,
       badge,

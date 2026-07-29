@@ -106,6 +106,9 @@ function WebShellInner({
 
             {user ? (
               <>
+                <Pressable style={styles.iconBtn} onPress={() => router.push('/favorilerim')}>
+                  <Text style={styles.iconBtnText}>❤️</Text>
+                </Pressable>
                 <Pressable style={styles.iconBtn} onPress={() => router.push('/notifications')}>
                   <Text style={styles.iconBtnText}>🔔</Text>
                   {unreadNotifs > 0 && (

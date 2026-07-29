@@ -182,6 +182,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <MenuItem icon="heart-outline" title="Favorilerim" onPress={() => router.push('/favorites')} colors={colors} />
         <MenuItem icon="settings-outline" title="Profil Ayarları" onPress={() => router.push('/settings')} colors={colors} />
         <MenuItem icon="help-circle-outline" title="Yardım" onPress={() => router.push('/help')} colors={colors} />
         <MenuItem icon="log-out-outline" title="Çıkış Yap" destructive onPress={handleLogout} colors={colors} last />

@@ -180,10 +180,12 @@ export function useSearch(q: string) {
   });
 }
 
-export function useFavorites() {
+export function useFavorites(enabled = true) {
   return useQuery({
     queryKey: ['favorites'],
     queryFn: () => apiFetch<ListResponse>('/favorites'),
+    enabled,
+    staleTime: 30_000,
   });
 }
 

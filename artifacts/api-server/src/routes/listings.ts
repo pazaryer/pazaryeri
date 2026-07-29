@@ -125,6 +125,12 @@ router.put("/listings/:listingId", authMiddleware, async (req, res, next) => {
     if (!listing) throw new AppError("İlan bulunamadı", 404);
     if (listing.seller_id !== req.user!.id) throw new AppError("Bu ilanı düzenleme yetkiniz yok", 403);
 
+    const { count: oldImageCount } = await sb
+      .from("listing_images")
+      .select("id", { count: "exact", head: true })
+      .eq("listing_id", listing.id);
+
+    const oldPrice = listing.price;
     const { images, acceptsOffers, contactPhone, ...rest } = body;
     const update: Record<string, unknown> = { ...rest, updated_at: new Date().toISOString() };
 
@@ -149,6 +155,22 @@ router.put("/listings/:listingId", authMiddleware, async (req, res, next) => {
       );
     }
 
+    const { notifyListingFavoriters } = await import("../lib/notify-favorite-watchers");
+    const newPrice = body.price ?? oldPrice;
+
+    if (body.price != null && newPrice < oldPrice) {
+      await notifyListingFavoriters(listing.id, listing.seller_id, {
+        changeType: "price_drop",
+        oldPrice,
+        newPrice,
+      });
+    } else if (images && images.length > (oldImageCount ?? 0)) {
+      await notifyListingFavoriters(listing.id, listing.seller_id, {
+        changeType: "image_added",
+        imageCount: images.length,
+      });
+    }
+
     res.json(await dbBuildListingDetail(listing.id, req.user!.id));
   } catch (err) {
     next(err);
@@ -167,6 +189,12 @@ router.patch("/listings/:listingId/status", authMiddleware, async (req, res, nex
     if (status === "sold") patch.sold_at = now;
     else if (status === "active") patch.sold_at = null;
     await sb.from("listings").update(patch).eq("id", req.params.listingId);
+
+    if (status === "sold") {
+      const { notifyListingFavoriters } = await import("../lib/notify-favorite-watchers");
+      await notifyListingFavoriters(req.params.listingId, listing.seller_id, { changeType: "sold" });
+    }
+
     res.json(await dbBuildListingDetail(req.params.listingId, req.user!.id));
   } catch (err) {
     next(err);

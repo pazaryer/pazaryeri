@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { BRAND } from '@/constants/brand';
 import { listingThumbImageProps } from '@/lib/listing-image-props';
 import type { MessageBannerPayload } from '@/lib/message-banner-bus';
+import { playInAppNotificationSound } from '@/lib/notification-sounds';
 import { useSendMessage } from '@/lib/hooks';
 
 const AUTO_HIDE_MS = 12_000;
@@ -49,6 +50,7 @@ export function MessageInAppBanner({ payload, onDismiss }: Props) {
 
   useEffect(() => {
     if (!payload) return;
+    void playInAppNotificationSound('popup');
     setReply('');
     translateY.setValue(-200);
     Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 68, friction: 11 }).start();

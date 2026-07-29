@@ -225,6 +225,10 @@ export function WebProfilePage() {
                   <Text style={styles.menuIcon}>💬</Text>
                   <Text style={styles.menuText}>Mesajlarım</Text>
                 </Pressable>
+                <Pressable style={styles.menuItem} onPress={() => router.push('/favorilerim')}>
+                  <Text style={styles.menuIcon}>❤️</Text>
+                  <Text style={styles.menuText}>Favorilerim</Text>
+                </Pressable>
                 <Pressable style={styles.menuItem} onPress={() => router.push('/notifications')}>
                   <Text style={styles.menuIcon}>🔔</Text>
                   <Text style={styles.menuText}>Bildirimler</Text>

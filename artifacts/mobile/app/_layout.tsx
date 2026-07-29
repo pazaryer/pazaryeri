@@ -24,7 +24,7 @@ import { initApi } from '@/lib/api';
 import { initFirebase } from '@/lib/firebase';
 import { isOnboardingComplete, isOnboardingDoneSync, subscribeOnboarding } from '@/lib/onboarding';
 import { PushNotificationHandler } from '@/components/PushNotificationHandler';
-import { MessageNotificationWatcher } from '@/components/MessageNotificationWatcher';
+import { AppNotificationWatcher } from '@/components/AppNotificationWatcher';
 
 try {
   initApi();
@@ -123,7 +123,7 @@ function RootLayoutNav() {
     <>
       {Platform.OS !== 'web' ? <StatusBar style="dark" /> : null}
       <PushNotificationHandler />
-      <MessageNotificationWatcher />
+      <AppNotificationWatcher />
       <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="index" />
@@ -147,6 +147,8 @@ function RootLayoutNav() {
       <Stack.Screen name="terms" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="notifications" />
+      <Stack.Screen name="favorites" />
+      <Stack.Screen name="favorilerim" />
       <Stack.Screen name="addresses" />
       <Stack.Screen name="help" />
     </Stack>

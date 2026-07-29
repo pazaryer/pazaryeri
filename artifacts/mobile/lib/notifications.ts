@@ -2,8 +2,17 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import type { QueryClient } from '@tanstack/react-query';
 import { showMessageBanner } from '@/lib/message-banner-bus';
+import { showInAppToast } from '@/lib/in-app-toast-bus';
+import { getPushSoundForType } from '@/lib/notification-sounds';
 
 let handlerConfigured = false;
+
+const ANDROID_SOUNDS = {
+  default: 'pazaryeri-push.wav',
+  messages: 'pazaryeri-message.wav',
+  favorites: 'pazaryeri-favorite.wav',
+  engagement: 'pazaryeri-push.wav',
+} as const;
 
 function getNotificationsModule() {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -18,10 +27,10 @@ function configureNotificationHandler() {
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => {
       const data = parsePushData(notification.request.content.data);
+      const content = notification.request.content;
       const isMessage = data.type === 'message' && data.conversationId;
 
       if (isMessage) {
-        const content = notification.request.content;
         showMessageBanner({
           conversationId: data.conversationId!,
           listingId: data.listingId ?? '',
@@ -31,14 +40,23 @@ function configureNotificationHandler() {
           senderAvatar: data.senderAvatar,
           listingImage: data.listingImage,
         });
+      } else {
+        showInAppToast({
+          id: `push-${Date.now()}`,
+          type: data.type ?? 'default',
+          title: content.title ?? 'Pazaryeri',
+          body: content.body ?? '',
+          listingId: data.listingId,
+          subtitle: content.subtitle ?? data.listingTitle,
+        });
       }
 
       return {
-        shouldShowAlert: !isMessage,
-        shouldPlaySound: true,
+        shouldShowAlert: false,
+        shouldPlaySound: false,
         shouldSetBadge: true,
-        shouldShowBanner: !isMessage,
-        shouldShowList: !isMessage,
+        shouldShowBanner: false,
+        shouldShowList: false,
       };
     },
   });
@@ -68,6 +86,7 @@ export type PushNavigationData = {
   messageText?: string;
   senderAvatar?: string;
   listingImage?: string;
+  changeType?: string;
 };
 
 export function parsePushData(raw: unknown): PushNavigationData {
@@ -84,6 +103,7 @@ export function parsePushData(raw: unknown): PushNavigationData {
     messageText: str('messageText'),
     senderAvatar: str('senderAvatar'),
     listingImage: str('listingImage'),
+    changeType: str('changeType'),
   };
 }
 
@@ -92,6 +112,7 @@ export function getPushNavigationPath(data: PushNavigationData): string | null {
     return `/chat/${data.conversationId}`;
   }
   if (data.listingId) return `/listing/${data.listingId}`;
+  if (data.screen === 'favorites') return '/favorites';
   if (data.screen === 'explore') return '/(tabs)/explore';
   if (data.screen === 'post') return '/(tabs)/post';
   if (data.screen === 'messages') return '/(tabs)/messages';
@@ -99,19 +120,61 @@ export function getPushNavigationPath(data: PushNavigationData): string | null {
   return '/notifications';
 }
 
-function pushPayloadFromNotification(
+function handleForegroundPush(
   data: PushNavigationData,
   content: { title?: string | null; body?: string | null; subtitle?: string | null },
 ): void {
-  if (data.type !== 'message' || !data.conversationId) return;
-  showMessageBanner({
-    conversationId: data.conversationId,
-    listingId: data.listingId ?? '',
-    senderName: data.senderName ?? content.title ?? 'Yeni mesaj',
-    listingTitle: data.listingTitle ?? content.subtitle ?? 'İlan',
-    messageText: data.messageText ?? content.body ?? '',
-    senderAvatar: data.senderAvatar,
-    listingImage: data.listingImage,
+  if (data.type === 'message' && data.conversationId) {
+    showMessageBanner({
+      conversationId: data.conversationId,
+      listingId: data.listingId ?? '',
+      senderName: data.senderName ?? content.title ?? 'Yeni mesaj',
+      listingTitle: data.listingTitle ?? content.subtitle ?? 'İlan',
+      messageText: data.messageText ?? content.body ?? '',
+      senderAvatar: data.senderAvatar,
+      listingImage: data.listingImage,
+    });
+    return;
+  }
+
+  showInAppToast({
+    id: `fg-${Date.now()}`,
+    type: data.type ?? 'default',
+    title: content.title ?? 'Pazaryeri',
+    body: content.body ?? '',
+    listingId: data.listingId,
+    subtitle: content.subtitle ?? data.listingTitle,
+  });
+}
+
+async function setupAndroidChannels(Notifications: ReturnType<typeof getNotificationsModule>): Promise<void> {
+  await Notifications.setNotificationChannelAsync('default', {
+    name: 'Pazaryeri',
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#3D1A78',
+    sound: ANDROID_SOUNDS.default,
+  });
+  await Notifications.setNotificationChannelAsync('messages', {
+    name: 'Mesajlar',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 200, 100, 200],
+    lightColor: '#3D1A78',
+    sound: ANDROID_SOUNDS.messages,
+  });
+  await Notifications.setNotificationChannelAsync('favorites', {
+    name: 'Favoriler & İlanlar',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 180, 120, 180],
+    lightColor: '#3D1A78',
+    sound: ANDROID_SOUNDS.favorites,
+  });
+  await Notifications.setNotificationChannelAsync('engagement', {
+    name: 'Pazaryeri Hatırlatmalar',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    vibrationPattern: [0, 150, 100, 150],
+    lightColor: '#3D1A78',
+    sound: ANDROID_SOUNDS.engagement,
   });
 }
 
@@ -139,24 +202,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   if (finalStatus !== 'granted') return null;
 
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Pazaryeri',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#3D1A78',
-    });
-    await Notifications.setNotificationChannelAsync('messages', {
-      name: 'Mesajlar',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 200, 100, 200],
-      lightColor: '#3D1A78',
-    });
-    await Notifications.setNotificationChannelAsync('engagement', {
-      name: 'Pazaryeri Hatırlatmalar',
-      importance: Notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 150, 100, 150],
-      lightColor: '#3D1A78',
-    });
+    await setupAndroidChannels(Notifications);
   }
 
   const projectId = getProjectId();
@@ -192,11 +238,12 @@ export function attachPushNotificationListeners(
   const invalidateAll = () => {
     void queryClient.invalidateQueries({ queryKey: ['notifications'] });
     void queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    void queryClient.invalidateQueries({ queryKey: ['favorites'] });
   };
 
   const receivedSub = Notifications.addNotificationReceivedListener((notification) => {
     const data = parsePushData(notification.request.content.data);
-    pushPayloadFromNotification(data, notification.request.content);
+    handleForegroundPush(data, notification.request.content);
     invalidateAll();
   });
 
@@ -219,3 +266,6 @@ export function attachPushNotificationListeners(
     responseSub.remove();
   };
 }
+
+// Re-export for push sound helper used elsewhere
+export { getPushSoundForType };
