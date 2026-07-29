@@ -59,7 +59,7 @@ export default function SettingsScreen() {
         <MenuCard
           icon="📊"
           title="AdMob Reklamları"
-          subtitle="Banner, geçiş, ödüllü — App/Unit ID tablosu"
+          subtitle="App ID, Unit ID, banner / geçiş / ödüllü toggle"
           onPress={() => router.push('/(tabs)/admob')}
         />
       </Section>

@@ -2,6 +2,7 @@ export const THEME = {
   bg: '#F4F6FA',
   bgSoft: '#EEF1F7',
   surface: '#FFFFFF',
+  card: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
   surfaceGlass: 'rgba(255, 255, 255, 0.96)',
   border: '#E2E8F0',

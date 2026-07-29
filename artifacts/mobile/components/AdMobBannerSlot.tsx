@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useAdMobConfig, resolveBannerUnitId } from '@/lib/admob/config';
 import { useAdMobSdkReady } from '@/lib/admob/init';
+import { getAdsModule, isAdMobSupported } from '@/lib/admob/native';
 import { BRAND } from '@/constants/brand';
 import { useColors } from '@/hooks/useColors';
 import { BANNER_BORDER_RADIUS, BANNER_INSET_H, useBannerLayout } from '@/lib/banner-layout';
@@ -10,10 +11,8 @@ type Props = {
   bottom: number;
 };
 
-const NATIVE_BANNER_W = 320;
 const NATIVE_BANNER_H = 50;
 
-/** Tek global AdMob banner — alt orta, tab bar üstü. */
 export function AdMobBannerSlot({ bottom }: Props) {
   const colors = useColors();
   const config = useAdMobConfig();
@@ -22,39 +21,24 @@ export function AdMobBannerSlot({ bottom }: Props) {
   const { width } = useBannerLayout();
   const [canMount, setCanMount] = useState(false);
 
-  const adModule = useMemo(() => {
-    if (Platform.OS === 'web') return null;
-    try {
-      return require('react-native-google-mobile-ads');
-    } catch {
-      return null;
-    }
-  }, []);
+  const adModule = useMemo(() => (isAdMobSupported() ? getAdsModule() : null), []);
 
   useEffect(() => {
-    if (!sdkReady || !config.banner.enabled || !unitId) {
+    if (!isAdMobSupported() || !sdkReady || !config.banner.enabled || !unitId) {
       setCanMount(false);
       return;
     }
-    const t = setTimeout(() => setCanMount(true), __DEV__ ? 400 : 100);
+    const t = setTimeout(() => setCanMount(true), 200);
     return () => {
       clearTimeout(t);
       setCanMount(false);
     };
   }, [sdkReady, config.banner.enabled, unitId]);
 
-  if (
-    Platform.OS === 'web' ||
-    !canMount ||
-    !config.banner.enabled ||
-    !unitId ||
-    !adModule
-  ) {
-    return null;
-  }
+  if (Platform.OS === 'web' || !canMount || !unitId || !adModule) return null;
 
   const { BannerAd, BannerAdSize } = adModule;
-  const cardWidth = Math.min(width, NATIVE_BANNER_W);
+  const cardWidth = Math.min(width, 320);
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom }]}>
@@ -63,7 +47,7 @@ export function AdMobBannerSlot({ bottom }: Props) {
           styles.card,
           {
             width: cardWidth,
-            height: NATIVE_BANNER_H,
+            minHeight: NATIVE_BANNER_H,
             borderColor: colors.border,
             backgroundColor: colors.card,
           },
@@ -76,6 +60,10 @@ export function AdMobBannerSlot({ bottom }: Props) {
           unitId={unitId}
           size={BannerAdSize.BANNER}
           requestOptions={{ requestNonPersonalizedAdsOnly: false }}
+          onAdFailedToLoad={() => {
+            setCanMount(false);
+            setTimeout(() => setCanMount(true), 3000);
+          }}
         />
       </View>
     </View>
@@ -100,11 +88,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: BRAND.primary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   badge: {
     position: 'absolute',
@@ -120,6 +103,5 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 6,
     fontWeight: '800',
-    letterSpacing: 0.4,
   },
 });

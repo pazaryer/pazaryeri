@@ -11,11 +11,10 @@ import {
   View,
 } from 'react-native';
 import { Redirect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { Btn, Input, Loading } from '@/components/ui';
-import { THEME } from '@/lib/theme';
+import { THEME, RADIUS, SHADOW } from '@/lib/theme';
 import { API_BASE_URL, checkApiHealth } from '@/lib/api';
 
 export default function LoginScreen() {
@@ -50,7 +49,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <LinearGradient colors={['#0F0A1A', '#1A1228', '#2A1260']} style={styles.root}>
+    <View style={styles.root}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}
@@ -66,7 +65,9 @@ export default function LoginScreen() {
 
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Ionicons name="shield-checkmark" size={22} color={THEME.gold} />
+              <View style={styles.shieldIcon}>
+                <Ionicons name="shield-checkmark" size={20} color={THEME.primary} />
+              </View>
               <Text style={styles.cardTitle}>Güvenli Giriş</Text>
             </View>
             <Text style={styles.cardHint}>Sadece yetkili yöneticiler erişebilir</Text>
@@ -116,12 +117,12 @@ export default function LoginScreen() {
           <Text style={styles.footer}>{API_BASE_URL}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: THEME.bg },
   flex: { flex: 1 },
   scroll: {
     flexGrow: 1,
@@ -135,24 +136,34 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 28,
-    backgroundColor: 'rgba(201,168,76,0.15)',
+    backgroundColor: THEME.primaryLight,
     borderWidth: 2,
-    borderColor: 'rgba(201,168,76,0.4)',
+    borderColor: THEME.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    ...SHADOW.card,
   },
   icon: { width: 72, height: 72, borderRadius: 16 },
-  brand: { fontSize: 30, fontWeight: '900', color: THEME.gold, letterSpacing: 5 },
-  brandSub: { fontSize: 11, color: THEME.textMuted, letterSpacing: 6, marginTop: 4 },
+  brand: { fontSize: 28, fontWeight: '900', color: THEME.primary, letterSpacing: 4 },
+  brandSub: { fontSize: 11, color: THEME.textMuted, letterSpacing: 5, marginTop: 4 },
   card: {
-    backgroundColor: 'rgba(26,18,40,0.95)',
-    borderRadius: 20,
+    backgroundColor: THEME.surface,
+    borderRadius: RADIUS.lg,
     padding: 22,
     borderWidth: 1,
     borderColor: THEME.border,
+    ...SHADOW.card,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
+  shieldIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: THEME.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardTitle: { fontSize: 18, fontWeight: '700', color: THEME.text },
   cardHint: { fontSize: 12, color: THEME.textMuted, marginBottom: 18 },
   input: { marginBottom: 12 },
@@ -165,11 +176,11 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 14,
     padding: 10,
-    borderRadius: 10,
+    borderRadius: RADIUS.sm,
   },
-  statusOk: { backgroundColor: 'rgba(18,183,106,0.12)' },
-  statusWarn: { backgroundColor: 'rgba(247,144,9,0.12)' },
+  statusOk: { backgroundColor: THEME.successBg },
+  statusWarn: { backgroundColor: THEME.warningBg },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 11, color: THEME.textMuted, flex: 1 },
-  footer: { textAlign: 'center', color: THEME.textMuted, fontSize: 10, marginTop: 20, opacity: 0.6 },
+  statusText: { fontSize: 11, color: THEME.textSoft, flex: 1 },
+  footer: { textAlign: 'center', color: THEME.textMuted, fontSize: 10, marginTop: 20, opacity: 0.7 },
 });

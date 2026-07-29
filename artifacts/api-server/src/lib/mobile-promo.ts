@@ -58,13 +58,25 @@ function mergeBannerItem(
   raw: Partial<SponsorBannerItem> | undefined,
   legacy?: SponsorBannerConfig,
 ): SponsorBannerItem {
-  const useLegacy = legacy && (placement === "home" || placement === "web");
+  const canUseLegacy = legacy && (placement === "home" || placement === "web");
+  const rawImage = nullableStr(raw?.imageUrl);
+  const imageUrl = rawImage ?? (canUseLegacy ? legacy!.imageUrl : null);
+
+  let enabled: boolean;
+  if (typeof raw?.enabled === "boolean") {
+    enabled = raw.enabled;
+  } else if (!rawImage && canUseLegacy && imageUrl) {
+    enabled = legacy!.enabled;
+  } else {
+    enabled = !!imageUrl;
+  }
+
   return {
     placement,
-    enabled: bool(raw?.enabled, useLegacy ? legacy!.enabled : false),
-    imageUrl: nullableStr(raw?.imageUrl) ?? (useLegacy ? legacy!.imageUrl : null),
-    linkUrl: nullableStr(raw?.linkUrl) ?? (useLegacy ? legacy!.linkUrl : null),
-    altText: str(raw?.altText, useLegacy ? legacy!.altText : "Sponsor"),
+    enabled,
+    imageUrl,
+    linkUrl: nullableStr(raw?.linkUrl) ?? (canUseLegacy && !rawImage ? legacy!.linkUrl : null),
+    altText: str(raw?.altText, canUseLegacy && !rawImage ? legacy!.altText : "Sponsor"),
   };
 }
 
@@ -91,10 +103,7 @@ export function mergeSponsorBanners(config: Record<string, unknown>): SponsorBan
     }
   }
 
-  const hasNew = byPlacement.size > 0;
-  return SPONSOR_PLACEMENTS.map((p) =>
-    mergeBannerItem(p.id, byPlacement.get(p.id), hasNew ? undefined : legacyCfg),
-  );
+  return SPONSOR_PLACEMENTS.map((p) => mergeBannerItem(p.id, byPlacement.get(p.id), legacyCfg));
 }
 
 export function mergeMobilePromo(config: Record<string, unknown>): MobilePromoBundle {

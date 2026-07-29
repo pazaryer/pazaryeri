@@ -8,6 +8,7 @@ import { useMobilePromoRefresh } from '@/hooks/useMobilePromoRefresh';
 import { AppOverlays } from '@/components/AppOverlays';
 import { WebAppDownloadFab } from '@/components/web/WebAppDownloadFab';
 import { useAdMobLifecycle } from '@/lib/admob/init';
+import { isAdMobSupported } from '@/lib/admob/native';
 
 export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -64,7 +65,7 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
       {Platform.OS === 'web' ? <BrandWebHead /> : null}
       {Platform.OS === 'web' ? <WebAppDownloadFab /> : null}
       {children}
-      {Platform.OS !== 'web' ? <AppOverlays /> : null}
+      {Platform.OS !== 'web' && isAdMobSupported() ? <AppOverlays /> : null}
     </BrandProvider>
   );
 }

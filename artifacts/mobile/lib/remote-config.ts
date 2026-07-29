@@ -192,7 +192,7 @@ export function getSponsorBanners(): SponsorBannerItem[] {
   const legacy = cached?.['mobile.sponsorBanner'];
   const byPlacement = new Map<SponsorPlacementId, Partial<SponsorBannerItem>>();
 
-  if (Array.isArray(rawArr) && rawArr.length > 0) {
+  if (Array.isArray(rawArr)) {
     for (const item of rawArr) {
       const placement = item?.placement as SponsorPlacementId | undefined;
       if (placement && SPONSOR_PLACEMENTS.some((p) => p.id === placement)) {
@@ -201,24 +201,48 @@ export function getSponsorBanners(): SponsorBannerItem[] {
     }
   }
 
-  const hasNew = byPlacement.size > 0;
+  const legacyImage =
+    typeof legacy?.imageUrl === 'string' && legacy.imageUrl.trim() ? legacy.imageUrl.trim() : null;
+  const legacyEnabled = legacy?.enabled ?? false;
+
   return SPONSOR_PLACEMENTS.map((p) => {
     const raw = byPlacement.get(p.id);
-    const useLegacy = !hasNew && legacy && (p.id === 'home' || p.id === 'web');
+    const rawImage =
+      typeof raw?.imageUrl === 'string' && raw.imageUrl.trim() ? raw.imageUrl.trim() : null;
+    const canUseLegacy = (p.id === 'home' || p.id === 'web') && !!legacyImage;
+
+    const imageUrl = rawImage ?? (canUseLegacy ? legacyImage : null);
+    let enabled: boolean;
+    if (typeof raw?.enabled === 'boolean') {
+      enabled = raw.enabled;
+    } else if (!rawImage && canUseLegacy && imageUrl) {
+      enabled = legacyEnabled;
+    } else {
+      enabled = !!imageUrl;
+    }
+
     return {
       placement: p.id,
-      enabled: raw?.enabled ?? (useLegacy ? legacy!.enabled ?? false : false),
-      imageUrl: raw?.imageUrl ?? (useLegacy ? legacy!.imageUrl ?? null : null),
-      linkUrl: raw?.linkUrl ?? (useLegacy ? legacy!.linkUrl ?? null : null),
-      altText: raw?.altText ?? (useLegacy ? legacy!.altText ?? 'Sponsor' : 'Sponsor'),
+      enabled,
+      imageUrl,
+      linkUrl:
+        (typeof raw?.linkUrl === 'string' && raw.linkUrl.trim() ? raw.linkUrl.trim() : null) ??
+        (!rawImage && canUseLegacy
+          ? typeof legacy?.linkUrl === 'string' && legacy.linkUrl.trim()
+            ? legacy.linkUrl.trim()
+            : null
+          : null),
+      altText: raw?.altText ?? (canUseLegacy && !rawImage ? legacy?.altText ?? 'Sponsor' : 'Sponsor'),
     };
   });
 }
 
 export function getSponsorForPlacement(placement: SponsorPlacementId): SponsorBannerItem | null {
   const banner = getSponsorBanners().find((b) => b.placement === placement);
-  if (!banner?.enabled || !banner.imageUrl) return null;
-  return banner;
+  if (!banner?.enabled) return null;
+  const imageUrl = banner.imageUrl?.trim();
+  if (!imageUrl) return null;
+  return { ...banner, imageUrl };
 }
 
 export function getSponsorBanner() {
