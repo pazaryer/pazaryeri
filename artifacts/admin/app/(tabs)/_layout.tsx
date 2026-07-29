@@ -3,9 +3,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/ui';
 import { LuxuryTabBar } from '@/components/LuxuryTabBar';
 import { THEME } from '@/lib/theme';
+import { useAdminPresencePing } from '@/lib/presence-ping';
 
 export default function TabsLayout() {
   const { user, profile, isLoading } = useAuth();
+  useAdminPresencePing();
 
   if (isLoading) return <Loading />;
   if (!user || !profile) return <Redirect href="/login" />;

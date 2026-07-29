@@ -14,7 +14,7 @@ export type PlatformSession = {
 };
 
 export type PlatformAnalytics = {
-  platform: "web" | "mobile";
+  platform: "web" | "mobile" | "admin";
   live: number;
   last24h: number;
   loggedInLive: number;
@@ -30,11 +30,13 @@ export type PlatformAnalytics = {
   }[];
 };
 
-function platformFilter(group: "web" | "mobile") {
-  return group === "web" ? ["web"] : ["ios", "android"];
+function platformFilter(group: "web" | "mobile" | "admin") {
+  if (group === "web") return ["web"];
+  if (group === "admin") return ["admin"];
+  return ["ios", "android"];
 }
 
-export async function getPlatformAnalytics(group: "web" | "mobile"): Promise<PlatformAnalytics> {
+export async function getPlatformAnalytics(group: "web" | "mobile" | "admin"): Promise<PlatformAnalytics> {
   const sb = getSupabaseAdmin();
   const now = Date.now();
   const liveCutoff = new Date(now - 5 * 60 * 1000).toISOString();

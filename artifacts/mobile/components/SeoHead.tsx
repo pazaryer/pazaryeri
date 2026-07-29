@@ -2,7 +2,8 @@ import React from 'react';
 import { Platform } from 'react-native';
 import Head from 'expo-router/head';
 import { useBrand } from '@/contexts/BrandContext';
-import { canonicalUrl, sitePath } from '@/lib/config';
+import { sitePath } from '@/lib/config';
+import { canonicalUrl } from '@/lib/seo';
 
 type JsonLd = Record<string, unknown> | Record<string, unknown>[];
 

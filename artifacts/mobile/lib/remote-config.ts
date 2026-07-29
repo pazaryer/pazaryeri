@@ -104,7 +104,7 @@ export function isMaintenanceMode(): { active: boolean; message: string } {
 
 const DEFAULT_DEVELOPER = {
   enabled: true,
-  signatureLabel: 'Dev / ByAltun',
+  signatureLabel: 'dev/ByAltun',
   rateApp: {
     enabled: true,
     label: 'Uygulamayı Puanla & Yorumla',

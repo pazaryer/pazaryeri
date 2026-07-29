@@ -29,6 +29,7 @@ import { AppNotificationWatcher } from '@/components/AppNotificationWatcher';
 import { installGlobalErrorHandlers } from '@/lib/global-error-handler';
 import { RemoteConfigGate } from '@/components/RemoteConfigGate';
 import { usePresencePing } from '@/lib/presence-ping';
+import { AppOverlays } from '@/components/AppOverlays';
 
 try {
   initApi();
@@ -165,6 +166,7 @@ function RootLayoutNav() {
       <Stack.Screen name="addresses" />
       <Stack.Screen name="help" />
     </Stack>
+    <AppOverlays />
     </>
   );
 }

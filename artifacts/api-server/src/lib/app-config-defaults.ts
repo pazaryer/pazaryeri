@@ -68,7 +68,7 @@ export const DEFAULT_APP_CONFIG: Record<string, unknown> = {
   },
   "mobile.developer": {
     enabled: true,
-    signatureLabel: "Dev / ByAltun",
+    signatureLabel: "dev/ByAltun",
     rateApp: {
       enabled: true,
       label: "Uygulamayı Puanla & Yorumla",

@@ -53,7 +53,12 @@ router.get("/admin/me", adminMiddleware, async (req, res, next) => {
 router.get("/admin/stats", adminMiddleware, async (_req, res, next) => {
   try {
     const sb = getSupabaseAdmin();
-    const live = await getLiveAnalytics();
+    const [live, webActivity, mobileActivity, adminActivity] = await Promise.all([
+      getLiveAnalytics(),
+      getPlatformAnalytics("web"),
+      getPlatformAnalytics("mobile"),
+      getPlatformAnalytics("admin"),
+    ]);
     const [
       users,
       listings,
@@ -99,6 +104,11 @@ router.get("/admin/stats", adminMiddleware, async (_req, res, next) => {
         bannedUsers: bannedUsers.count ?? 0,
       },
       live,
+      platformActivity: {
+        web: webActivity,
+        mobile: mobileActivity,
+        admin: adminActivity,
+      },
       analyticsResetAt: await getAnalyticsResetAt(),
       recentUsers: recentUsers ?? [],
       recentListings: (recentListings ?? []).map((l) => ({

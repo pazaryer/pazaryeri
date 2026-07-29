@@ -37,7 +37,7 @@ router.post("/presence/ping", optionalAuth, async (req, res, next) => {
     const body = z
       .object({
         deviceId: z.string().min(8).max(128),
-        platform: z.enum(["ios", "android", "web"]).optional(),
+        platform: z.enum(["ios", "android", "web", "admin"]).optional(),
         appVersion: z.string().max(32).optional(),
       })
       .parse(req.body);
