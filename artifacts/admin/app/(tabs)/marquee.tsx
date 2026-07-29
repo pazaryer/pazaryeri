@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, FlatList, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, StyleSheet, Switch } from 'react-native';
 import { adminFetch } from '@/lib/api';
-import { Btn, Card, EmptyState, Input, Loading, Screen, Subtitle, Title } from '@/components/ui';
-import { THEME, SPACING } from '@/lib/theme';
+import { Btn, Card, Input, Loading } from '@/components/ui';
+import { PageShell } from '@/components/PageShell';
+import { DataTable, CellText } from '@/components/DataTable';
+import { THEME } from '@/lib/theme';
 
 interface MarqueeRow {
   id: string;
@@ -55,43 +57,50 @@ export default function MarqueeScreen() {
   if (isLoading) return <Loading />;
 
   return (
-    <Screen style={{ paddingBottom: 0 }}>
-      <Title>Kayan Yazılar</Title>
-      <Subtitle>Web ve mobil anasayfadaki duyuru bandı — aç/kapat, düzenle, sil</Subtitle>
-
+    <PageShell
+      title="Kayan Yazılar"
+      subtitle="Web ve mobil anasayfa duyuru bandı"
+    >
       <Card style={styles.addBox}>
         <Input value={newText} onChangeText={setNewText} placeholder="Yeni duyuru metni..." />
-        <Btn label="Ekle" onPress={addItem} />
+        <Btn label="Ekle" variant="gold" onPress={addItem} />
       </Card>
 
-      <FlatList
+      <DataTable
+        columns={[
+          { key: 'text', title: 'Metin', flex: 3 },
+          { key: 'order', title: 'Sıra', width: 60 },
+          { key: 'enabled', title: 'Aktif', width: 80 },
+          { key: 'action', title: 'İşlem', width: 70 },
+        ]}
         data={data?.items ?? []}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<EmptyState message="Kayan yazı yok" />}
-        renderItem={({ item }) => (
-          <Card style={styles.row}>
-            <View style={styles.rowTop}>
-              <Text style={[styles.text, !item.enabled && styles.textOff]} numberOfLines={2}>
+        emptyMessage="Kayan yazı yok"
+        renderCell={(item, col) => {
+          if (col.key === 'text') {
+            return (
+              <CellText bold muted={!item.enabled}>
                 {item.text}
-              </Text>
+              </CellText>
+            );
+          }
+          if (col.key === 'order') return <CellText muted>{item.sort_order}</CellText>;
+          if (col.key === 'enabled') {
+            return (
               <Switch
                 value={item.enabled}
                 onValueChange={() => toggle(item)}
                 trackColor={{ true: THEME.primary, false: THEME.border }}
               />
-            </View>
-            <Btn label="Sil" variant="danger" onPress={() => remove(item.id)} />
-          </Card>
-        )}
+            );
+          }
+          return <Btn label="Sil" variant="danger" compact onPress={() => remove(item.id)} />;
+        }}
       />
-    </Screen>
+    </PageShell>
   );
 }
 
 const styles = StyleSheet.create({
-  addBox: { marginBottom: SPACING.md, gap: SPACING.sm },
-  row: { marginBottom: SPACING.sm, gap: SPACING.sm },
-  rowTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  text: { flex: 1, color: THEME.text, fontSize: 14 },
-  textOff: { color: THEME.textMuted, textDecorationLine: 'line-through' },
+  addBox: { marginBottom: 12, gap: 8 },
 });

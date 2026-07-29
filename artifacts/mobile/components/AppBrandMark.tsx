@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
 import { AppIcon, APP_ICON_SIZES, type AppIconSize } from '@/components/AppIcon';
-import { BRAND } from '@/constants/brand';
+import { useBrand } from '@/contexts/BrandContext';
 
 type Props = {
   size?: AppIconSize;
@@ -18,6 +18,7 @@ export function AppBrandMark({
   centered = false,
   style,
 }: Props) {
+  const brand = useBrand();
   const px = typeof size === 'number' ? size : APP_ICON_SIZES[size];
 
   return (
@@ -25,8 +26,10 @@ export function AppBrandMark({
       <AppIcon size={px} variant="app" />
       {showName && (
         <View style={styles.textCol}>
-          <Text style={[styles.name, { fontSize: Math.max(18, px * 0.34) }]}>Pazaryeri</Text>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          <Text style={[styles.name, { fontSize: Math.max(18, px * 0.34), color: brand.primary }]}>
+            {brand.name}
+          </Text>
+          {subtitle ? <Text style={[styles.subtitle, { color: brand.textMuted }]}>{subtitle}</Text> : null}
         </View>
       )}
     </View>
@@ -46,12 +49,10 @@ const styles = StyleSheet.create({
   textCol: { gap: 2 },
   name: {
     fontWeight: '800',
-    color: BRAND.primary,
     letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: BRAND.textMuted,
   },
 });

@@ -9,7 +9,7 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
-import { THEME, SPACING } from '@/lib/theme';
+import { THEME, SPACING, RADIUS, SHADOW } from '@/lib/theme';
 
 export function Screen({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   return <View style={[styles.screen, style]}>{children}</View>;
@@ -33,12 +33,14 @@ export function Btn({
   variant = 'primary',
   disabled,
   loading,
+  compact,
 }: {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'danger' | 'ghost';
+  variant?: 'primary' | 'danger' | 'ghost' | 'gold';
   disabled?: boolean;
   loading?: boolean;
+  compact?: boolean;
 }) {
   return (
     <Pressable
@@ -46,16 +48,46 @@ export function Btn({
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.btn,
+        compact && styles.btnCompact,
         variant === 'danger' && styles.btnDanger,
         variant === 'ghost' && styles.btnGhost,
+        variant === 'gold' && styles.btnGold,
         (disabled || loading || pressed) && styles.btnPressed,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={THEME.text} />
+        <ActivityIndicator color={THEME.text} size="small" />
       ) : (
-        <Text style={[styles.btnText, variant === 'ghost' && styles.btnGhostText]}>{label}</Text>
+        <Text
+          style={[
+            styles.btnText,
+            variant === 'ghost' && styles.btnGhostText,
+            variant === 'gold' && styles.btnGoldText,
+            compact && styles.btnTextCompact,
+          ]}
+        >
+          {label}
+        </Text>
       )}
+    </Pressable>
+  );
+}
+
+export function Chip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.chip, active && styles.chipActive]}
+    >
+      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
     </Pressable>
   );
 }
@@ -70,28 +102,60 @@ export function Input(props: TextInputProps) {
   );
 }
 
-export function StatCard({ label, value, color }: { label: string; value: number | string; color?: string }) {
+export function SearchInput(props: TextInputProps) {
   return (
-    <Card style={styles.statCard}>
-      <Text style={[styles.statValue, color ? { color } : null]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </Card>
+    <View style={styles.searchWrap}>
+      <Text style={styles.searchIcon}>⌕</Text>
+      <TextInput
+        {...props}
+        placeholderTextColor={THEME.textMuted}
+        style={[styles.searchInput, props.style]}
+      />
+    </View>
   );
 }
 
-export function Badge({ text, tone = 'default' }: { text: string; tone?: 'default' | 'success' | 'warning' | 'danger' }) {
+export function StatCard({
+  label,
+  value,
+  color,
+  icon,
+}: {
+  label: string;
+  value: number | string;
+  color?: string;
+  icon?: string;
+}) {
+  return (
+    <View style={styles.statCard}>
+      {icon ? <Text style={styles.statIcon}>{icon}</Text> : null}
+      <Text style={[styles.statValue, color ? { color } : null]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+export function Badge({
+  text,
+  tone = 'default',
+}: {
+  text: string;
+  tone?: 'default' | 'success' | 'warning' | 'danger' | 'gold';
+}) {
   const bg =
-    tone === 'success' ? '#123B2A' :
-    tone === 'warning' ? '#3D2A0A' :
-    tone === 'danger' ? '#3D1212' :
-    THEME.surfaceElevated;
+    tone === 'success' ? THEME.successBg :
+    tone === 'warning' ? THEME.warningBg :
+    tone === 'danger' ? THEME.dangerBg :
+    tone === 'gold' ? THEME.goldMuted :
+    'rgba(157, 139, 181, 0.12)';
   const color =
     tone === 'success' ? THEME.success :
     tone === 'warning' ? THEME.warning :
     tone === 'danger' ? THEME.danger :
+    tone === 'gold' ? THEME.gold :
     THEME.textMuted;
   return (
-    <View style={[styles.badge, { backgroundColor: bg }]}>
+    <View style={[styles.badge, { backgroundColor: bg, borderColor: `${color}33` }]}>
       <Text style={[styles.badgeText, { color }]}>{text}</Text>
     </View>
   );
@@ -100,6 +164,7 @@ export function Badge({ text, tone = 'default' }: { text: string; tone?: 'defaul
 export function EmptyState({ message }: { message: string }) {
   return (
     <View style={styles.empty}>
+      <Text style={styles.emptyIcon}>◇</Text>
       <Text style={styles.emptyText}>{message}</Text>
     </View>
   );
@@ -108,49 +173,160 @@ export function EmptyState({ message }: { message: string }) {
 export function Loading() {
   return (
     <View style={styles.loading}>
-      <ActivityIndicator size="large" color={THEME.primary} />
+      <ActivityIndicator size="large" color={THEME.gold} />
+      <Text style={styles.loadingText}>Yükleniyor...</Text>
     </View>
   );
 }
 
+export function MenuCard({
+  title,
+  subtitle,
+  icon,
+  onPress,
+}: {
+  title: string;
+  subtitle: string;
+  icon: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.menuCard, pressed && styles.menuPressed]}>
+      <View style={styles.menuIconWrap}>
+        <Text style={styles.menuIcon}>{icon}</Text>
+      </View>
+      <View style={styles.menuText}>
+        <Text style={styles.menuTitle}>{title}</Text>
+        <Text style={styles.menuSub}>{subtitle}</Text>
+      </View>
+      <Text style={styles.menuArrow}>›</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: THEME.bg, padding: SPACING.md },
+  screen: { flex: 1, backgroundColor: THEME.bg },
   card: {
     backgroundColor: THEME.surface,
-    borderRadius: 14,
-    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
     borderWidth: 1,
     borderColor: THEME.border,
+    ...SHADOW.card,
   },
-  title: { fontSize: 24, fontWeight: '700', color: THEME.text, marginBottom: SPACING.sm },
-  subtitle: { fontSize: 14, color: THEME.textMuted, marginBottom: SPACING.md },
+  title: { fontSize: 24, fontWeight: '800', color: THEME.text, marginBottom: SPACING.sm },
+  subtitle: { fontSize: 14, color: THEME.textMuted, marginBottom: SPACING.md, lineHeight: 20 },
   btn: {
     backgroundColor: THEME.primary,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     paddingVertical: 14,
+    paddingHorizontal: 18,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.4)',
   },
-  btnDanger: { backgroundColor: THEME.danger },
-  btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: THEME.border },
-  btnPressed: { opacity: 0.75 },
-  btnText: { color: THEME.text, fontWeight: '600', fontSize: 15 },
+  btnCompact: { paddingVertical: 10, paddingHorizontal: 14 },
+  btnDanger: { backgroundColor: THEME.danger, borderColor: 'rgba(239,68,68,0.4)' },
+  btnGhost: { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: THEME.border },
+  btnGold: { backgroundColor: THEME.goldMuted, borderColor: 'rgba(212,175,55,0.45)' },
+  btnPressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
+  btnText: { color: THEME.text, fontWeight: '700', fontSize: 14 },
+  btnTextCompact: { fontSize: 12 },
   btnGhostText: { color: THEME.textMuted },
+  btnGoldText: { color: THEME.goldLight },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1,
+    borderColor: THEME.borderSoft,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  chipActive: {
+    backgroundColor: THEME.goldMuted,
+    borderColor: 'rgba(212, 175, 55, 0.45)',
+  },
+  chipText: { fontSize: 12, fontWeight: '600', color: THEME.textMuted },
+  chipTextActive: { color: THEME.goldLight },
   input: {
     backgroundColor: THEME.surfaceElevated,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     color: THEME.text,
     borderWidth: 1,
-    borderColor: THEME.border,
-    marginBottom: SPACING.sm,
+    borderColor: THEME.borderSoft,
+    fontSize: 15,
   },
-  statCard: { flex: 1, minWidth: '45%' },
-  statValue: { fontSize: 28, fontWeight: '800', color: THEME.gold },
-  statLabel: { fontSize: 12, color: THEME.textMuted, marginTop: 4 },
-  badge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { fontSize: 11, fontWeight: '600' },
-  empty: { padding: SPACING.xl, alignItems: 'center' },
-  emptyText: { color: THEME.textMuted },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: THEME.bg },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.surfaceElevated,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: THEME.borderSoft,
+    marginBottom: SPACING.md,
+    paddingHorizontal: 14,
+  },
+  searchIcon: { fontSize: 18, color: THEME.gold, marginRight: 8 },
+  searchInput: { flex: 1, paddingVertical: 14, color: THEME.text, fontSize: 15 },
+  statCard: {
+    flex: 1,
+    minWidth: '46%',
+    backgroundColor: THEME.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    ...SHADOW.card,
+  },
+  statIcon: { fontSize: 18, marginBottom: 6 },
+  statValue: { fontSize: 30, fontWeight: '800', color: THEME.gold, letterSpacing: -1 },
+  statLabel: { fontSize: 12, color: THEME.textMuted, marginTop: 6, lineHeight: 16 },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+  },
+  badgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+  empty: { padding: SPACING.xl, alignItems: 'center', gap: 8 },
+  emptyIcon: { fontSize: 28, color: THEME.border },
+  emptyText: { color: THEME.textMuted, fontSize: 14 },
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: THEME.bg,
+    gap: 12,
+  },
+  loadingText: { color: THEME.textMuted, fontSize: 13 },
+  menuCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    gap: SPACING.md,
+  },
+  menuPressed: { backgroundColor: THEME.surfaceElevated },
+  menuIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: THEME.goldMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(212,175,55,0.25)',
+  },
+  menuIcon: { fontSize: 22 },
+  menuText: { flex: 1 },
+  menuTitle: { fontSize: 16, fontWeight: '700', color: THEME.text },
+  menuSub: { fontSize: 12, color: THEME.textMuted, marginTop: 3 },
+  menuArrow: { fontSize: 24, color: THEME.gold, fontWeight: '300' },
 });

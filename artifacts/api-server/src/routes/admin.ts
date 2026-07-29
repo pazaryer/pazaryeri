@@ -8,8 +8,11 @@ import {
   getAppConfig,
   setAppConfig,
   deleteAppConfigKey,
+  invalidateAppConfigCache,
 } from "../lib/app-config";
 import { CONFIG_KEYS, DEFAULT_APP_CONFIG } from "../lib/app-config-defaults";
+import { mergeBrandingBundle, brandingBundleToConfigKeys, type BrandingBundle } from "../lib/branding";
+import { storeListingImage } from "../lib/image-storage";
 import { purgeListingCompletely } from "../lib/purge-listing";
 import { dbBuildListingDetail } from "../lib/listings-store";
 import { getLiveAnalytics } from "../lib/presence";
@@ -539,6 +542,142 @@ router.delete("/admin/config/:key", superAdminMiddleware, async (req, res, next)
       ip: clientIp(req),
     });
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── Branding (tam marka yönetimi) ───────────────────────────
+
+const brandAssetUploadSchema = z.object({
+  contentType: z.string().default("image/jpeg"),
+  data: z.string().min(1),
+});
+
+const brandingBundleSchema = z.object({
+  name: z.string().min(1).max(80),
+  tagline: z.string().max(200).default(""),
+  supportEmail: z.string().email().optional(),
+  colors: z.object({
+    primary: z.string().min(4).max(20),
+    primaryDark: z.string().min(4).max(20),
+    primaryMid: z.string().min(4).max(20),
+    primaryLight: z.string().min(4).max(20),
+    gold: z.string().min(4).max(20),
+    background: z.string().min(4).max(20),
+  }),
+  assets: z
+    .object({
+      iconUrl: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
+      logoUrl: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
+      splashUrl: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
+      faviconUrl: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
+      ogImageUrl: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
+      adaptiveIconUrl: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
+    })
+    .default({}),
+  seo: z.object({
+    title: z.string().min(2).max(200),
+    description: z.string().min(10).max(500),
+    keywords: z.string().max(500).default(""),
+  }),
+  app: z
+    .object({
+      version: z.string().default("1.0.0"),
+      minSupportedVersion: z.string().default("1.0.0"),
+      forceUpdate: z.boolean().default(false),
+      updateMessage: z.string().max(300).default("Yeni sürüm mevcut. Lütfen güncelleyin."),
+    })
+    .optional(),
+});
+
+router.get("/admin/branding", adminMiddleware, async (_req, res, next) => {
+  try {
+    const config = await getAppConfig();
+    const branding = mergeBrandingBundle(config);
+    res.json({ branding, defaults: mergeBrandingBundle(DEFAULT_APP_CONFIG) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/admin/branding", superAdminMiddleware, async (req, res, next) => {
+  try {
+    const parsed = brandingBundleSchema.parse(req.body);
+    const bundle = {
+      name: parsed.name,
+      tagline: parsed.tagline,
+      supportEmail: parsed.supportEmail ?? "pazaryer0@gmail.com",
+      colors: parsed.colors,
+      assets: Object.fromEntries(
+        Object.entries(parsed.assets ?? {}).map(([k, v]) => [k, v && String(v).trim() ? String(v).trim() : null]),
+      ) as BrandingBundle["assets"],
+      seo: parsed.seo,
+      app: {
+        version: parsed.app?.version ?? "1.0.0",
+        minSupportedVersion: parsed.app?.minSupportedVersion ?? "1.0.0",
+        forceUpdate: parsed.app?.forceUpdate ?? false,
+        updateMessage: parsed.app?.updateMessage ?? "Yeni sürüm mevcut. Lütfen güncelleyin.",
+      },
+    } satisfies BrandingBundle;
+    const keys = brandingBundleToConfigKeys(bundle);
+    await setAppConfig("brand", keys.brand, req.user!.id, "Marka kimliği");
+    await setAppConfig("web.seo", keys["web.seo"], req.user!.id, "Web SEO");
+    await setAppConfig("mobile.app", keys["mobile.app"], req.user!.id, "Mobil uygulama meta");
+
+    await logAdminAction(req.user!.id, "branding.update", {
+      targetType: "branding",
+      targetId: bundle.name,
+      details: { name: bundle.name },
+      ip: clientIp(req),
+    });
+
+    res.json({ success: true, branding: mergeBrandingBundle(await getAppConfig()) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/admin/branding/publish", superAdminMiddleware, async (req, res, next) => {
+  try {
+    invalidateAppConfigCache();
+    const config = await getAppConfig();
+    const branding = mergeBrandingBundle(config);
+
+    await logAdminAction(req.user!.id, "branding.publish", {
+      targetType: "branding",
+      targetId: branding.name,
+      ip: clientIp(req),
+    });
+
+    res.json({
+      success: true,
+      publishedAt: new Date().toISOString(),
+      branding,
+      message:
+        "Marka ayarları yayınlandı. Web ve mobil uygulama 60 saniye içinde güncellenecek.",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/admin/upload/brand-asset", superAdminMiddleware, async (req, res, next) => {
+  try {
+    const { contentType, data } = brandAssetUploadSchema.parse(req.body);
+    const buffer = Buffer.from(data, "base64");
+    if (buffer.length > 8 * 1024 * 1024) {
+      throw new AppError("Görsel çok büyük (maks. 8 MB)", 400);
+    }
+    const { publicUrl, provider } = await storeListingImage(req.user!.id, buffer, contentType);
+
+    await logAdminAction(req.user!.id, "branding.asset_upload", {
+      targetType: "branding",
+      details: { url: publicUrl, provider },
+      ip: clientIp(req),
+    });
+
+    res.json({ publicUrl, provider });
   } catch (err) {
     next(err);
   }

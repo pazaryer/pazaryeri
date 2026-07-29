@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { adminFetch } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { Badge, Btn, Card, Loading, Screen, StatCard, Subtitle, Title } from '@/components/ui';
+import { Badge, Btn, Loading, StatCard } from '@/components/ui';
+import { PageShell, Section } from '@/components/PageShell';
+import { DataTable, CellText } from '@/components/DataTable';
 import { THEME, SPACING } from '@/lib/theme';
 
 interface StatsResponse {
@@ -37,92 +39,107 @@ export default function DashboardScreen() {
   if (isLoading || !data) return <Loading />;
 
   const live = data.live;
+  const roleLabel = profile?.role === 'admin' ? 'Süper Admin' : 'Moderatör';
 
   return (
-    <Screen style={{ paddingBottom: 0 }}>
-      <ScrollView refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={THEME.gold} />}>
-        <View style={styles.header}>
-          <View>
-            <Title>Canlı Panel</Title>
-            <Subtitle>{profile?.name} · {profile?.role === 'admin' ? 'Süper Admin' : 'Moderatör'}</Subtitle>
-          </View>
-          <Btn label="Çıkış" variant="ghost" onPress={signOut} />
-        </View>
-
-        <Text style={styles.section}>👥 Kullanıcılar</Text>
+    <PageShell
+      title="Canlı Panel"
+      subtitle={`${profile?.name} · ${roleLabel}`}
+      headerRight={<Btn label="Çıkış" variant="ghost" compact onPress={signOut} />}
+      refreshing={isRefetching}
+      onRefresh={refetch}
+    >
+      <Section title="Kullanıcılar">
         <View style={styles.statsGrid}>
-          <StatCard label="Anlık Aktif (5dk)" value={live?.users?.live ?? 0} color={THEME.success} />
-          <StatCard label="Son 24 Saat" value={live?.users?.last24h ?? 0} color={THEME.info} />
-          <StatCard label="Bugün Yeni" value={live?.users?.newToday ?? 0} color={THEME.gold} />
-          <StatCard label="Toplam" value={data.counts.users} />
+          <StatCard icon="👥" label="Anlık Aktif (5dk)" value={live?.users?.live ?? 0} color={THEME.success} />
+          <StatCard icon="📈" label="Son 24 Saat" value={live?.users?.last24h ?? 0} color={THEME.info} />
+          <StatCard icon="✨" label="Bugün Yeni" value={live?.users?.newToday ?? 0} color={THEME.gold} />
+          <StatCard icon="🌐" label="Toplam" value={data.counts.users} />
         </View>
+      </Section>
 
-        <Text style={styles.section}>📦 İlanlar</Text>
+      <Section title="İlanlar">
         <View style={styles.statsGrid}>
-          <StatCard label="Anlık Görüntülenen" value={live?.listings?.live ?? 0} color={THEME.success} />
-          <StatCard label="24s Görüntülenen" value={live?.listings?.last24h ?? 0} color={THEME.info} />
-          <StatCard label="Bugün Yeni İlan" value={live?.listings?.newToday ?? 0} color={THEME.gold} />
-          <StatCard label="Aktif İlan" value={data.counts.activeListings} />
+          <StatCard icon="👁" label="Anlık Görüntülenen" value={live?.listings?.live ?? 0} color={THEME.success} />
+          <StatCard icon="📊" label="24s Görüntülenen" value={live?.listings?.last24h ?? 0} color={THEME.info} />
+          <StatCard icon="🆕" label="Bugün Yeni İlan" value={live?.listings?.newToday ?? 0} color={THEME.gold} />
+          <StatCard icon="📦" label="Aktif İlan" value={data.counts.activeListings} />
         </View>
+      </Section>
 
-        <Text style={styles.section}>📊 Genel</Text>
+      <Section title="Genel Özet">
         <View style={styles.statsGrid}>
-          <StatCard label="Şikayet" value={data.counts.pendingReports} color={THEME.warning} />
-          <StatCard label="Engelli" value={data.counts.bannedUsers} color={THEME.danger} />
-          <StatCard label="Yorum" value={data.counts.comments} />
-          <StatCard label="Mesaj" value={data.counts.conversations} />
+          <StatCard icon="🚩" label="Şikayet" value={data.counts.pendingReports} color={THEME.warning} />
+          <StatCard icon="🚫" label="Engelli" value={data.counts.bannedUsers} color={THEME.danger} />
+          <StatCard icon="💬" label="Yorum" value={data.counts.comments} />
+          <StatCard icon="✉️" label="Mesaj" value={data.counts.conversations} />
         </View>
+      </Section>
 
-        {live?.users?.liveDevices?.length ? (
-          <>
-            <Text style={styles.section}>🟢 Anlık Cihazlar (tek kimlik)</Text>
-            {live.users.liveDevices.slice(0, 8).map((d) => (
-              <Card key={d.deviceId} style={styles.deviceRow}>
-                <Text style={styles.deviceId}>{d.deviceId.slice(0, 12)}…</Text>
-                <Text style={styles.deviceMeta}>{d.platform ?? '?'} · {new Date(d.lastPingAt).toLocaleTimeString('tr-TR')}</Text>
-              </Card>
-            ))}
-          </>
-        ) : null}
+      {live?.users?.liveDevices?.length ? (
+        <Section title="Anlık Cihazlar">
+          <DataTable
+            columns={[
+              { key: 'device', title: 'Cihaz ID', flex: 2 },
+              { key: 'platform', title: 'Platform', width: 90 },
+              { key: 'time', title: 'Son Ping', width: 90 },
+            ]}
+            data={live.users.liveDevices.slice(0, 8)}
+            keyExtractor={(d) => d.deviceId}
+            renderCell={(d, col) => {
+              if (col.key === 'device') return <CellText bold>{d.deviceId.slice(0, 14)}…</CellText>;
+              if (col.key === 'platform') return <CellText muted>{d.platform ?? '?'}</CellText>;
+              return <CellText muted>{new Date(d.lastPingAt).toLocaleTimeString('tr-TR')}</CellText>;
+            }}
+          />
+        </Section>
+      ) : null}
 
-        <Text style={styles.section}>Son Kullanıcılar</Text>
-        {data.recentUsers.map((item) => (
-          <Pressable key={item.id} onPress={() => router.push(`/user/${item.id}`)}>
-            <Card style={styles.row}>
-              <Text style={styles.rowTitle}>
-                {item.badge_emoji ? `${item.badge_emoji} ` : ''}{item.name}
-              </Text>
-              <Text style={styles.rowSub}>{item.email ?? '—'}</Text>
-            </Card>
-          </Pressable>
-        ))}
+      <Section title="Son Kullanıcılar">
+        <DataTable
+          columns={[
+            { key: 'name', title: 'İsim', flex: 2 },
+            { key: 'email', title: 'E-posta', flex: 2 },
+            { key: 'date', title: 'Kayıt', width: 100 },
+          ]}
+          data={data.recentUsers}
+          keyExtractor={(u) => u.id}
+          onRowPress={(u) => router.push(`/user/${u.id}`)}
+          emptyMessage="Henüz kullanıcı yok"
+          renderCell={(u, col) => {
+            if (col.key === 'name') {
+              return <CellText bold>{u.badge_emoji ? `${u.badge_emoji} ` : ''}{u.name}</CellText>;
+            }
+            if (col.key === 'email') return <CellText muted>{u.email ?? '—'}</CellText>;
+            return <CellText muted>{new Date(u.created_at).toLocaleDateString('tr-TR')}</CellText>;
+          }}
+        />
+      </Section>
 
-        <Text style={styles.section}>Son İlanlar</Text>
-        {data.recentListings.map((l) => (
-          <Pressable key={l.id} onPress={() => router.push(`/listing/${l.id}`)}>
-            <Card style={styles.row}>
-              <View style={styles.rowTop}>
-                <Text style={styles.rowTitle} numberOfLines={1}>{l.title}</Text>
-                <Badge text={l.status} tone={l.status === 'active' ? 'success' : 'default'} />
-              </View>
-              <Text style={styles.rowSub}>{l.sellerName} · {l.price.toLocaleString('tr-TR')} ₺</Text>
-            </Card>
-          </Pressable>
-        ))}
-      </ScrollView>
-    </Screen>
+      <Section title="Son İlanlar">
+        <DataTable
+          columns={[
+            { key: 'title', title: 'Başlık', flex: 2 },
+            { key: 'seller', title: 'Satıcı', flex: 1 },
+            { key: 'price', title: 'Fiyat', width: 100 },
+            { key: 'status', title: 'Durum', width: 80 },
+          ]}
+          data={data.recentListings}
+          keyExtractor={(l) => l.id}
+          onRowPress={(l) => router.push(`/listing/${l.id}`)}
+          emptyMessage="Henüz ilan yok"
+          renderCell={(l, col) => {
+            if (col.key === 'title') return <CellText bold>{l.title}</CellText>;
+            if (col.key === 'seller') return <CellText muted>{l.sellerName}</CellText>;
+            if (col.key === 'price') return <CellText>{l.price.toLocaleString('tr-TR')} ₺</CellText>;
+            return <Badge text={l.status} tone={l.status === 'active' ? 'success' : 'default'} />;
+          }}
+        />
+      </Section>
+    </PageShell>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: SPACING.sm, marginBottom: SPACING.md },
-  section: { fontSize: 15, fontWeight: '700', color: THEME.gold, marginTop: SPACING.md, marginBottom: SPACING.sm },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-  row: { marginBottom: SPACING.sm },
-  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: SPACING.sm },
-  rowTitle: { color: THEME.text, fontWeight: '600', flex: 1 },
-  rowSub: { color: THEME.textMuted, fontSize: 12, marginTop: 4 },
-  deviceRow: { marginBottom: 6, paddingVertical: 8 },
-  deviceId: { color: THEME.text, fontFamily: 'monospace', fontSize: 12 },
-  deviceMeta: { color: THEME.textMuted, fontSize: 11, marginTop: 2 },
 });

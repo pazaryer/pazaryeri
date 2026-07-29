@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { FlatList, StyleSheet, Text } from 'react-native';
 import { adminFetch } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, EmptyState, Loading, Screen, Subtitle, Title } from '@/components/ui';
-import { THEME, SPACING } from '@/lib/theme';
+import { Loading, EmptyState } from '@/components/ui';
+import { PageShell } from '@/components/PageShell';
+import { DataTable, CellText } from '@/components/DataTable';
 
 interface AuditRow {
   id: string;
@@ -25,43 +25,42 @@ export default function AuditScreen() {
 
   if (profile?.role !== 'admin') {
     return (
-      <Screen>
-        <Title>Denetim Kaydı</Title>
-        <Subtitle>Sadece süper admin erişebilir</Subtitle>
-      </Screen>
+      <PageShell title="Denetim Kaydı" subtitle="Sadece süper admin erişebilir">
+        <EmptyState message="Bu sayfaya erişim yetkiniz yok" />
+      </PageShell>
     );
   }
 
   if (isLoading) return <Loading />;
 
   return (
-    <Screen style={{ paddingBottom: 0 }}>
-      <Title>Admin İşlem Kaydı</Title>
-      <Subtitle>Tüm moderasyon ve yapılandırma işlemleri</Subtitle>
-      <FlatList
+    <PageShell
+      title="Admin İşlem Kaydı"
+      subtitle="Tüm moderasyon ve yapılandırma işlemleri"
+    >
+      <DataTable
+        columns={[
+          { key: 'action', title: 'İşlem', flex: 2 },
+          { key: 'admin', title: 'Admin', flex: 1 },
+          { key: 'target', title: 'Hedef', flex: 1 },
+          { key: 'date', title: 'Tarih', width: 120 },
+        ]}
         data={data?.items ?? []}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<EmptyState message="Kayıt yok" />}
-        renderItem={({ item }) => (
-          <Card style={styles.row}>
-            <Text style={styles.action}>{item.action}</Text>
-            <Text style={styles.sub}>
-              {item.users?.name ?? '—'} · {new Date(item.created_at).toLocaleString('tr-TR')}
-            </Text>
-            {item.target_type ? (
-              <Text style={styles.sub}>
-                {item.target_type}: {item.target_id ?? '—'}
-              </Text>
-            ) : null}
-          </Card>
-        )}
+        emptyMessage="Kayıt yok"
+        renderCell={(item, col) => {
+          if (col.key === 'action') return <CellText bold>{item.action}</CellText>;
+          if (col.key === 'admin') return <CellText muted>{item.users?.name ?? '—'}</CellText>;
+          if (col.key === 'target') {
+            return (
+              <CellText muted>
+                {item.target_type ? `${item.target_type}: ${item.target_id ?? '—'}` : '—'}
+              </CellText>
+            );
+          }
+          return <CellText muted>{new Date(item.created_at).toLocaleString('tr-TR')}</CellText>;
+        }}
       />
-    </Screen>
+    </PageShell>
   );
 }
-
-const styles = StyleSheet.create({
-  row: { marginBottom: SPACING.sm },
-  action: { color: THEME.gold, fontWeight: '700' },
-  sub: { color: THEME.textMuted, fontSize: 11, marginTop: 2 },
-});

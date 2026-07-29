@@ -2,6 +2,8 @@
 
 export const DEFAULT_APP_CONFIG: Record<string, unknown> = {
   "brand": {
+    name: "Pazaryeri",
+    tagline: "Türkiye'nin ikinci el alım satım platformu",
     primary: "#3D1A78",
     primaryDark: "#2A1260",
     primaryMid: "#5B3FA0",
@@ -9,6 +11,14 @@ export const DEFAULT_APP_CONFIG: Record<string, unknown> = {
     gold: "#C9A84C",
     background: "#F7F5FC",
     supportEmail: "pazaryer0@gmail.com",
+    assets: {
+      iconUrl: null,
+      logoUrl: null,
+      splashUrl: null,
+      faviconUrl: null,
+      ogImageUrl: null,
+      adaptiveIconUrl: null,
+    },
   },
   "web.seo": {
     brand: "Pazaryeri",

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, FlatList, Pressable, StyleSheet, Text } from 'react-native';
+import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { adminFetch } from '@/lib/api';
-import { Badge, Btn, Card, EmptyState, Input, Loading, Screen, Title } from '@/components/ui';
-import { THEME, SPACING } from '@/lib/theme';
+import { Badge, Btn, Chip, Loading, SearchInput } from '@/components/ui';
+import { PageShell, FilterRow } from '@/components/PageShell';
+import { DataTable, CellText } from '@/components/DataTable';
 
 interface ListingRow {
   id: string;
@@ -15,6 +16,13 @@ interface ListingRow {
   city: string | null;
   seller: { name: string; email: string | null };
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  '': 'Tümü',
+  active: 'Aktif',
+  sold: 'Satıldı',
+  reserved: 'Rezerve',
+};
 
 export default function ListingsScreen() {
   const router = useRouter();
@@ -50,48 +58,54 @@ export default function ListingsScreen() {
   const statuses = ['', 'active', 'sold', 'reserved'];
 
   return (
-    <Screen style={{ paddingBottom: 0 }}>
-      <Title>İlanlar ({data?.total ?? 0})</Title>
-      <Input value={q} onChangeText={setQ} placeholder="Başlık veya açıklama ara..." onSubmitEditing={() => refetch()} />
-      <FlatList
-        horizontal
-        data={statuses}
-        keyExtractor={(s) => s || 'all'}
-        style={styles.statusRow}
-        renderItem={({ item }) => (
-          <Btn
-            label={item || 'Tümü'}
-            variant={status === item ? 'primary' : 'ghost'}
-            onPress={() => setStatus(item)}
-          />
-        )}
+    <PageShell
+      title="İlanlar"
+      subtitle={`${data?.total ?? 0} kayıt · durum filtrele`}
+    >
+      <SearchInput
+        value={q}
+        onChangeText={setQ}
+        placeholder="Başlık veya açıklama ara..."
+        onSubmitEditing={() => refetch()}
+        returnKeyType="search"
       />
-      <FlatList
+      <FilterRow>
+        {statuses.map((s) => (
+          <Chip
+            key={s || 'all'}
+            label={STATUS_LABELS[s] ?? s}
+            active={status === s}
+            onPress={() => setStatus(s)}
+          />
+        ))}
+      </FilterRow>
+
+      <DataTable
+        columns={[
+          { key: 'title', title: 'Başlık', flex: 2 },
+          { key: 'price', title: 'Fiyat', width: 100 },
+          { key: 'category', title: 'Kategori', width: 100 },
+          { key: 'seller', title: 'Satıcı', flex: 1 },
+          { key: 'status', title: 'Durum', width: 80 },
+          { key: 'action', title: 'İşlem', width: 70 },
+        ]}
         data={data?.items ?? []}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<EmptyState message="İlan bulunamadı" />}
-        renderItem={({ item }) => (
-          <Card style={styles.row}>
-            <Pressable onPress={() => router.push(`/listing/${item.id}`)}>
-              <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-              <Text style={styles.sub}>
-                {item.price.toLocaleString('tr-TR')} ₺ · {item.category}
-                {item.city ? ` · ${item.city}` : ''}
-              </Text>
-              <Text style={styles.sub}>Satıcı: {item.seller?.name ?? '—'}</Text>
-              <Badge text={item.status} tone={item.status === 'active' ? 'success' : 'default'} />
-            </Pressable>
-            <Btn label="Sil" variant="danger" onPress={() => deleteListing(item.id, item.title)} />
-          </Card>
-        )}
+        onRowPress={(item) => router.push(`/listing/${item.id}`)}
+        emptyMessage="İlan bulunamadı"
+        renderCell={(item, col) => {
+          if (col.key === 'title') return <CellText bold>{item.title}</CellText>;
+          if (col.key === 'price') return <CellText>{item.price.toLocaleString('tr-TR')} ₺</CellText>;
+          if (col.key === 'category') return <CellText muted>{item.category}</CellText>;
+          if (col.key === 'seller') return <CellText muted>{item.seller?.name ?? '—'}</CellText>;
+          if (col.key === 'status') {
+            return <Badge text={item.status} tone={item.status === 'active' ? 'success' : 'default'} />;
+          }
+          return (
+            <Btn label="Sil" variant="danger" compact onPress={() => deleteListing(item.id, item.title)} />
+          );
+        }}
       />
-    </Screen>
+    </PageShell>
   );
 }
-
-const styles = StyleSheet.create({
-  statusRow: { maxHeight: 52, marginBottom: SPACING.sm },
-  row: { marginBottom: SPACING.sm, gap: SPACING.sm },
-  title: { color: THEME.text, fontWeight: '700', fontSize: 15 },
-  sub: { color: THEME.textMuted, fontSize: 12, marginTop: 2 },
-});

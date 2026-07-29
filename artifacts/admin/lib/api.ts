@@ -79,5 +79,6 @@ export function getBootstrapAdminEmails(): string[] {
     process.env.EXPO_PUBLIC_ADMIN_EMAILS ??
     (Constants.expoConfig?.extra?.bootstrapAdminEmails as string[] | undefined) ??
     [];
-  return raw.map((e) => e.trim().toLowerCase()).filter(Boolean);
+  const list = Array.isArray(raw) ? raw : typeof raw === 'string' ? raw.split(',') : [];
+  return list.map((e) => e.trim().toLowerCase()).filter(Boolean);
 }

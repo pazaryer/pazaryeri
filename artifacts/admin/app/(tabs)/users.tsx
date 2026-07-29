@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { adminFetch } from '@/lib/api';
-import { Badge, Btn, Card, EmptyState, Input, Loading, Screen, Title } from '@/components/ui';
-import { THEME, SPACING } from '@/lib/theme';
+import { Badge, Btn, Chip, Loading, SearchInput } from '@/components/ui';
+import { PageShell, FilterRow } from '@/components/PageShell';
+import { DataTable, CellText } from '@/components/DataTable';
 
 interface UserRow {
   id: string;
@@ -22,9 +23,8 @@ export default function UsersScreen() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'all' | 'banned' | 'admin'>('all');
 
-  const queryKey = ['admin-users', q, filter];
   const { data, isLoading, refetch } = useQuery({
-    queryKey,
+    queryKey: ['admin-users', q, filter],
     queryFn: () => {
       const params = new URLSearchParams({ limit: '50' });
       if (q) params.set('q', q);
@@ -59,54 +59,67 @@ export default function UsersScreen() {
   if (isLoading) return <Loading />;
 
   return (
-    <Screen style={{ paddingBottom: 0 }}>
-      <Title>Kullanıcılar ({data?.total ?? 0})</Title>
-      <Input value={q} onChangeText={setQ} placeholder="Ara: isim, e-posta, telefon" onSubmitEditing={() => refetch()} />
-      <View style={styles.filters}>
+    <PageShell
+      title="Kullanıcılar"
+      subtitle={`${data?.total ?? 0} kayıt · arama ve filtrele`}
+    >
+      <SearchInput
+        value={q}
+        onChangeText={setQ}
+        placeholder="Ara: isim, e-posta, telefon"
+        onSubmitEditing={() => refetch()}
+        returnKeyType="search"
+      />
+      <FilterRow>
         {(['all', 'banned', 'admin'] as const).map((f) => (
-          <Btn
+          <Chip
             key={f}
             label={f === 'all' ? 'Tümü' : f === 'banned' ? 'Engelli' : 'Admin'}
-            variant={filter === f ? 'primary' : 'ghost'}
+            active={filter === f}
             onPress={() => setFilter(f)}
           />
         ))}
-      </View>
-      <FlatList
+      </FilterRow>
+
+      <DataTable
+        columns={[
+          { key: 'name', title: 'İsim', flex: 2 },
+          { key: 'email', title: 'E-posta', flex: 2 },
+          { key: 'rating', title: 'Puan', width: 70 },
+          { key: 'tags', title: 'Etiket', width: 110 },
+          { key: 'action', title: 'İşlem', width: 100 },
+        ]}
         data={data?.items ?? []}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<EmptyState message="Kullanıcı bulunamadı" />}
-        renderItem={({ item }) => (
-          <Card style={styles.row}>
-            <Pressable onPress={() => router.push(`/user/${item.id}`)}>
-              <View style={styles.rowTop}>
-                <Text style={styles.name}>{item.name}</Text>
-                <View style={styles.badges}>
-                  {item.is_verified && <Badge text="✓" tone="success" />}
-                  {item.is_banned && <Badge text="ENGEL" tone="danger" />}
-                  {item.role !== 'user' && <Badge text={item.role.toUpperCase()} tone="warning" />}
-                </View>
+        onRowPress={(item) => router.push(`/user/${item.id}`)}
+        emptyMessage="Kullanıcı bulunamadı"
+        renderCell={(item, col) => {
+          if (col.key === 'name') return <CellText bold>{item.name}</CellText>;
+          if (col.key === 'email') return <CellText muted>{item.email ?? '—'}</CellText>;
+          if (col.key === 'rating') return <CellText>⭐ {item.rating.toFixed(1)}</CellText>;
+          if (col.key === 'tags') {
+            return (
+              <View style={styles.tags}>
+                {item.is_verified && <Badge text="✓" tone="success" />}
+                {item.is_banned && <Badge text="ENGEL" tone="danger" />}
+                {item.role !== 'user' && <Badge text={item.role.toUpperCase()} tone="gold" />}
               </View>
-              <Text style={styles.sub}>{item.email ?? '—'}</Text>
-              <Text style={styles.sub}>⭐ {item.rating.toFixed(1)}</Text>
-            </Pressable>
+            );
+          }
+          return (
             <Btn
-              label={item.is_banned ? 'Engeli Kaldır' : 'Engelle'}
+              label={item.is_banned ? 'Aç' : 'Engelle'}
               variant={item.is_banned ? 'ghost' : 'danger'}
+              compact
               onPress={() => toggleBan(item)}
             />
-          </Card>
-        )}
+          );
+        }}
       />
-    </Screen>
+    </PageShell>
   );
 }
 
 const styles = StyleSheet.create({
-  filters: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
-  row: { marginBottom: SPACING.sm, gap: SPACING.sm },
-  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  badges: { flexDirection: 'row', gap: 4 },
-  name: { color: THEME.text, fontWeight: '700', fontSize: 16 },
-  sub: { color: THEME.textMuted, fontSize: 12 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, paddingHorizontal: 6 },
 });

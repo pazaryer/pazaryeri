@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, FlatList, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
 import { adminFetch } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { Btn, Card, Input, Loading, Screen, Subtitle, Title } from '@/components/ui';
+import { Btn, Card, Input, Loading, MenuCard } from '@/components/ui';
+import { PageShell, Section } from '@/components/PageShell';
 import { THEME, SPACING } from '@/lib/theme';
-
 const CONFIG_LABELS: Record<string, string> = {
   brand: 'Marka Renkleri',
   'web.seo': 'Web SEO',
@@ -74,56 +74,61 @@ export default function ConfigScreen() {
 
   if (selectedKey) {
     return (
-      <Screen>
-        <Title>{CONFIG_LABELS[selectedKey] ?? selectedKey}</Title>
-        <Subtitle>JSON düzenleyici — web ve mobil uygulamayı uzaktan yönetir</Subtitle>
-        <Input
-          value={editJson}
-          onChangeText={setEditJson}
-          multiline
-          style={styles.jsonInput}
-          textAlignVertical="top"
-        />
-        <Btn label="Kaydet" onPress={saveConfig} />
-        <Btn label="Varsayılana Dön" variant="ghost" onPress={resetConfig} />
-        <Btn label="Geri" variant="ghost" onPress={() => setSelectedKey(null)} />
-      </Screen>
+      <PageShell
+        title={CONFIG_LABELS[selectedKey] ?? selectedKey}
+        subtitle="JSON düzenleyici — web ve mobil uygulamayı uzaktan yönetir"
+      >
+        <Card>
+          <Input
+            value={editJson}
+            onChangeText={setEditJson}
+            multiline
+            style={styles.jsonInput}
+            textAlignVertical="top"
+          />
+        </Card>
+        <Section title="Kaydet">
+          <Btn label="Kaydet" variant="gold" onPress={saveConfig} />
+          <Btn label="Varsayılana Dön" variant="ghost" onPress={resetConfig} />
+          <Btn label="Geri" variant="ghost" onPress={() => setSelectedKey(null)} />
+        </Section>
+      </PageShell>
     );
   }
 
   return (
-    <Screen style={{ paddingBottom: 0 }}>
-      <Title>Site & Uygulama CMS</Title>
-      <Subtitle>Web sitesi ve mobil uygulamanın tüm içeriğini buradan yönetin</Subtitle>
-      <FlatList
-        data={data.keys}
-        keyExtractor={(k) => k}
-        renderItem={({ item }) => (
-          <Card style={styles.row}>
-            <Text style={styles.keyTitle}>{CONFIG_LABELS[item] ?? item}</Text>
-            <Text style={styles.keySub}>{item}</Text>
-            <Btn label="Düzenle" variant="ghost" onPress={() => openEditor(item)} />
-          </Card>
-        )}
-        ListFooterComponent={
-          <ScrollView style={styles.preview}>
-            <Text style={styles.previewTitle}>Önizleme (brand)</Text>
-            <Text style={styles.previewJson}>
-              {JSON.stringify(data.config.brand ?? data.defaults.brand, null, 2)}
-            </Text>
-          </ScrollView>
-        }
-      />
-    </Screen>
+    <PageShell
+      title="Site & Uygulama CMS"
+      subtitle="Web sitesi ve mobil uygulamanın tüm içeriğini buradan yönetin"
+    >
+      <Section title="Yapılandırma Anahtarları">
+        {data.keys.map((key) => (
+          <MenuCard
+            key={key}
+            icon="⚙️"
+            title={CONFIG_LABELS[key] ?? key}
+            subtitle={key}
+            onPress={() => openEditor(key)}
+          />
+        ))}
+      </Section>
+
+      <Section title="Önizleme (brand)">
+        <Card>
+          <Input
+            value={JSON.stringify(data.config.brand ?? data.defaults.brand, null, 2)}
+            editable={false}
+            multiline
+            style={styles.previewJson}
+            textAlignVertical="top"
+          />
+        </Card>
+      </Section>
+    </PageShell>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { marginBottom: SPACING.sm, gap: SPACING.sm },
-  keyTitle: { color: THEME.text, fontWeight: '700', fontSize: 16 },
-  keySub: { color: THEME.textMuted, fontSize: 11 },
-  jsonInput: { minHeight: 280, fontFamily: 'monospace', fontSize: 12 },
-  preview: { marginTop: SPACING.lg },
-  previewTitle: { color: THEME.gold, fontWeight: '600', marginBottom: SPACING.sm },
-  previewJson: { color: THEME.textMuted, fontSize: 11, fontFamily: 'monospace' },
+  jsonInput: { minHeight: 320, fontFamily: 'monospace', fontSize: 12 },
+  previewJson: { minHeight: 120, fontFamily: 'monospace', fontSize: 11, color: THEME.textMuted },
 });

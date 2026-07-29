@@ -36,8 +36,8 @@ export default function RootLayout() {
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="login" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="user/[id]" options={{ title: 'Kullanıcı' }} />
-              <Stack.Screen name="listing/[id]" options={{ title: 'İlan' }} />
+              <Stack.Screen name="user/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
             </Stack>
           </AuthProvider>
         </QueryClientProvider>

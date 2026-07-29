@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { getAppConfig } from "../lib/app-config";
+import { mergeBrandingBundle } from "../lib/branding";
 
 const router: IRouter = Router();
 
@@ -7,6 +8,15 @@ router.get("/config", async (_req, res, next) => {
   try {
     const config = await getAppConfig();
     res.json({ config, updatedAt: new Date().toISOString() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/config/branding", async (_req, res, next) => {
+  try {
+    const config = await getAppConfig();
+    res.json({ branding: mergeBrandingBundle(config), updatedAt: new Date().toISOString() });
   } catch (err) {
     next(err);
   }

@@ -14,6 +14,8 @@ import { Logo } from '@/components/Logo';
 import { WebLocationProvider, useWebLocation } from '@/contexts/WebLocationContext';
 import { WebLocationPicker } from './WebLocationPicker';
 import { WEB_CATEGORIES } from '@/lib/categories';
+import { useWebTheme } from '@/hooks/useWebTheme';
+import { useBrand } from '@/contexts/BrandContext';
 import { WEB_THEME } from '@/lib/web-theme';
 import { useNotifications, useConversations } from '@/lib/hooks';
 
@@ -43,14 +45,16 @@ function WebShellInner({
   onSearchSubmit,
   hideFooter,
 }: WebShellProps) {
+  const theme = useWebTheme();
+  const brand = useBrand();
   const { width } = useWindowDimensions();
   const router = useRouter();
   const { user } = useAuth();
   const { label, openPicker } = useWebLocation();
   const { data: notifData } = useNotifications(!!user);
   const { data: convoData } = useConversations(!!user);
-  const mobile = width < WEB_THEME.mobileBreakpoint;
-  const tablet = width >= WEB_THEME.mobileBreakpoint && width < WEB_THEME.tabletBreakpoint;
+  const mobile = width < theme.mobileBreakpoint;
+  const tablet = width >= theme.mobileBreakpoint && width < theme.tabletBreakpoint;
 
   const unreadNotifs = notifData?.items.filter((n) => !n.isRead).length ?? 0;
   const unreadMessages = useMemo(
@@ -66,10 +70,10 @@ function WebShellInner({
         <View style={[styles.topBar, mobile && styles.topBarMobile]}>
           <Link href="/" asChild>
             <Pressable style={styles.brand}>
-              <View style={[styles.brandMark, mobile && styles.brandMarkMobile]}>
-                <Logo size={mobile ? 20 : 22} color={WEB_THEME.brand} />
+              <View style={[styles.brandMark, mobile && styles.brandMarkMobile, { backgroundColor: theme.brandLight }]}>
+                <Logo size={mobile ? 20 : 22} color={theme.brand} />
               </View>
-              {!mobile && <Text style={styles.brandText}>Pazaryeri</Text>}
+              {!mobile && <Text style={[styles.brandText, { color: theme.brand }]}>{brand.name}</Text>}
             </Pressable>
           </Link>
 
@@ -88,7 +92,7 @@ function WebShellInner({
                 onChangeText={onSearchChange}
                 onSubmitEditing={onSearchSubmit}
                 placeholder="İlan, marka, kategori ara..."
-                placeholderTextColor={WEB_THEME.textLight}
+                placeholderTextColor={theme.textLight}
                 style={styles.searchInput}
                 returnKeyType="search"
               />
@@ -152,7 +156,7 @@ function WebShellInner({
               onChangeText={onSearchChange}
               onSubmitEditing={onSearchSubmit}
               placeholder="İlan, marka, kategori ara..."
-              placeholderTextColor={WEB_THEME.textLight}
+              placeholderTextColor={theme.textLight}
               style={styles.searchInput}
               returnKeyType="search"
             />
@@ -191,13 +195,13 @@ function WebShellInner({
           <View style={[styles.footerInner, mobile && styles.footerInnerMobile]}>
             <View style={styles.footerBrandRow}>
               <View style={styles.footerMark}>
-                <Logo size={16} color={WEB_THEME.brand} />
+                <Logo size={16} color={theme.brand} />
               </View>
-              <Text style={styles.footerBrandName}>Pazaryeri</Text>
+              <Text style={[styles.footerBrandName, { color: theme.brand }]}>{brand.name}</Text>
               {!mobile && (
                 <>
                   <Text style={styles.footerSep}>·</Text>
-                  <Text style={styles.footerTagline}>İkinci el alım satım · Ücretsiz ilan</Text>
+                  <Text style={styles.footerTagline}>{brand.tagline}</Text>
                 </>
               )}
             </View>

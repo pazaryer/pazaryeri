@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { adminFetch } from '@/lib/api';
-import { Badge, Btn, Card, Input, Loading, Screen, Subtitle, Title } from '@/components/ui';
+import { Badge, Btn, Card, Input, Loading } from '@/components/ui';
+import { PageShell, Section } from '@/components/PageShell';
 import { THEME, SPACING } from '@/lib/theme';
 
 export default function ListingDetailScreen() {
@@ -29,11 +30,7 @@ export default function ListingDetailScreen() {
   async function save() {
     await adminFetch(`/admin/listings/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({
-        title,
-        price: Number(price),
-        description,
-      }),
+      body: JSON.stringify({ title, price: Number(price), description }),
     });
     setEditMode(false);
     refetch();
@@ -63,48 +60,56 @@ export default function ListingDetailScreen() {
 
   if (isLoading || !data) return <Loading />;
 
-  return (
-    <Screen>
-      <ScrollView>
-        <Badge text={String(data.status)} tone={data.status === 'active' ? 'success' : 'default'} />
-        {editMode ? (
-          <>
-            <Input value={title} onChangeText={setTitle} placeholder="Başlık" />
-            <Input value={price} onChangeText={setPrice} placeholder="Fiyat" keyboardType="numeric" />
-            <Input value={description} onChangeText={setDescription} placeholder="Açıklama" multiline />
-            <Btn label="Kaydet" onPress={save} />
-            <Btn label="İptal" variant="ghost" onPress={() => setEditMode(false)} />
-          </>
-        ) : (
-          <>
-            <Title>{String(data.title)}</Title>
-            <Subtitle>{Number(data.price).toLocaleString('tr-TR')} ₺ · {String(data.category)}</Subtitle>
-            <Card style={styles.card}>
-              <Text style={styles.desc}>{String(data.description || '—')}</Text>
-              <Text style={styles.meta}>
-                {String(data.city ?? '')} {String(data.district ?? '')}
-              </Text>
-              <Text style={styles.meta}>
-                Satıcı: {(data.seller as { name?: string })?.name ?? '—'}
-              </Text>
-            </Card>
-            <Btn label="Düzenle" onPress={startEdit} />
-          </>
-        )}
+  const seller = data.seller as { name?: string } | undefined;
+  const subtitle = `${Number(data.price).toLocaleString('tr-TR')} ₺ · ${String(data.category)}`;
 
-        <Text style={styles.section}>Durum</Text>
+  return (
+    <PageShell
+      title={editMode ? 'İlan Düzenle' : String(data.title)}
+      subtitle={editMode ? 'Değişiklikleri kaydedin' : subtitle}
+      headerRight={
+        !editMode ? (
+          <Badge text={String(data.status)} tone={data.status === 'active' ? 'success' : 'default'} />
+        ) : undefined
+      }
+    >
+      {editMode ? (
+        <Card style={styles.editCard}>
+          <Input value={title} onChangeText={setTitle} placeholder="Başlık" />
+          <Input value={price} onChangeText={setPrice} placeholder="Fiyat" keyboardType="numeric" />
+          <Input value={description} onChangeText={setDescription} placeholder="Açıklama" multiline />
+          <Btn label="Kaydet" variant="gold" onPress={save} />
+          <Btn label="İptal" variant="ghost" onPress={() => setEditMode(false)} />
+        </Card>
+      ) : (
+        <>
+          <Card style={styles.card}>
+            <Text style={styles.desc}>{String(data.description || '—')}</Text>
+            <View style={styles.metaRow}>
+              <Text style={styles.meta}>
+                📍 {String(data.city ?? '')} {String(data.district ?? '')}
+              </Text>
+              <Text style={styles.meta}>👤 Satıcı: {seller?.name ?? '—'}</Text>
+            </View>
+          </Card>
+          <Btn label="Düzenle" variant="gold" onPress={startEdit} />
+        </>
+      )}
+
+      <Section title="Durum Değiştir">
         <Btn label="Aktif" variant="ghost" onPress={() => setStatus('active')} />
         <Btn label="Satıldı" variant="ghost" onPress={() => setStatus('sold')} />
         <Btn label="Rezerve" variant="ghost" onPress={() => setStatus('reserved')} />
-        <Btn label="Sil" variant="danger" onPress={remove} />
-      </ScrollView>
-    </Screen>
+        <Btn label="Kalıcı Sil" variant="danger" onPress={remove} />
+      </Section>
+    </PageShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { marginVertical: SPACING.md },
-  desc: { color: THEME.text, lineHeight: 22 },
-  meta: { color: THEME.textMuted, fontSize: 12, marginTop: 8 },
-  section: { color: THEME.gold, fontWeight: '700', marginVertical: SPACING.md },
+  card: { marginBottom: SPACING.md },
+  editCard: { gap: SPACING.sm, marginBottom: SPACING.md },
+  desc: { color: THEME.text, lineHeight: 24, fontSize: 15 },
+  metaRow: { marginTop: SPACING.md, gap: 6 },
+  meta: { color: THEME.textMuted, fontSize: 13 },
 });

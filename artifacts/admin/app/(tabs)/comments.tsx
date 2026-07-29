@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, FlatList, StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { adminFetch } from '@/lib/api';
-import { Btn, Card, EmptyState, Input, Loading, Screen, Title } from '@/components/ui';
-import { THEME, SPACING } from '@/lib/theme';
+import { Btn, Card, Input, Loading, SearchInput } from '@/components/ui';
+import { PageShell, Section } from '@/components/PageShell';
+import { DataTable, CellText } from '@/components/DataTable';
 
 interface CommentRow {
   id: string;
@@ -60,10 +61,27 @@ export default function CommentsScreen() {
   if (isLoading) return <Loading />;
 
   return (
-    <Screen style={{ paddingBottom: 0 }}>
-      <Title>Yorumlar ({data?.total ?? 0})</Title>
-      <Input value={q} onChangeText={setQ} placeholder="Yorum içeriğinde ara..." onSubmitEditing={() => refetch()} />
-      <Btn label={showAdd ? 'İptal' : '+ Admin Yorumu Yaz'} variant="ghost" onPress={() => setShowAdd(!showAdd)} />
+    <PageShell
+      title="Yorumlar"
+      subtitle={`${data?.total ?? 0} kayıt · moderasyon`}
+    >
+      <SearchInput
+        value={q}
+        onChangeText={setQ}
+        placeholder="Yorum içeriğinde ara..."
+        onSubmitEditing={() => refetch()}
+        returnKeyType="search"
+      />
+
+      <View style={styles.toolbar}>
+        <Btn
+          label={showAdd ? 'İptal' : '+ Admin Yorumu'}
+          variant={showAdd ? 'ghost' : 'gold'}
+          compact
+          onPress={() => setShowAdd(!showAdd)}
+        />
+      </View>
+
       {showAdd && (
         <Card style={styles.addBox}>
           <Input value={newListingId} onChangeText={setNewListingId} placeholder="İlan UUID" />
@@ -71,28 +89,33 @@ export default function CommentsScreen() {
           <Btn label="Gönder" onPress={addComment} />
         </Card>
       )}
-      <FlatList
+
+      <DataTable
+        columns={[
+          { key: 'content', title: 'Yorum', flex: 3 },
+          { key: 'user', title: 'Kullanıcı', flex: 1 },
+          { key: 'listing', title: 'İlan', flex: 1 },
+          { key: 'date', title: 'Tarih', width: 100 },
+          { key: 'action', title: 'İşlem', width: 70 },
+        ]}
         data={data?.items ?? []}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<EmptyState message="Yorum bulunamadı" />}
-        renderItem={({ item }) => (
-          <Card style={styles.row}>
-            <Text style={styles.content}>{item.content}</Text>
-            <Text style={styles.sub}>
-              {item.user?.name ?? '—'} · {item.listingTitle}
-            </Text>
-            <Text style={styles.sub}>{new Date(item.createdAt).toLocaleString('tr-TR')}</Text>
-            <Btn label="Sil" variant="danger" onPress={() => deleteComment(item.id)} />
-          </Card>
-        )}
+        emptyMessage="Yorum bulunamadı"
+        renderCell={(item, col) => {
+          if (col.key === 'content') return <CellText>{item.content}</CellText>;
+          if (col.key === 'user') return <CellText muted>{item.user?.name ?? '—'}</CellText>;
+          if (col.key === 'listing') return <CellText muted>{item.listingTitle}</CellText>;
+          if (col.key === 'date') {
+            return <CellText muted>{new Date(item.createdAt).toLocaleDateString('tr-TR')}</CellText>;
+          }
+          return <Btn label="Sil" variant="danger" compact onPress={() => deleteComment(item.id)} />;
+        }}
       />
-    </Screen>
+    </PageShell>
   );
 }
 
 const styles = StyleSheet.create({
-  addBox: { marginBottom: SPACING.md, gap: SPACING.sm },
-  row: { marginBottom: SPACING.sm, gap: SPACING.sm },
-  content: { color: THEME.text, fontSize: 14 },
-  sub: { color: THEME.textMuted, fontSize: 11 },
+  toolbar: { marginBottom: 12 },
+  addBox: { marginBottom: 12, gap: 8 },
 });

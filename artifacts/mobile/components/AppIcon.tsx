@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, type ImageStyle, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
-import { BRAND } from '@/constants/brand';
+import { useBrand } from '@/contexts/BrandContext';
 
 export const APP_ICON_SIZES = {
   xs: 28,
@@ -29,14 +29,17 @@ function resolveSize(size: AppIconSize): number {
 }
 
 export function AppIcon({ size = 'md', variant = 'app', style }: Props) {
+  const brand = useBrand();
   const px = resolveSize(size);
   const radius = Math.round(px * (variant === 'plain' ? 0.2 : 0.22));
   const imageInset = variant === 'splash' ? 0 : Math.max(0, Math.round(px * 0.02));
+  const remoteIcon = brand.assets.iconUrl;
+  const source = remoteIcon ? { uri: remoteIcon } : ICON_SOURCE;
 
   if (variant === 'plain') {
     return (
       <Image
-        source={ICON_SOURCE}
+        source={source}
         style={[{ width: px, height: px, borderRadius: radius }, style]}
         contentFit="cover"
         transition={100}
@@ -53,6 +56,8 @@ export function AppIcon({ size = 'md', variant = 'app', style }: Props) {
           width: px,
           height: px,
           borderRadius: radius,
+          backgroundColor: brand.primary,
+          shadowColor: brand.primaryDark,
           shadowRadius: px * 0.12,
           shadowOffset: { width: 0, height: px * 0.04 },
         },
@@ -60,7 +65,7 @@ export function AppIcon({ size = 'md', variant = 'app', style }: Props) {
       ]}
     >
       <Image
-        source={ICON_SOURCE}
+        source={source}
         style={{
           width: px - imageInset * 2,
           height: px - imageInset * 2,
@@ -78,8 +83,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: BRAND.primary,
-    shadowColor: BRAND.primaryDark,
     shadowOpacity: 0.22,
     elevation: 4,
   },

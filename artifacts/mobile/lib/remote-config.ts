@@ -3,7 +3,19 @@ import { BRAND, SUPPORT_EMAIL } from '@/constants/brand';
 import { LISTING_CATEGORIES } from './categories';
 
 export type RemoteAppConfig = {
-  brand?: Partial<typeof BRAND> & { supportEmail?: string };
+  brand?: Partial<typeof BRAND> & {
+    name?: string;
+    tagline?: string;
+    supportEmail?: string;
+    assets?: {
+      iconUrl?: string | null;
+      logoUrl?: string | null;
+      splashUrl?: string | null;
+      faviconUrl?: string | null;
+      ogImageUrl?: string | null;
+      adaptiveIconUrl?: string | null;
+    };
+  };
   'web.seo'?: Record<string, string>;
   'web.announcements'?: unknown[];
   'mobile.categories'?: string[];
