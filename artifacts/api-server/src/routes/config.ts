@@ -1,12 +1,21 @@
 import { Router, type IRouter } from "express";
 import { getAppConfig } from "../lib/app-config";
 import { mergeBrandingBundle } from "../lib/branding";
+import { mergeAdMobConfig } from "../lib/mobile-admob";
 
 const router: IRouter = Router();
 
+function withPublicConfigOverrides(config: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...config,
+    "mobile.admob": mergeAdMobConfig(config),
+  };
+}
+
 router.get("/config", async (_req, res, next) => {
   try {
-    const config = await getAppConfig();
+    const raw = await getAppConfig();
+    const config = withPublicConfigOverrides(raw);
     res.json({ config, updatedAt: new Date().toISOString() });
   } catch (err) {
     next(err);

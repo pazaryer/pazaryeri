@@ -7,6 +7,12 @@ function env(key: string): string {
   return process.env[key]?.trim() ?? "";
 }
 
+const TEST_PUBLISHER = "3940256099942544";
+
+function isTestAdId(id: string): boolean {
+  return id.includes(TEST_PUBLISHER);
+}
+
 /** Render env veya admin panelden gelen boş unit ID'leri tamamlar */
 export function applyAdMobEnvOverrides(config: AdMobConfig): AdMobConfig {
   const bannerAndroid = env("ADMOB_ANDROID_BANNER_UNIT_ID");
@@ -23,13 +29,27 @@ export function applyAdMobEnvOverrides(config: AdMobConfig): AdMobConfig {
     unit: AdMobConfig["banner"],
     androidUnit: string,
     iosUnit: string,
-  ): AdMobConfig["banner"] => ({
-    ...unit,
-    androidAppId: unit.androidAppId || appAndroid,
-    iosAppId: unit.iosAppId || appIos,
-    androidUnitId: unit.androidUnitId || androidUnit,
-    iosUnitId: unit.iosUnitId || iosUnit,
-  });
+  ): AdMobConfig["banner"] => {
+    let androidAppId = unit.androidAppId || appAndroid;
+    let iosAppId = unit.iosAppId || appIos;
+    let androidUnitId = unit.androidUnitId || androidUnit;
+    let iosUnitId = unit.iosUnitId || iosUnit;
+
+    if (forceProd) {
+      if (isTestAdId(androidAppId)) androidAppId = appAndroid;
+      if (isTestAdId(iosAppId)) iosAppId = appIos;
+      if (androidUnit && isTestAdId(androidUnitId)) androidUnitId = androidUnit;
+      if (iosUnit && isTestAdId(iosUnitId)) iosUnitId = iosUnit;
+    }
+
+    return {
+      ...unit,
+      androidAppId,
+      iosAppId,
+      androidUnitId,
+      iosUnitId,
+    };
+  };
 
   const next: AdMobConfig = {
     ...config,
