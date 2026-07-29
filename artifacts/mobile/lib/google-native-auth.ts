@@ -14,8 +14,6 @@ const webClientId = resolveGoogleWebClientId();
 let oauthInFlight: Promise<void> | null = null;
 
 export function getNativeOAuthRedirectUri(): string {
-  // Linking.createURL expo-router origin yüzünden https://.../oauth/app-return döndürür — kullanma.
-  // Expo Go: exp://.../--/auth | production: pazaryeri://auth
   return AuthSession.makeRedirectUri({
     scheme: 'pazaryeri',
     path: 'auth',
@@ -76,11 +74,13 @@ export function parseOAuthReturnUrl(returnUrl: string): { idToken?: string; erro
 }
 
 async function completeGoogleSignIn(idToken: string): Promise<void> {
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) return;
   const credential = GoogleAuthProvider.credential(idToken);
-  await signInWithCredential(getFirebaseAuth(), credential);
+  await signInWithCredential(auth, credential);
 }
 
-function waitForSignedInUser(timeoutMs = 10000): Promise<boolean> {
+function waitForSignedInUser(timeoutMs = 12000): Promise<boolean> {
   const auth = getFirebaseAuth();
   if (auth.currentUser) return Promise.resolve(true);
   return new Promise((resolve) => {
@@ -98,23 +98,21 @@ function waitForSignedInUser(timeoutMs = 10000): Promise<boolean> {
   });
 }
 
-async function fetchGoogleAuthUrl(returnUrl: string): Promise<string> {
-  const endpoint = `${buildApiUrl('/auth/google/url')}?return=${encodeURIComponent(returnUrl)}`;
-  const res = await fetch(endpoint);
-  const data = (await res.json()) as { url?: string; error?: string };
-  if (!res.ok || !data.url) {
-    throw new Error(data.error ?? 'Google giriş URL alınamadı');
-  }
-  return data.url;
+function buildGoogleStartUrl(returnUrl: string): string {
+  return `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(returnUrl)}`;
 }
 
 async function runGoogleOAuth(): Promise<void> {
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) return;
+
   const returnUrl = getNativeOAuthRedirectUri();
-  const googleUrl = await fetchGoogleAuthUrl(returnUrl);
+  const googleUrl = buildGoogleStartUrl(returnUrl);
 
   if (__DEV__) {
     console.log('[Google] platform:', Platform.OS);
     console.log('[Google] return:', returnUrl);
+    console.log('[Google] start:', googleUrl);
   }
 
   let capturedToken: string | null = null;
@@ -135,8 +133,6 @@ async function runGoogleOAuth(): Promise<void> {
   };
 
   const linkSub = Linking.addEventListener('url', onUrl);
-  const initialUrl = await Linking.getInitialURL();
-  if (initialUrl) processReturnUrl(initialUrl);
 
   if (Platform.OS === 'android') {
     try {
@@ -149,9 +145,10 @@ async function runGoogleOAuth(): Promise<void> {
   let result: WebBrowser.WebBrowserAuthSessionResult;
   try {
     result = await WebBrowser.openAuthSessionAsync(googleUrl, returnUrl, {
-      preferEphemeralSession: Platform.OS === 'ios',
+      // Cihazdaki Google oturumunu kullan — tek tıkla giriş
+      preferEphemeralSession: false,
       showInRecents: false,
-      createTask: Platform.OS === 'android',
+      createTask: false,
     });
   } finally {
     if (Platform.OS === 'android') {
@@ -161,23 +158,16 @@ async function runGoogleOAuth(): Promise<void> {
         /* ignore */
       }
     }
+    linkSub.remove();
+    try {
+      await WebBrowser.dismissBrowser();
+    } catch {
+      /* ignore */
+    }
   }
 
   if (__DEV__) {
-    console.log('[Google] result:', result.type, result.type === 'success' ? result.url?.slice(0, 80) : '');
-  }
-
-  // Android bazen deep link'i session kapandıktan sonra iletir
-  if (Platform.OS === 'android' && !capturedToken && !capturedError) {
-    await new Promise((r) => setTimeout(r, 2000));
-  }
-
-  linkSub.remove();
-
-  try {
-    await WebBrowser.dismissBrowser();
-  } catch {
-    /* ignore */
+    console.log('[Google] result:', result.type);
   }
 
   if (capturedError) {
@@ -201,7 +191,7 @@ async function runGoogleOAuth(): Promise<void> {
     return;
   }
 
-  if (await waitForSignedInUser(8000)) return;
+  if (await waitForSignedInUser(10000)) return;
 
   if (result.type === 'cancel' || result.type === 'dismiss') {
     throw new Error('Google girişi iptal edildi');
@@ -216,6 +206,7 @@ export function useGoogleSignIn() {
     oauthInFlight = runGoogleOAuth();
     try {
       await oauthInFlight;
+      await waitForSignedInUser(8000);
     } finally {
       oauthInFlight = null;
     }
@@ -232,6 +223,7 @@ export async function signInWithGoogleMobile(): Promise<void> {
   oauthInFlight = runGoogleOAuth();
   try {
     await oauthInFlight;
+    await waitForSignedInUser(8000);
   } finally {
     oauthInFlight = null;
   }

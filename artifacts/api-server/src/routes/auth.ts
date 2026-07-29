@@ -174,7 +174,6 @@ function buildGoogleAuthUrl(returnUrl: string): string {
     code_challenge: challenge,
     code_challenge_method: "S256",
     access_type: "online",
-    prompt: "select_account",
   });
 
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;

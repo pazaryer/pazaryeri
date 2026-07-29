@@ -96,7 +96,7 @@ function RootLayoutNav() {
       target = '/onboarding';
     } else if (!user && !inAuth && !inLegal && !isPublicWeb) {
       target = isWeb ? '/giris' : '/login';
-    } else if (user && (segName === 'login' || segName === 'email-auth' || segName === 'giris' || segName === 'kayit')) {
+    } else if (user && (segName === 'login' || segName === 'email-auth' || segName === 'auth' || segName === 'giris' || segName === 'kayit')) {
       target = isWeb ? '/' : '/(tabs)';
     }
 

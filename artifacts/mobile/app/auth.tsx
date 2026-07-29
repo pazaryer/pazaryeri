@@ -1,16 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BRAND } from '@/constants/brand';
 import { completeGoogleSignInFromUrl } from '@/lib/google-native-auth';
 import { getFirebaseAuth } from '@/lib/firebase';
 
-/** iOS deep link yedek: pazaryeri://auth?id_token=... */
+/** OAuth dönüşü: exp://.../auth?id_token=... — giriş tamamlanınca ana sayfaya */
 export default function AuthCallbackScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id_token?: string | string[]; error?: string | string[] }>();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const handled = useRef(false);
 
   useEffect(() => {
@@ -18,8 +16,11 @@ export default function AuthCallbackScreen() {
     handled.current = true;
 
     const auth = getFirebaseAuth();
+
+    const goHome = () => router.replace('/(tabs)');
+
     if (auth.currentUser) {
-      router.replace('/(tabs)');
+      goHome();
       return;
     }
 
@@ -27,61 +28,44 @@ export default function AuthCallbackScreen() {
     const err = pickParam(params.error);
 
     if (err) {
-      setError(err);
-      setLoading(false);
+      router.replace('/login');
       return;
     }
 
-    if (!idToken) {
-      const timer = setTimeout(() => {
-        if (auth.currentUser) {
-          router.replace('/(tabs)');
-          return;
+    if (idToken) {
+      void (async () => {
+        try {
+          await completeGoogleSignInFromUrl(`?id_token=${encodeURIComponent(idToken)}`);
+        } catch {
+          /* runGoogleOAuth zaten tamamlamış olabilir */
         }
-        setError('Google oturum bilgisi bulunamadı');
-        setLoading(false);
-      }, 6000);
-      const unsub = auth.onAuthStateChanged((u) => {
-        if (u) {
-          clearTimeout(timer);
-          unsub();
-          router.replace('/(tabs)');
-        }
-      });
-      return () => {
-        clearTimeout(timer);
-        unsub();
-      };
+        goHome();
+      })();
+      return;
     }
 
-    void (async () => {
-      try {
-        await completeGoogleSignInFromUrl(`?id_token=${encodeURIComponent(idToken)}`);
-        router.replace('/(tabs)');
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Google girişi başarısız');
-        setLoading(false);
+    const timer = setTimeout(() => {
+      if (auth.currentUser) goHome();
+      else router.replace('/login');
+    }, 8000);
+
+    const unsub = auth.onAuthStateChanged((u) => {
+      if (u) {
+        clearTimeout(timer);
+        unsub();
+        goHome();
       }
-    })();
+    });
+
+    return () => {
+      clearTimeout(timer);
+      unsub();
+    };
   }, [params.id_token, params.error, router]);
 
   return (
     <View style={styles.wrap}>
-      {loading && !error ? (
-        <>
-          <ActivityIndicator size="large" color={BRAND.primary} />
-          <Text style={styles.title}>Giriş tamamlanıyor...</Text>
-        </>
-      ) : null}
-      {error ? (
-        <>
-          <Text style={styles.title}>Giriş tamamlanamadı</Text>
-          <Text style={styles.sub}>{error}</Text>
-          <Pressable style={styles.btn} onPress={() => router.replace('/login')}>
-            <Text style={styles.btnText}>Giriş ekranına dön</Text>
-          </Pressable>
-        </>
-      ) : null}
+      <ActivityIndicator size="large" color={BRAND.primary} />
     </View>
   );
 }
@@ -97,18 +81,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
     backgroundColor: BRAND.background,
-    gap: 12,
   },
-  title: { fontSize: 18, fontWeight: '700', color: BRAND.text, textAlign: 'center' },
-  sub: { fontSize: 14, color: BRAND.textMuted, textAlign: 'center', lineHeight: 20 },
-  btn: {
-    marginTop: 16,
-    backgroundColor: BRAND.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 24,
-  },
-  btnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
 });

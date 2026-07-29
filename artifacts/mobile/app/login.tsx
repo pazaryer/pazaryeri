@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BRAND } from '@/constants/brand';
 import { AppBrandMark } from '@/components/AppBrandMark';
 import { useGoogleSignIn } from '@/lib/google-native-auth';
+import { getFirebaseAuth } from '@/lib/firebase';
 
 export default function LoginScreen() {
   if (Platform.OS === 'web') {
@@ -39,6 +40,11 @@ function MobileLoginScreen() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
       if (msg.includes('iptal') || msg.includes('cancel')) return;
+      const auth = getFirebaseAuth();
+      if (auth.currentUser) {
+        router.replace('/(tabs)');
+        return;
+      }
       Alert.alert('Giriş Hatası', msg);
     } finally {
       setGoogleLoading(false);
