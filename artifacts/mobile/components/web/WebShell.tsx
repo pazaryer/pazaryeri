@@ -419,10 +419,9 @@ const styles = StyleSheet.create({
   mainMobile: { flexGrow: 0, flexShrink: 0 },
   sponsorSlot: {
     width: '100%',
-    maxWidth: WEB_THEME.maxWidth,
-    alignSelf: 'center',
-    paddingHorizontal: 8,
-    paddingTop: 8,
+    alignItems: 'center',
+    paddingTop: 6,
+    paddingBottom: 2,
   },
   footer: {
     backgroundColor: WEB_THEME.surface,

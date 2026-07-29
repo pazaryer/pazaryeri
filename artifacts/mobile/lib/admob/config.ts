@@ -130,3 +130,5 @@ export function resolveRewardedUnitId(config: AdMobRemoteConfig): string | null 
 }
 
 export const ADMOB_BANNER_HEIGHT = 50;
+
+export { bannerHeightForWidth, resolveBannerWidth } from '@/lib/banner-layout';
