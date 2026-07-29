@@ -1,14 +1,21 @@
 import { useEffect } from 'react';
 import Constants from 'expo-constants';
-import { publicFetch } from '@/lib/api';
+import { authFetch, getIdToken } from '@/lib/api';
 import { getAdminDeviceId } from '@/lib/device-id';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useAdminPresencePing(intervalMs = 45_000) {
+  const { user, profile } = useAuth();
+
   useEffect(() => {
+    if (!user || !profile) return;
+
     const ping = async () => {
       try {
+        const token = await getIdToken();
+        if (!token) return;
         const deviceId = await getAdminDeviceId();
-        await publicFetch('/presence/ping', {
+        await authFetch('/presence/ping', {
           method: 'POST',
           body: JSON.stringify({
             deviceId,
@@ -23,5 +30,5 @@ export function useAdminPresencePing(intervalMs = 45_000) {
     void ping();
     const t = setInterval(ping, intervalMs);
     return () => clearInterval(t);
-  }, [intervalMs]);
+  }, [user, profile, intervalMs]);
 }

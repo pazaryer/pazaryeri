@@ -209,10 +209,18 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
   try {
     const { apiFetch } = await import('./api');
-    await apiFetch('/users/me/push-token', {
-      method: 'POST',
-      body: JSON.stringify({ token, platform: Platform.OS }),
-    });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await apiFetch('/users/me/push-token', {
+          method: 'POST',
+          body: JSON.stringify({ token, platform: Platform.OS }),
+        });
+        break;
+      } catch {
+        if (attempt === 2) throw new Error('push-token failed');
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      }
+    }
   } catch {
     /* auth hazır değilse sonra tekrar denenecek */
   }

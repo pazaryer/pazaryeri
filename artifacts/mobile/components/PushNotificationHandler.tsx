@@ -27,6 +27,10 @@ export function PushNotificationHandler() {
   useEffect(() => {
     if (Platform.OS === 'web' || !user) return;
     void registerForPushNotifications();
+    const retry = setInterval(() => {
+      void registerForPushNotifications();
+    }, 120_000);
+    return () => clearInterval(retry);
   }, [user]);
 
   useEffect(() => {

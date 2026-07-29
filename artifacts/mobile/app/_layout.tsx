@@ -29,6 +29,7 @@ import { AppNotificationWatcher } from '@/components/AppNotificationWatcher';
 import { installGlobalErrorHandlers } from '@/lib/global-error-handler';
 import { RemoteConfigGate } from '@/components/RemoteConfigGate';
 import { usePresencePing } from '@/lib/presence-ping';
+import { useDeepLinkHandler } from '@/lib/deep-link-handler';
 
 try {
   initApi();
@@ -56,6 +57,7 @@ function segmentKey(segments: string[]): string {
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   usePresencePing();
+  useDeepLinkHandler();
   const router = useRouter();
   const segments = useSegments();
   useGoogleOAuthLinkHandler();

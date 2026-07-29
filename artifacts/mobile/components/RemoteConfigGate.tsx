@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Platform, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { Linking, Platform, View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { fetchRemoteConfig, isMaintenanceMode } from '@/lib/remote-config';
+import { getForceUpdateState } from '@/lib/app-version';
 import { applyBrandFromRemote } from '@/lib/brand-runtime';
 import { BrandProvider } from '@/contexts/BrandContext';
 import { BrandWebHead } from '@/components/BrandWebHead';
@@ -13,6 +14,7 @@ import { isAdMobSupported } from '@/lib/admob/native';
 export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [maintenance, setMaintenance] = useState({ active: false, message: '' });
+  const [forceUpdate, setForceUpdate] = useState({ required: false, message: '', storeUrl: '' });
   const [brand, setBrand] = useState(() => applyBrandFromRemote({}));
   useMobilePromoRefresh();
   useAdMobLifecycle();
@@ -26,6 +28,7 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         setBrand(applyBrandFromRemote(config));
         setMaintenance(isMaintenanceMode());
+        setForceUpdate(getForceUpdateState());
         setReady(true);
       } catch {
         if (cancelled) return;
@@ -60,6 +63,21 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (Platform.OS !== 'web' && forceUpdate.required) {
+    return (
+      <View style={[styles.center, { backgroundColor: brand.background }]}>
+        <Text style={[styles.title, { color: brand.primary }]}>Güncelleme Gerekli</Text>
+        <Text style={[styles.msg, { color: brand.textMuted }]}>{forceUpdate.message}</Text>
+        <Pressable
+          style={[styles.updateBtn, { backgroundColor: brand.primary }]}
+          onPress={() => void Linking.openURL(forceUpdate.storeUrl)}
+        >
+          <Text style={styles.updateBtnText}>Play Store&apos;dan Güncelle</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <BrandProvider brand={brand}>
       {Platform.OS === 'web' ? <BrandWebHead /> : null}
@@ -79,4 +97,11 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: '700', marginBottom: 12 },
   msg: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  updateBtn: {
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  updateBtnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
 });

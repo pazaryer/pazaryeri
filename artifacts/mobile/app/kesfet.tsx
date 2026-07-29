@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Platform, View, ScrollView, StyleSheet } from 'react-native';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { WebShell } from '@/components/web/WebShell';
@@ -42,6 +42,10 @@ export default function KesfetScreen() {
   const mobileWeb = useIsMobileWeb();
   const params = useLocalSearchParams<{ q?: string; kategori?: string }>();
   const [search, setSearch] = useState(typeof params.q === 'string' ? params.q : '');
+
+  useEffect(() => {
+    setSearch(typeof params.q === 'string' ? params.q : '');
+  }, [params.q]);
 
   if (Platform.OS !== 'web') {
     return <Redirect href="/(tabs)/explore" />;

@@ -1,10 +1,7 @@
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
-import {
-  getAuth,
-  initializeAuth,
-  getReactNativePersistence,
-  type Auth,
-} from 'firebase/auth';
+import { getAuth, initializeAuth, type Auth } from 'firebase/auth';
+// @ts-expect-error RN persistence path (Firebase v11)
+import { getReactNativePersistence } from '@firebase/auth/dist/rn/index.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FIREBASE_CONFIG } from './firebase.config';
 

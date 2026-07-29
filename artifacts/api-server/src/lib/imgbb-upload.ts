@@ -1,11 +1,6 @@
 const IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload";
 
-/** Render ortam değişkeni yoksa kullanılır (kullanıcı tarafından sağlandı) */
-const DEFAULT_IMGBB_KEYS = [
-  "91caa7c6b5720d1f1351e502086cf720",
-  "235ba2b98ebf0e39333f19e0756bc842",
-];
-
+/** ImgBB — yalnızca ortam değişkenlerinden okunur (güvenlik) */
 let keyIndex = 0;
 
 function getImgBBApiKeys(): string[] {
@@ -22,7 +17,10 @@ function getImgBBApiKeys(): string[] {
   if (single) keys.add(single);
 
   if (keys.size === 0) {
-    for (const k of DEFAULT_IMGBB_KEYS) keys.add(k);
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("IMGBB_API_KEY veya IMGBB_API_KEYS ortam değişkeni gerekli");
+    }
+    return [];
   }
 
   return [...keys];

@@ -3,6 +3,7 @@ User-agent: *
 Allow: /
 Allow: /kesfet
 Allow: /listing/
+Allow: /ilan/
 Disallow: /hesabim
 Disallow: /mesajlar
 Disallow: /ilan-ver
@@ -19,5 +20,6 @@ User-agent: Googlebot
 Allow: /
 Allow: /kesfet
 Allow: /listing/
+Allow: /ilan/
 
 Sitemap: https://pazaryeri0.web.app/sitemap.xml

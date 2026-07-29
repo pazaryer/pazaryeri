@@ -11,6 +11,7 @@ export type PlatformSession = {
   lastPingAt: string;
   firstSeenAt: string;
   isLoggedIn: boolean;
+  isAdminSession: boolean;
 };
 
 export type PlatformAnalytics = {
@@ -50,7 +51,7 @@ export async function getPlatformAnalytics(group: "web" | "mobile" | "admin"): P
 
   const liveQuery = sb
     .from("device_presence")
-    .select("device_id, user_id, platform, app_version, last_ping_at, first_seen_at, users(id, name, email)")
+    .select("device_id, user_id, platform, app_version, last_ping_at, first_seen_at, users(id, name, email, role)")
     .gte("last_ping_at", liveCutoff)
     .in("platform", platforms)
     .order("last_ping_at", { ascending: false })
@@ -75,17 +76,22 @@ export async function getPlatformAnalytics(group: "web" | "mobile" | "admin"): P
   ]);
 
   const sessions: PlatformSession[] = (liveRows ?? []).map((r) => {
-    const u = r.users as { id?: string; name?: string; email?: string | null } | null;
+    const u = r.users as { id?: string; name?: string; email?: string | null; role?: string } | null;
+    const platform = (r.platform as string | null) ?? null;
+    const isAdminSession = group === "admin" && platform === "admin";
+    const hasUser = Boolean(r.user_id);
+    const isAdminRole = u?.role === "admin" || u?.role === "moderator";
     return {
       deviceId: r.device_id as string,
       userId: (r.user_id as string | null) ?? null,
-      userName: u?.name ?? null,
+      userName: u?.name ?? (isAdminSession ? "Yönetici" : null),
       userEmail: u?.email ?? null,
-      platform: (r.platform as string | null) ?? null,
+      platform,
       appVersion: (r.app_version as string | null) ?? null,
       lastPingAt: r.last_ping_at as string,
       firstSeenAt: r.first_seen_at as string,
-      isLoggedIn: Boolean(r.user_id),
+      isLoggedIn: hasUser || isAdminSession || (group === "admin" && isAdminRole),
+      isAdminSession,
     };
   });
 

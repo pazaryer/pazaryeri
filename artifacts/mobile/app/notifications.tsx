@@ -13,6 +13,8 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenLayout } from '@/components/ProfileScreenLayout';
+import { WebShell } from '@/components/web/WebShell';
+import { SeoHead } from '@/components/SeoHead';
 import { useColors } from '@/hooks/useColors';
 import {
   useDeleteAllNotifications,
@@ -87,7 +89,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  return (
+  const panel = (
     <ProfileScreenLayout title="Bildirimler" scroll={false}>
       <ScrollView
         style={styles.scroll}
@@ -188,6 +190,17 @@ export default function NotificationsScreen() {
       </Modal>
     </ProfileScreenLayout>
   );
+
+  if (Platform.OS === 'web') {
+    return (
+      <WebShell>
+        <SeoHead title="Bildirimler" description="Pazaryeri bildirimleriniz." path="/notifications" noindex />
+        {panel}
+      </WebShell>
+    );
+  }
+
+  return panel;
 }
 
 const styles = StyleSheet.create({

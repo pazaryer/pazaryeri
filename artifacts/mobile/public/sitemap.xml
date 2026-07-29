@@ -14,12 +14,6 @@
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://pazaryeri0.web.app/giris</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
     <loc>https://pazaryeri0.web.app/kayit</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -36,6 +30,12 @@
     <lastmod>2026-07-29</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/help</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
   </url>
   <url>
     <loc>https://pazaryeri0.web.app/kesfet?kategori=Elektronik</loc>
@@ -201,6 +201,12 @@
   </url>
   <url>
     <loc>https://pazaryeri0.web.app/listing/eebd1c13-a922-4a6c-82b4-22d291cbb3fa</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://pazaryeri0.web.app/ilan/eebd1c13-a922-4a6c-82b4-22d291cbb3fa</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

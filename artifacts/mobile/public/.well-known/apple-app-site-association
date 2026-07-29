@@ -4,7 +4,13 @@
     "details": [
       {
         "appID": "TEAMID.com.pazaryerim",
-        "paths": ["/listing/*", "/kesfet", "/kesfet/*", "/"]
+        "paths": [
+          "/listing/*",
+          "/kesfet",
+          "/kesfet/*",
+          "/ilan/*",
+          "/"
+        ]
       }
     ]
   }

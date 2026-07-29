@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Linking, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenLayout } from '@/components/ProfileScreenLayout';
+import { WebShell } from '@/components/web/WebShell';
+import { SeoHead } from '@/components/SeoHead';
 import { useColors } from '@/hooks/useColors';
 import { SUPPORT_EMAIL } from '@/constants/brand';
 
@@ -33,7 +35,7 @@ export default function HelpScreen() {
     Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Pazaryeri%20Destek`).catch(() => null);
   };
 
-  return (
+  const panel = (
     <ProfileScreenLayout title="Yardım ve Destek">
       <View style={[styles.contactCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Ionicons name="mail-outline" size={28} color={colors.primary} />
@@ -66,6 +68,21 @@ export default function HelpScreen() {
       </View>
     </ProfileScreenLayout>
   );
+
+  if (Platform.OS === 'web') {
+    return (
+      <WebShell>
+        <SeoHead
+          title="Yardım ve Destek"
+          description="Pazaryeri sık sorulan sorular, destek ve yasal bilgiler."
+          path="/help"
+        />
+        {panel}
+      </WebShell>
+    );
+  }
+
+  return panel;
 }
 
 const styles = StyleSheet.create({

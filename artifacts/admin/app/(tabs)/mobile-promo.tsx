@@ -450,10 +450,14 @@ export default function MobilePromoScreen() {
           onChange={(placement, patch) =>
             setForm((f) => ({
               ...f,
-              sponsorBanners: updateSponsorBanner(f.sponsorBanners, placement as SponsorPlacementId, patch),
+              sponsorBanners: updateSponsorBanner(
+                f.sponsorBanners,
+                placement as SponsorPlacementId,
+                patch as Partial<SponsorBannerForm>,
+              ),
             }))
           }
-          onUpload={uploadBanner}
+          onUpload={(placement) => uploadBanner(placement as SponsorPlacementId)}
           uploadingPlacement={uploadingPlacement}
           readOnly={profile?.role !== 'admin'}
         />

@@ -12,10 +12,10 @@ const API_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://pazaryerim.onrender
 const STATIC_PAGES = [
   { path: '/', priority: '1.0', changefreq: 'daily' },
   { path: '/kesfet', priority: '0.95', changefreq: 'daily' },
-  { path: '/giris', priority: '0.4', changefreq: 'monthly' },
   { path: '/kayit', priority: '0.5', changefreq: 'monthly' },
   { path: '/terms', priority: '0.3', changefreq: 'yearly' },
   { path: '/privacy', priority: '0.3', changefreq: 'yearly' },
+  { path: '/help', priority: '0.4', changefreq: 'monthly' },
 ];
 
 const CATEGORY_PATHS = [
@@ -101,6 +101,11 @@ async function main() {
   if (fs.existsSync(iconSrc)) {
     fs.copyFileSync(iconSrc, ogDest);
     console.log('Copied og-image.png');
+    const iconsDir = path.join(publicDir, 'icons');
+    fs.mkdirSync(iconsDir, { recursive: true });
+    fs.copyFileSync(iconSrc, path.join(iconsDir, 'icon-512.png'));
+    fs.copyFileSync(iconSrc, path.join(iconsDir, 'icon-192.png'));
+    console.log('Copied PWA icons');
   }
 
   let listings = [];
@@ -129,6 +134,7 @@ async function main() {
   for (const listing of listings) {
     const lastmod = (listing.updatedAt ?? now).toString().split('T')[0];
     writeUrl(urls, `/listing/${listing.id}`, '0.8', 'weekly', lastmod);
+    writeUrl(urls, `/ilan/${listing.id}`, '0.8', 'weekly', lastmod);
   }
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -143,6 +149,7 @@ User-agent: *
 Allow: /
 Allow: /kesfet
 Allow: /listing/
+Allow: /ilan/
 Disallow: /hesabim
 Disallow: /mesajlar
 Disallow: /ilan-ver
@@ -159,6 +166,7 @@ User-agent: Googlebot
 Allow: /
 Allow: /kesfet
 Allow: /listing/
+Allow: /ilan/
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `;

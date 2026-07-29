@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pazaryeri",
     "slug": "pazaryeri",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pazaryeri",
@@ -41,6 +41,14 @@
             {
               "scheme": "pazaryeri",
               "host": "auth"
+            },
+            {
+              "scheme": "pazaryeri",
+              "host": "listing"
+            },
+            {
+              "scheme": "pazaryeri",
+              "host": "ilan"
             }
           ]
         },
@@ -57,6 +65,26 @@
             {
               "scheme": "https",
               "host": "pazaryeri0.web.app",
+              "pathPrefix": "/ilan"
+            },
+            {
+              "scheme": "https",
+              "host": "pazaryeri0.firebaseapp.com",
+              "pathPrefix": "/listing"
+            },
+            {
+              "scheme": "https",
+              "host": "pazaryeri0.firebaseapp.com",
+              "pathPrefix": "/ilan"
+            },
+            {
+              "scheme": "https",
+              "host": "pazaryeri0.web.app",
+              "pathPrefix": "/kesfet"
+            },
+            {
+              "scheme": "https",
+              "host": "pazaryeri0.firebaseapp.com",
               "pathPrefix": "/kesfet"
             }
           ]
@@ -72,8 +100,7 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
-        "android.permission.POST_NOTIFICATIONS",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -141,8 +168,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "androidAppId": "ca-app-pub-8045800087063412~8727412358",
+          "iosAppId": "ca-app-pub-8045800087063412~8727412358",
           "userTrackingUsageDescription": "Size daha uygun reklamlar gösterebilmek için."
         }
       ]

@@ -18,6 +18,7 @@ type PlatformSession = {
   appVersion: string | null;
   lastPingAt: string;
   isLoggedIn: boolean;
+  isAdminSession?: boolean;
 };
 
 type PlatformActivity = {
@@ -99,7 +100,7 @@ function PlatformLiveTable({
         emptyMessage="Şu an aktif yok"
         renderCell={(s, col) => {
           if (col.key === 'user') {
-            if (s.isLoggedIn && s.userName) {
+            if (s.userName) {
               return (
                 <View>
                   <CellText bold>{s.userName}</CellText>
@@ -107,14 +108,19 @@ function PlatformLiveTable({
                 </View>
               );
             }
+            if (s.isAdminSession || (title.includes('Admin') && s.platform === 'admin')) {
+              return <CellText muted>Yönetici oturumu</CellText>;
+            }
             return <CellText muted>Misafir</CellText>;
           }
           if (col.key === 'platform') return <CellText muted>{s.platform ?? '—'}</CellText>;
           if (col.key === 'status') {
+            const isAdminSession = Boolean(s.isAdminSession) || (title.includes('Admin') && s.platform === 'admin');
+            const loggedIn = s.isLoggedIn || isAdminSession;
             return (
               <Badge
-                text={s.isLoggedIn ? 'Girişli' : 'Misafir'}
-                tone={s.isLoggedIn ? 'success' : 'default'}
+                text={loggedIn ? (isAdminSession ? 'Admin' : 'Girişli') : 'Misafir'}
+                tone={loggedIn ? 'success' : 'default'}
               />
             );
           }

@@ -820,6 +820,28 @@ const nullableUrl = z.preprocess(
   z.union([z.string().max(4000), z.null()]),
 );
 
+const nullableHttpsUrl = z.preprocess(
+  (val) => (val === "" || val === undefined || val === null ? null : val),
+  z.union([
+    z
+      .string()
+      .max(4000)
+      .refine((u) => /^https:\/\//i.test(u), { message: "Link https:// ile başlamalı" }),
+    z.null(),
+  ]),
+);
+
+const nullableImageUrl = z.preprocess(
+  (val) => (val === "" || val === undefined || val === null ? null : val),
+  z.union([
+    z
+      .string()
+      .max(4000)
+      .refine((u) => /^https?:\/\//i.test(u), { message: "Geçerli görsel URL gerekli" }),
+    z.null(),
+  ]),
+);
+
 const nullableShortText = z.preprocess(
   (val) => (typeof val === "string" && val.trim() ? val.trim() : "Sponsor"),
   z.string().max(120),
@@ -867,16 +889,16 @@ const mobilePromoSchema = z.object({
     z.object({
       placement: z.enum(["home", "explore", "post", "messages", "profile", "listing", "web"]),
       enabled: z.boolean(),
-      imageUrl: nullableUrl,
-      linkUrl: nullableUrl,
+      imageUrl: nullableImageUrl,
+      linkUrl: nullableHttpsUrl,
       altText: nullableShortText,
     }),
   ),
   sponsorBanner: z
     .object({
       enabled: z.boolean(),
-      imageUrl: nullableUrl,
-      linkUrl: nullableUrl,
+      imageUrl: nullableImageUrl,
+      linkUrl: nullableHttpsUrl,
       altText: nullableShortText,
     })
     .optional(),

@@ -1,0 +1,5 @@
+{
+  "androidSha256Fingerprints": [],
+  "appleTeamId": "",
+  "_note": "Play Console → Uygulama bütünlüğü → Uygulama imzalama → SHA-256 sertifika parmak izi. Veya: EXPO_TOKEN ile node scripts/fetch-eas-fingerprints.mjs"
+}

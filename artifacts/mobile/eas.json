@@ -11,13 +11,20 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "googleServicesFile": "./google-services.json"
+      },
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com",
+        "EXPO_PUBLIC_API_URL": "https://pazaryerim.onrender.com",
+        "EXPO_PUBLIC_SITE_URL": "https://pazaryeri0.web.app"
       }
     },
     "production": {
       "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "googleServicesFile": "./google-services.json"
       },
       "env": {
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "637257074433-gr8vbeupacshsv6omfsf60mn5rkef719.apps.googleusercontent.com",

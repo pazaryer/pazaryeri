@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { getSupabaseAdmin } from "../lib/supabase-db";
 import { upsertDevicePresence } from "../lib/presence";
 import { optionalAuth } from "../middleware/auth";
+import { dbSyncUser } from "../lib/listings-store";
 
 const router: IRouter = Router();
 
@@ -41,6 +42,17 @@ router.post("/presence/ping", optionalAuth, async (req, res, next) => {
         appVersion: z.string().max(32).optional(),
       })
       .parse(req.body);
+
+    if (req.user) {
+      try {
+        await dbSyncUser(req.user.id, {
+          email: req.user.email,
+          name: (req.user.email?.split("@")[0] ?? "Kullanıcı").slice(0, 100),
+        });
+      } catch {
+        /* kullanıcı satırı yoksa presence FK başarısız olabilir */
+      }
+    }
 
     await upsertDevicePresence(body.deviceId, {
       userId: req.user?.id,

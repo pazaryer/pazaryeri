@@ -151,12 +151,20 @@ export async function registerAdminPushNotifications(): Promise<string | null> {
 
   try {
     const { authFetch } = await import('@/lib/api');
-    await authFetch('/users/me/push-token', {
-      method: 'POST',
-      body: JSON.stringify({ token, platform: Platform.OS }),
-    });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await authFetch('/users/me/push-token', {
+          method: 'POST',
+          body: JSON.stringify({ token, platform: Platform.OS }),
+        });
+        break;
+      } catch {
+        if (attempt === 2) throw new Error('push-token failed');
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      }
+    }
   } catch {
-    /* retry later */
+    /* auth hazır değilse sonra tekrar denenecek */
   }
 
   return token;
