@@ -154,10 +154,14 @@ router.patch("/notifications/read-all", authMiddleware, async (req, res, next) =
 
 router.patch("/notifications/:notificationId/read", authMiddleware, async (req, res, next) => {
   try {
-    await getSupabaseAdmin()
+    const { data } = await getSupabaseAdmin()
       .from("notifications")
       .update({ is_read: true })
-      .eq("id", req.params.notificationId);
+      .eq("id", req.params.notificationId)
+      .eq("user_id", req.user!.id)
+      .select("id");
+
+    if (!data?.length) throw new AppError("Bildirim bulunamadı", 404);
     res.json({ success: true });
   } catch (err) {
     next(err);

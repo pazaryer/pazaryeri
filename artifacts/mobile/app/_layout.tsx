@@ -23,6 +23,7 @@ import { useGoogleOAuthLinkHandler } from '@/lib/google-native-auth';
 import { initApi } from '@/lib/api';
 import { initFirebase } from '@/lib/firebase';
 import { isOnboardingComplete, isOnboardingDoneSync, subscribeOnboarding } from '@/lib/onboarding';
+import { PushNotificationHandler } from '@/components/PushNotificationHandler';
 
 try {
   initApi();
@@ -120,6 +121,7 @@ function RootLayoutNav() {
   return (
     <>
       {Platform.OS !== 'web' ? <StatusBar style="dark" /> : null}
+      <PushNotificationHandler />
       <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="index" />

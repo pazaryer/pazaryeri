@@ -2,6 +2,7 @@ import "./lib/node-polyfills";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startSoldListingPurgeScheduler } from "./jobs/purge-sold-listings";
+import { startEngagementNotificationScheduler } from "./jobs/daily-engagement-notifications";
 
 const rawPort = process.env["PORT"];
 
@@ -25,4 +26,5 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   startSoldListingPurgeScheduler();
+  startEngagementNotificationScheduler();
 });

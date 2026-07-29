@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenLayout } from '@/components/ProfileScreenLayout';
 import { useColors } from '@/hooks/useColors';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/hooks';
+import { getPushNavigationPath, parsePushData } from '@/lib/notifications';
 
 export default function NotificationsScreen() {
   const colors = useColors();
@@ -27,20 +28,14 @@ export default function NotificationsScreen() {
   };
 
   const handleNotificationPress = async (id: string, type: string, rawData?: string | null) => {
-    if (!rawData) {
-      await markRead.mutateAsync(id);
-      return;
-    }
+    await markRead.mutateAsync(id);
+    if (!rawData) return;
     try {
-      const parsed = JSON.parse(rawData) as { conversationId?: string; listingId?: string };
-      await markRead.mutateAsync(id);
-      if (type === 'message' && parsed.conversationId) {
-        router.push(`/chat/${parsed.conversationId}`);
-      } else if (parsed.listingId) {
-        router.push(`/listing/${parsed.listingId}`);
-      }
+      const parsed = parsePushData(JSON.parse(rawData));
+      const path = getPushNavigationPath({ ...parsed, type });
+      if (path) router.push(path as never);
     } catch {
-      await markRead.mutateAsync(id);
+      /* ignore */
     }
   };
 
