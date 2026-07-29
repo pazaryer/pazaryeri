@@ -19,6 +19,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { MobileLocationProvider } from '@/contexts/MobileLocationContext';
 import { BootScreen } from '@/components/BootScreen';
+import { useGoogleOAuthLinkHandler } from '@/lib/google-native-auth';
 import { initApi } from '@/lib/api';
 import { initFirebase } from '@/lib/firebase';
 import { isOnboardingComplete, isOnboardingDoneSync, subscribeOnboarding } from '@/lib/onboarding';
@@ -49,6 +50,7 @@ function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+  useGoogleOAuthLinkHandler();
   const [onboardingDone, setOnboardingDone] = useState(true);
   const lastNavTarget = useRef<string | null>(null);
 

@@ -39,26 +39,31 @@ function MobileLoginScreen() {
     router.replace('/(tabs)');
   }, [user, router]);
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     if (busyRef.current || googleLoading || !ready) return;
     busyRef.current = true;
     setGoogleLoading(true);
-    try {
-      await signIn();
-      router.replace('/(tabs)');
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
-      if (msg.includes('iptal') || msg.includes('cancel')) return;
-      const auth = getFirebaseAuth();
-      if (auth.currentUser) {
-        router.replace('/(tabs)');
-        return;
-      }
-      Alert.alert('Giriş Hatası', msg);
-    } finally {
-      setGoogleLoading(false);
-      busyRef.current = false;
-    }
+    void signIn()
+      .then(() => {
+        if (getFirebaseAuth().currentUser) {
+          router.replace('/(tabs)');
+        }
+      })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
+        if (msg.includes('iptal') || msg.includes('cancel')) return;
+        if (getFirebaseAuth().currentUser) {
+          router.replace('/(tabs)');
+          return;
+        }
+        Alert.alert('Giriş Hatası', msg);
+      })
+      .finally(() => {
+        if (!getFirebaseAuth().currentUser) {
+          setGoogleLoading(false);
+          busyRef.current = false;
+        }
+      });
   };
 
   return (

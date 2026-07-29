@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-nativ
 import { useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppIcon } from '@/components/AppIcon';
-import { buildApiUrl } from '@/lib/config';
+import { sitePath } from '@/lib/config';
 import { isMobileOAuthReturnUrl } from '@/lib/google-native-auth';
 
 /**
@@ -21,7 +21,7 @@ export default function MobileOAuthBridge() {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    const startUrl = `${buildApiUrl('/auth/google/start')}?return=${encodeURIComponent(appReturn)}`;
+    const startUrl = `${sitePath('/oauth/start')}?return=${encodeURIComponent(appReturn)}`;
     window.location.replace(startUrl);
   }, [appReturn]);
 
