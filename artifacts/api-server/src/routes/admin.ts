@@ -18,6 +18,7 @@ import { dbBuildListingDetail } from "../lib/listings-store";
 import { getLiveAnalytics } from "../lib/presence";
 import { getPlatformAnalytics } from "../lib/platform-analytics";
 import { resetLiveAnalytics, getAnalyticsResetAt } from "../lib/analytics-reset";
+import { logAdminAction } from "../lib/admin-audit";
 
 const router: IRouter = Router();
 

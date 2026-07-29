@@ -9,13 +9,15 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSegments } from 'expo-router';
 import { getSponsorBanner } from '@/lib/remote-config';
 import { useColors } from '@/hooks/useColors';
 import { useCompactScreen } from '@/hooks/useCompactScreen';
 import { BRAND } from '@/constants/brand';
+
+/** AdMob standart banner oranı 320×50 */
+const BANNER_ASPECT = 320 / 50;
 
 type Props = {
   variant?: 'inline' | 'floating';
@@ -47,20 +49,17 @@ export function SponsorBanner({ variant = 'inline', style }: Props) {
         style,
       ]}
     >
-      <View style={styles.badgeRow}>
+      <View style={styles.imageWrap}>
+        <Image
+          source={{ uri: sponsor.imageUrl }}
+          style={styles.image}
+          contentFit="cover"
+          accessibilityLabel={sponsor.altText}
+        />
         <View style={[styles.badge, { backgroundColor: BRAND.primary }]}>
           <Text style={styles.badgeText}>SPONSOR</Text>
         </View>
-        {sponsor.linkUrl ? (
-          <Ionicons name="open-outline" size={14} color={colors.mutedForeground} />
-        ) : null}
       </View>
-      <Image
-        source={{ uri: sponsor.imageUrl }}
-        style={styles.image}
-        contentFit="cover"
-        accessibilityLabel={sponsor.altText}
-      />
     </View>
   );
 
@@ -68,7 +67,7 @@ export function SponsorBanner({ variant = 'inline', style }: Props) {
     return (
       <View
         pointerEvents="box-none"
-        style={[styles.floatingWrap, { bottom: tabBarOffset + 6 }]}
+        style={[styles.floatingWrap, { bottom: tabBarOffset + 4 }]}
       >
         <Pressable
           onPress={onPress}
@@ -100,52 +99,61 @@ export function SponsorBanner({ variant = 'inline', style }: Props) {
 const styles = StyleSheet.create({
   floatingWrap: {
     position: 'absolute',
-    left: 12,
-    right: 12,
+    left: 16,
+    right: 16,
     zIndex: 40,
+    maxWidth: 728,
+    alignSelf: 'center',
+    width: '100%',
     ...Platform.select({
-      web: { position: 'fixed' as const },
+      web: {
+        position: 'fixed' as const,
+        left: '50%',
+        right: 'auto',
+        transform: [{ translateX: '-50%' }],
+        width: 'min(100% - 32px, 728px)',
+      } as object,
     }),
   },
   card: {
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     overflow: 'hidden',
-    marginHorizontal: 12,
-    marginVertical: 8,
+    marginHorizontal: 16,
+    marginVertical: 6,
     shadowColor: BRAND.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
   },
   cardFloating: {
     marginHorizontal: 0,
     marginVertical: 0,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 6,
+  imageWrap: {
+    width: '100%',
+    aspectRatio: BANNER_ASPECT,
+    backgroundColor: '#F3EFFF',
+    overflow: 'hidden',
+  },
+  image: {
+    ...StyleSheet.absoluteFillObject,
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    position: 'absolute',
+    top: 4,
+    left: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    opacity: 0.92,
   },
   badgeText: {
     color: '#FFF',
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '900',
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
   },
-  image: {
-    width: '100%',
-    height: 72,
-    backgroundColor: '#F3EFFF',
-  },
-  pressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
+  pressed: { opacity: 0.94, transform: [{ scale: 0.998 }] },
 });

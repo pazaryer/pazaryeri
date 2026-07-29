@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
   Image,
-  Pressable,
   StyleSheet,
   Switch,
   Text,
@@ -45,7 +44,7 @@ function emptyForm(): MobilePromoForm {
   return {
     developer: {
       enabled: true,
-      signatureLabel: 'Dev / ByAltun',
+      signatureLabel: 'dev/ByAltun',
       rateApp: {
         enabled: true,
         label: 'Uygulamayı Puanla & Yorumla',
@@ -215,6 +214,10 @@ export default function MobilePromoScreen() {
       Alert.alert('Yetki', 'Yayınlamak için süper admin gerekli');
       return;
     }
+    if (form.sponsorBanner.enabled && !form.sponsorBanner.imageUrl.trim()) {
+      Alert.alert('Eksik görsel', 'Banner açıkken bir görsel URL veya yüklenmiş dosya gerekli.');
+      return;
+    }
     setBusy(true);
     try {
       await adminFetch('/admin/mobile-promo', {
@@ -363,6 +366,9 @@ export default function MobilePromoScreen() {
 
       <Section title="Sponsor Banner">
         <Card>
+          <Text style={styles.hint}>
+            Önerilen boyut: 320×50 (AdMob standart) veya 728×90. Görsel banner alanına tam oturur.
+          </Text>
           <ToggleRow
             label="Banner açık"
             hint="Kapalıyken hiçbir sayfada görünmez"
@@ -374,6 +380,68 @@ export default function MobilePromoScreen() {
               }))
             }
           />
+          <Text style={styles.fieldLabel}>Tıklanınca gidilecek link</Text>
+          <Input
+            value={form.sponsorBanner.linkUrl}
+            onChangeText={(v) =>
+              setForm((f) => ({
+                ...f,
+                sponsorBanner: { ...f.sponsorBanner, linkUrl: v },
+              }))
+            }
+            placeholder="https://..."
+            autoCapitalize="none"
+          />
+          <Text style={styles.fieldLabel}>Banner görseli — link (URL)</Text>
+          <Input
+            value={form.sponsorBanner.imageUrl}
+            onChangeText={(v) =>
+              setForm((f) => ({
+                ...f,
+                sponsorBanner: { ...f.sponsorBanner, imageUrl: v },
+              }))
+            }
+            placeholder="https://i.imgur.com/... veya ImgBB linki"
+            autoCapitalize="none"
+          />
+          <Text style={styles.fieldLabel}>veya dosyadan yükle</Text>
+          {form.sponsorBanner.imageUrl ? (
+            <View style={styles.previewWrap}>
+              <Image
+                source={{ uri: form.sponsorBanner.imageUrl }}
+                style={styles.bannerPreview}
+                resizeMode="cover"
+              />
+              <View style={styles.previewBadge}>
+                <Text style={styles.previewBadgeText}>SPONSOR</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.bannerPlaceholder}>
+              <Text style={styles.bannerPlaceholderText}>320 × 50 önizleme</Text>
+            </View>
+          )}
+          <View style={styles.uploadRow}>
+            <Btn
+              label={uploading ? 'Yükleniyor…' : 'Galeriden Yükle'}
+              variant="ghost"
+              onPress={uploadBanner}
+              disabled={uploading}
+            />
+            {form.sponsorBanner.imageUrl ? (
+              <Btn
+                label="Görseli Kaldır"
+                variant="danger"
+                compact
+                onPress={() =>
+                  setForm((f) => ({
+                    ...f,
+                    sponsorBanner: { ...f.sponsorBanner, imageUrl: '' },
+                  }))
+                }
+              />
+            ) : null}
+          </View>
           <Text style={styles.fieldLabel}>Alt metin (erişilebilirlik)</Text>
           <Input
             value={form.sponsorBanner.altText}
@@ -385,43 +453,6 @@ export default function MobilePromoScreen() {
             }
             placeholder="Sponsor"
           />
-          <Text style={styles.fieldLabel}>Tıklanınca gidilecek link</Text>
-          <Input
-            value={form.sponsorBanner.linkUrl}
-            onChangeText={(v) =>
-              setForm((f) => ({
-                ...f,
-                sponsorBanner: { ...f.sponsorBanner, linkUrl: v },
-              }))
-            }
-            placeholder="https://..."
-          />
-          <Text style={styles.uploadLabel}>Banner görseli</Text>
-          {form.sponsorBanner.imageUrl ? (
-            <Image source={{ uri: form.sponsorBanner.imageUrl }} style={styles.bannerPreview} />
-          ) : (
-            <View style={styles.bannerPlaceholder}>
-              <Text style={styles.bannerPlaceholderText}>Görsel yok</Text>
-            </View>
-          )}
-          <Btn
-            label={uploading ? 'Yükleniyor…' : 'Görsel Yükle'}
-            variant="ghost"
-            onPress={uploadBanner}
-            disabled={uploading}
-          />
-          {form.sponsorBanner.imageUrl ? (
-            <Pressable
-              onPress={() =>
-                setForm((f) => ({
-                  ...f,
-                  sponsorBanner: { ...f.sponsorBanner, imageUrl: '' },
-                }))
-              }
-            >
-              <Text style={styles.removeLink}>Görseli kaldır</Text>
-            </Pressable>
-          ) : null}
         </Card>
       </Section>
 
@@ -445,16 +476,33 @@ const styles = StyleSheet.create({
   toggleLabel: { fontSize: 14, fontWeight: '700', color: THEME.text },
   toggleHint: { fontSize: 11, color: THEME.textMuted, marginTop: 2 },
   fieldLabel: { fontSize: 12, fontWeight: '600', color: THEME.textSoft, marginBottom: 6, marginTop: 8 },
-  uploadLabel: { fontSize: 13, fontWeight: '600', color: THEME.textSoft, marginBottom: 8, marginTop: 8 },
-  bannerPreview: {
+  hint: { fontSize: 11, color: THEME.textMuted, lineHeight: 17, marginBottom: SPACING.sm },
+  previewWrap: {
     width: '100%',
-    height: 96,
+    aspectRatio: 320 / 50,
     borderRadius: RADIUS.md,
+    overflow: 'hidden',
     marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: THEME.border,
     backgroundColor: THEME.card,
   },
+  bannerPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  previewBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 6,
+    backgroundColor: THEME.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  previewBadgeText: { color: '#FFF', fontSize: 8, fontWeight: '900' },
   bannerPlaceholder: {
-    height: 96,
+    aspectRatio: 320 / 50,
     borderRadius: RADIUS.md,
     borderWidth: 1,
     borderColor: THEME.border,
@@ -463,7 +511,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: SPACING.sm,
   },
-  bannerPlaceholderText: { color: THEME.textMuted, fontSize: 13 },
-  removeLink: { color: THEME.danger, fontSize: 13, marginTop: 4, textAlign: 'center' },
+  bannerPlaceholderText: { color: THEME.textMuted, fontSize: 12 },
+  uploadRow: { flexDirection: 'row', gap: SPACING.sm, flexWrap: 'wrap', marginBottom: SPACING.sm },
   actions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg, marginBottom: SPACING.xl },
 });
