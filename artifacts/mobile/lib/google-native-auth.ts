@@ -73,6 +73,17 @@ export function parseOAuthReturnUrl(returnUrl: string): { idToken?: string; erro
   }
 }
 
+async function safeDismissBrowser(): Promise<void> {
+  try {
+    const maybe = WebBrowser.dismissBrowser() as void | Promise<void>;
+    if (maybe && typeof (maybe as Promise<void>).then === 'function') {
+      await maybe;
+    }
+  } catch {
+    /* Android'de dismissBrowser bazen undefined döner */
+  }
+}
+
 async function completeGoogleSignIn(idToken: string): Promise<void> {
   const auth = getFirebaseAuth();
   if (auth.currentUser) return;
@@ -80,7 +91,7 @@ async function completeGoogleSignIn(idToken: string): Promise<void> {
   await signInWithCredential(auth, credential);
 }
 
-function waitForSignedInUser(timeoutMs = 12000): Promise<boolean> {
+function waitForSignedInUser(timeoutMs = 8000): Promise<boolean> {
   const auth = getFirebaseAuth();
   if (auth.currentUser) return Promise.resolve(true);
   return new Promise((resolve) => {
@@ -117,6 +128,7 @@ async function runGoogleOAuth(): Promise<void> {
 
   let capturedToken: string | null = null;
   let capturedError: string | null = null;
+  let signInFromLink: Promise<void> | null = null;
 
   const processReturnUrl = (url: string) => {
     if (!url || !isMobileOAuthReturnUrl(url)) return;
@@ -127,8 +139,11 @@ async function runGoogleOAuth(): Promise<void> {
 
   const onUrl = ({ url }: { url: string }) => {
     processReturnUrl(url);
-    if (capturedToken || capturedError) {
-      void WebBrowser.dismissBrowser().catch(() => {});
+    if (capturedToken && !signInFromLink) {
+      signInFromLink = completeGoogleSignIn(capturedToken).catch((e: unknown) => {
+        capturedError = e instanceof Error ? e.message : 'Google girişi başarısız';
+      });
+      void safeDismissBrowser();
     }
   };
 
@@ -145,7 +160,6 @@ async function runGoogleOAuth(): Promise<void> {
   let result: WebBrowser.WebBrowserAuthSessionResult;
   try {
     result = await WebBrowser.openAuthSessionAsync(googleUrl, returnUrl, {
-      // Cihazdaki Google oturumunu kullan — tek tıkla giriş
       preferEphemeralSession: false,
       showInRecents: false,
       createTask: false,
@@ -158,21 +172,29 @@ async function runGoogleOAuth(): Promise<void> {
         /* ignore */
       }
     }
-    linkSub.remove();
-    try {
-      await WebBrowser.dismissBrowser();
-    } catch {
-      /* ignore */
-    }
   }
 
   if (__DEV__) {
     console.log('[Google] result:', result.type);
   }
 
+  // Android: deep link bazen session kapandıktan sonra gelir
+  if (!capturedToken && !capturedError && !auth.currentUser) {
+    await new Promise((r) => setTimeout(r, Platform.OS === 'android' ? 2000 : 500));
+  }
+
+  linkSub.remove();
+  await safeDismissBrowser();
+
+  if (signInFromLink) {
+    await signInFromLink;
+  }
+
   if (capturedError) {
     throw new Error(capturedError);
   }
+
+  if (auth.currentUser) return;
 
   let idToken: string | undefined;
 
@@ -191,7 +213,7 @@ async function runGoogleOAuth(): Promise<void> {
     return;
   }
 
-  if (await waitForSignedInUser(10000)) return;
+  if (await waitForSignedInUser(6000)) return;
 
   if (result.type === 'cancel' || result.type === 'dismiss') {
     throw new Error('Google girişi iptal edildi');
@@ -206,7 +228,6 @@ export function useGoogleSignIn() {
     oauthInFlight = runGoogleOAuth();
     try {
       await oauthInFlight;
-      await waitForSignedInUser(8000);
     } finally {
       oauthInFlight = null;
     }
@@ -223,7 +244,6 @@ export async function signInWithGoogleMobile(): Promise<void> {
   oauthInFlight = runGoogleOAuth();
   try {
     await oauthInFlight;
-    await waitForSignedInUser(8000);
   } finally {
     oauthInFlight = null;
   }

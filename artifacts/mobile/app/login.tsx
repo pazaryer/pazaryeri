@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { BRAND } from '@/constants/brand';
 import { AppBrandMark } from '@/components/AppBrandMark';
 import { useGoogleSignIn } from '@/lib/google-native-auth';
 import { getFirebaseAuth } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
   if (Platform.OS === 'web') {
@@ -26,9 +27,17 @@ export default function LoginScreen() {
 function MobileLoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { signIn, ready } = useGoogleSignIn();
   const [googleLoading, setGoogleLoading] = useState(false);
   const busyRef = useRef(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setGoogleLoading(false);
+    busyRef.current = false;
+    router.replace('/(tabs)');
+  }, [user, router]);
 
   const handleGoogleLogin = async () => {
     if (busyRef.current || googleLoading || !ready) return;
