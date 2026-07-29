@@ -17,6 +17,10 @@
         "destination": "/firebase-messaging-sw.js"
       },
       {
+        "source": "/ads.txt",
+        "destination": "/ads.txt"
+      },
+      {
         "source": "/app-ads.txt",
         "destination": "/app-ads.txt"
       },

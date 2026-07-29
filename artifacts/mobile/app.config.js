@@ -4,8 +4,6 @@ const path = require('path');
 
 const appJson = require('./app.json');
 
-const PUBLISHER = '8045800087063412';
-
 function loadAdMobAppIds() {
   const fromEnv = {
     android: process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID?.trim(),
@@ -19,47 +17,43 @@ function loadAdMobAppIds() {
   if (fs.existsSync(configPath)) {
     try {
       const raw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      if (raw.androidAppId && raw.iosAppId) {
-        return { androidAppId: raw.androidAppId, iosAppId: raw.iosAppId };
+      if (raw.androidAppId?.trim() && raw.iosAppId?.trim()) {
+        return { androidAppId: raw.androidAppId.trim(), iosAppId: raw.iosAppId.trim() };
       }
     } catch {
-      /* fall through */
+      /* ignore */
     }
   }
 
-  const profile = process.env.EAS_BUILD_PROFILE ?? '';
-  const isRelease = profile === 'production' || profile === 'preview';
-  if (isRelease) {
-    console.warn(
-      `[AdMob] Üretim build: config/admob.ids.json veya EXPO_PUBLIC_ADMOB_* env ayarlayın (pub-${PUBLISHER}).`,
-    );
-  }
-
-  return {
-    androidAppId: `ca-app-pub-${PUBLISHER}~8727412358`,
-    iosAppId: `ca-app-pub-${PUBLISHER}~8727412358`,
-  };
+  return null;
 }
 
 function patchPlugins(plugins, admobIds) {
-  return plugins.map((entry) => {
-    if (Array.isArray(entry) && entry[0] === 'react-native-google-mobile-ads') {
-      return [
+  return plugins
+    .filter((entry) => !(Array.isArray(entry) && entry[0] === 'react-native-google-mobile-ads'))
+    .concat([
+      [
         'react-native-google-mobile-ads',
         {
-          ...entry[1],
           androidAppId: admobIds.androidAppId,
           iosAppId: admobIds.iosAppId,
+          userTrackingUsageDescription: 'Size daha uygun reklamlar gösterebilmek için.',
         },
-      ];
-    }
-    return entry;
-  });
+      ],
+    ]);
 }
 
 module.exports = () => {
   const admobIds = loadAdMobAppIds();
   const expo = appJson.expo;
+  const profile = process.env.EAS_BUILD_PROFILE ?? '';
+  const isRelease = profile === 'production' || profile === 'preview';
+
+  if (!admobIds && isRelease) {
+    console.warn(
+      '[AdMob] App ID yok — config/admob.ids.json doldurun. Native reklam SDK build’e eklenmedi; admin panelden Unit ID yayınlayınca web dışı reklamlar için yeni build gerekir.',
+    );
+  }
 
   return {
     ...expo,
@@ -84,12 +78,15 @@ module.exports = () => {
         usesNonExemptEncryption: false,
       },
     },
-    plugins: patchPlugins(expo.plugins, admobIds),
+    plugins: admobIds ? patchPlugins(expo.plugins, admobIds) : expo.plugins.filter(
+      (entry) => !(Array.isArray(entry) && entry[0] === 'react-native-google-mobile-ads'),
+    ),
     extra: {
       ...expo.extra,
       admob: admobIds,
       privacyPolicyUrl: 'https://pazaryeri0.web.app/privacy',
       termsUrl: 'https://pazaryeri0.web.app/terms',
+      adsenseClient: 'ca-pub-7876914696425843',
     },
   };
 };

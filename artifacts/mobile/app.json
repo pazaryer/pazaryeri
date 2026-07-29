@@ -164,14 +164,6 @@
         {
           "locationWhenInUsePermission": "Konumunuzu ilanınıza eklemek için konum erişimi gerekli."
         }
-      ],
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-8045800087063412~8727412358",
-          "iosAppId": "ca-app-pub-8045800087063412~8727412358",
-          "userTrackingUsageDescription": "Size daha uygun reklamlar gösterebilmek için."
-        }
       ]
     ],
     "experiments": {

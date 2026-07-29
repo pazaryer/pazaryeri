@@ -41,13 +41,3 @@ services:
         sync: false
       - key: ANDROID_SHA256_FINGERPRINTS
         sync: false
-      - key: ADMOB_ANDROID_APP_ID
-        value: ca-app-pub-8045800087063412~8727412358
-      - key: ADMOB_ANDROID_BANNER_UNIT_ID
-        sync: false
-      - key: ADMOB_ANDROID_INTERSTITIAL_UNIT_ID
-        sync: false
-      - key: ADMOB_ANDROID_REWARDED_UNIT_ID
-        sync: false
-      - key: ADMOB_FORCE_PRODUCTION
-        value: "1"

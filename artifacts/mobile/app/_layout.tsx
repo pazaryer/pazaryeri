@@ -30,6 +30,7 @@ import { installGlobalErrorHandlers } from '@/lib/global-error-handler';
 import { RemoteConfigGate } from '@/components/RemoteConfigGate';
 import { usePresencePing } from '@/lib/presence-ping';
 import { useDeepLinkHandler } from '@/lib/deep-link-handler';
+import { AdSenseHead } from '@/components/AdSenseHead';
 
 try {
   initApi();
@@ -135,6 +136,7 @@ function RootLayoutNav() {
 
   return (
     <>
+      <AdSenseHead />
       {Platform.OS !== 'web' ? <StatusBar style="dark" /> : null}
       <PushNotificationHandler />
       <WebPushHandler />

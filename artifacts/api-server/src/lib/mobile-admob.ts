@@ -1,5 +1,4 @@
 import { DEFAULT_APP_CONFIG } from "./app-config-defaults";
-import { applyAdMobEnvOverrides } from "./admob-env";
 
 export type AdMobUnitConfig = {
   enabled: boolean;
@@ -56,7 +55,7 @@ export function mergeAdMobConfig(config: Record<string, unknown>): AdMobConfig {
   const interstitialRaw = raw.interstitial as Record<string, unknown> | undefined;
   const rewardedRaw = raw.rewarded as Record<string, unknown> | undefined;
 
-  return applyAdMobEnvOverrides({
+  return {
     testMode: bool(raw.testMode, DEFAULT_ADMOB.testMode),
     banner,
     interstitial: {
@@ -75,7 +74,7 @@ export function mergeAdMobConfig(config: Record<string, unknown>): AdMobConfig {
       ...mergeUnit(rewardedRaw, DEFAULT_ADMOB.rewarded),
       boostHours: typeof rewardedRaw?.boostHours === "number" ? rewardedRaw.boostHours : DEFAULT_ADMOB.rewarded.boostHours,
     },
-  });
+  };
 }
 
 export function admobToConfigKey(bundle: AdMobConfig): Record<string, unknown> {

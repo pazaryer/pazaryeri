@@ -22,57 +22,33 @@ export type AdMobRemoteConfig = {
   };
 };
 
-const TEST_IDS = {
-  android: {
-    app: 'ca-app-pub-3940256099942544~3347511713',
-    banner: 'ca-app-pub-3940256099942544/6300978111',
-    interstitial: 'ca-app-pub-3940256099942544/1033173712',
-    rewarded: 'ca-app-pub-3940256099942544/5224354917',
-  },
-  ios: {
-    app: 'ca-app-pub-3940256099942544~1458002511',
-    banner: 'ca-app-pub-3940256099942544/2934735716',
-    interstitial: 'ca-app-pub-3940256099942544/4411468910',
-    rewarded: 'ca-app-pub-3940256099942544/1712485313',
-  },
+const EMPTY_UNIT: AdMobUnitConfig = {
+  enabled: false,
+  androidAppId: '',
+  iosAppId: '',
+  androidUnitId: '',
+  iosUnitId: '',
 };
 
 const DEFAULT_ADMOB: AdMobRemoteConfig = {
-  testMode: true,
-  banner: {
-    enabled: false,
-    androidAppId: TEST_IDS.android.app,
-    iosAppId: TEST_IDS.ios.app,
-    androidUnitId: TEST_IDS.android.banner,
-    iosUnitId: TEST_IDS.ios.banner,
-  },
+  testMode: false,
+  banner: { ...EMPTY_UNIT },
   interstitial: {
-    enabled: false,
-    androidAppId: TEST_IDS.android.app,
-    iosAppId: TEST_IDS.ios.app,
-    androidUnitId: TEST_IDS.android.interstitial,
-    iosUnitId: TEST_IDS.ios.interstitial,
+    ...EMPTY_UNIT,
     thirdSessionEnabled: true,
     afterSecondListingEnabled: true,
     afterDeleteListingEnabled: true,
   },
-  rewarded: {
-    enabled: false,
-    androidAppId: TEST_IDS.android.app,
-    iosAppId: TEST_IDS.ios.app,
-    androidUnitId: TEST_IDS.android.rewarded,
-    iosUnitId: TEST_IDS.ios.rewarded,
-    boostHours: 2,
-  },
+  rewarded: { ...EMPTY_UNIT, boostHours: 2 },
 };
 
 function mergeUnit(raw: Partial<AdMobUnitConfig> | undefined, fallback: AdMobUnitConfig): AdMobUnitConfig {
   return {
     enabled: raw?.enabled ?? fallback.enabled,
-    androidAppId: raw?.androidAppId?.trim() || fallback.androidAppId,
-    iosAppId: raw?.iosAppId?.trim() || fallback.iosAppId,
-    androidUnitId: raw?.androidUnitId?.trim() || fallback.androidUnitId,
-    iosUnitId: raw?.iosUnitId?.trim() || fallback.iosUnitId,
+    androidAppId: raw?.androidAppId?.trim() ?? fallback.androidAppId,
+    iosAppId: raw?.iosAppId?.trim() ?? fallback.iosAppId,
+    androidUnitId: raw?.androidUnitId?.trim() ?? fallback.androidUnitId,
+    iosUnitId: raw?.iosUnitId?.trim() ?? fallback.iosUnitId,
   };
 }
 
@@ -102,31 +78,25 @@ export function useAdMobConfig(): AdMobRemoteConfig {
   return getAdMobConfig();
 }
 
-export function resolveBannerUnitId(config: AdMobRemoteConfig): string | null {
-  if (Platform.OS === 'web') return null;
-  if (config.testMode) {
-    return Platform.OS === 'android' ? TEST_IDS.android.banner : TEST_IDS.ios.banner;
-  }
-  const id = Platform.OS === 'android' ? config.banner.androidUnitId : config.banner.iosUnitId;
+function resolveUnitId(
+  config: AdMobRemoteConfig,
+  unit: AdMobUnitConfig,
+): string | null {
+  if (Platform.OS === 'web' || !unit.enabled || config.testMode) return null;
+  const id = Platform.OS === 'android' ? unit.androidUnitId : unit.iosUnitId;
   return id?.trim() || null;
+}
+
+export function resolveBannerUnitId(config: AdMobRemoteConfig): string | null {
+  return resolveUnitId(config, config.banner);
 }
 
 export function resolveInterstitialUnitId(config: AdMobRemoteConfig): string | null {
-  if (Platform.OS === 'web') return null;
-  if (config.testMode) {
-    return Platform.OS === 'android' ? TEST_IDS.android.interstitial : TEST_IDS.ios.interstitial;
-  }
-  const id = Platform.OS === 'android' ? config.interstitial.androidUnitId : config.interstitial.iosUnitId;
-  return id?.trim() || null;
+  return resolveUnitId(config, config.interstitial);
 }
 
 export function resolveRewardedUnitId(config: AdMobRemoteConfig): string | null {
-  if (Platform.OS === 'web') return null;
-  if (config.testMode) {
-    return Platform.OS === 'android' ? TEST_IDS.android.rewarded : TEST_IDS.ios.rewarded;
-  }
-  const id = Platform.OS === 'android' ? config.rewarded.androidUnitId : config.rewarded.iosUnitId;
-  return id?.trim() || null;
+  return resolveUnitId(config, config.rewarded);
 }
 
 export const ADMOB_BANNER_HEIGHT = 50;

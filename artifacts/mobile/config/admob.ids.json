@@ -1,5 +1,5 @@
 {
-  "androidAppId": "ca-app-pub-8045800087063412~8727412358",
-  "iosAppId": "ca-app-pub-8045800087063412~8727412358",
-  "_note": "AdMob Console → Uygulamalar → Pazaryeri → Uygulama kimliği ile güncelleyin. pub-8045800087063412"
+  "androidAppId": "",
+  "iosAppId": "",
+  "_note": "Mobil APK build öncesi Admin panelden aldığınız App ID'leri buraya yazın. Runtime Unit ID'ler yalnızca admin panelden yönetilir."
 }

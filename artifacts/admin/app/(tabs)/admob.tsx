@@ -33,7 +33,7 @@ function emptyUnit(): AdMobUnit {
 
 function emptyForm(): AdMobForm {
   return {
-    testMode: true,
+    testMode: false,
     banner: emptyUnit(),
     interstitial: {
       ...emptyUnit(),
@@ -75,16 +75,14 @@ function ToggleRow({
 export default function AdMobScreen() {
   const { profile } = useAuth();
   const [form, setForm] = useState<AdMobForm>(emptyForm());
-  const [defaults, setDefaults] = useState<AdMobForm | null>(null);
   const [busy, setBusy] = useState(false);
   const isSuperAdmin = profile?.role === 'admin';
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-admob'],
     queryFn: async () => {
-      const res = await adminFetch<{ admob: AdMobForm; defaults: AdMobForm }>('/admin/admob');
+      const res = await adminFetch<{ admob: AdMobForm }>('/admin/admob');
       setForm(res.admob);
-      setDefaults(res.defaults);
       return res;
     },
   });
@@ -141,22 +139,8 @@ export default function AdMobScreen() {
     }));
   }
 
-  function fillTestIds() {
-    if (!defaults) return;
-    setForm((f) => ({
-      ...f,
-      testMode: true,
-      banner: { ...defaults.banner, enabled: f.banner.enabled },
-      interstitial: {
-        ...defaults.interstitial,
-        enabled: f.interstitial.enabled,
-        thirdSessionEnabled: f.interstitial.thirdSessionEnabled,
-        afterSecondListingEnabled: f.interstitial.afterSecondListingEnabled,
-        afterDeleteListingEnabled: f.interstitial.afterDeleteListingEnabled,
-      },
-      rewarded: { ...defaults.rewarded, enabled: f.rewarded.enabled, boostHours: f.rewarded.boostHours },
-    }));
-    Alert.alert('Test ID', 'Google test kimlikleri tabloya dolduruldu.');
+  function admobPayload(): AdMobForm {
+    return { ...form, testMode: false };
   }
 
   async function save() {
@@ -166,7 +150,7 @@ export default function AdMobScreen() {
     }
     setBusy(true);
     try {
-      await adminFetch('/admin/admob', { method: 'PUT', body: JSON.stringify(form) });
+      await adminFetch('/admin/admob', { method: 'PUT', body: JSON.stringify(admobPayload()) });
       Alert.alert('Kaydedildi', 'AdMob ayarları kaydedildi.');
       refetch();
     } catch (e) {
@@ -183,7 +167,7 @@ export default function AdMobScreen() {
     }
     setBusy(true);
     try {
-      await adminFetch('/admin/admob', { method: 'PUT', body: JSON.stringify(form) });
+      await adminFetch('/admin/admob', { method: 'PUT', body: JSON.stringify(admobPayload()) });
       const res = await adminFetch<{ message: string }>('/admin/admob/publish', { method: 'POST' });
       await adminFetch('/admin/publish', { method: 'POST' });
       Alert.alert('Yayınlandı', res.message);
@@ -213,7 +197,7 @@ export default function AdMobScreen() {
             </Text>
           </View>
           <Text style={styles.hint}>
-            {form.testMode ? 'Test modu açık — Google test reklamları kullanılır.' : 'Canlı mod — kendi Unit ID’leriniz kullanılır.'}
+            Gerçek App ID ve Unit ID&apos;leri girin. Reklamlar yalnızca yayınladıktan sonra mobil uygulamada görünür.
           </Text>
         </Card>
       </Section>
@@ -225,13 +209,6 @@ export default function AdMobScreen() {
             value={anyEnabled}
             onChange={setAllEnabled}
           />
-          <ToggleRow
-            label="Test modu"
-            hint="Kapalıyken canlı reklam birimleri kullanılır"
-            value={form.testMode}
-            onChange={(v) => setForm((f) => ({ ...f, testMode: v }))}
-          />
-          <Btn label="Google test ID'lerini tabloya doldur" variant="ghost" onPress={fillTestIds} />
         </Card>
       </Section>
 

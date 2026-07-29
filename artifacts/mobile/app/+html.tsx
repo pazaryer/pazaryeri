@@ -2,6 +2,7 @@ import { ScrollViewStyleReset } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
 const SITE_URL = 'https://pazaryeri0.web.app';
+const ADSENSE_CLIENT = 'ca-pub-7876914696425843';
 
 export default function Root({ children }: PropsWithChildren) {
   return (
@@ -56,6 +57,13 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-title" content="Pazaryeri" />
         <meta name="application-name" content="Pazaryeri" />
         <meta name="format-detection" content="telephone=no" />
+        <meta name="google-adsense-account" content={ADSENSE_CLIENT} />
+
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          crossOrigin="anonymous"
+        />
 
         <ScrollViewStyleReset />
         <style>{`
