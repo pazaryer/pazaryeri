@@ -1,24 +1,25 @@
 import React, { useMemo } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useAdMobConfig, resolveBannerUnitId } from '@/lib/admob/config';
+import { useAdMobSdkReady } from '@/lib/admob/init';
 import { BRAND } from '@/constants/brand';
 import { useColors } from '@/hooks/useColors';
-import {
-  BANNER_BORDER_RADIUS,
-  BANNER_INSET_H,
-  useBannerLayout,
-} from '@/lib/banner-layout';
+import { BANNER_BORDER_RADIUS, BANNER_INSET_H, useBannerLayout } from '@/lib/banner-layout';
 
 type Props = {
   bottom: number;
 };
+
+const NATIVE_BANNER_W = 320;
+const NATIVE_BANNER_H = 50;
 
 /** Tek global AdMob banner — alt orta, tab bar üstü. */
 export function AdMobBannerSlot({ bottom }: Props) {
   const colors = useColors();
   const config = useAdMobConfig();
   const unitId = resolveBannerUnitId(config);
-  const { width, height, admobScale } = useBannerLayout();
+  const sdkReady = useAdMobSdkReady();
+  const { width } = useBannerLayout();
 
   const adModule = useMemo(() => {
     if (Platform.OS === 'web') return null;
@@ -29,39 +30,46 @@ export function AdMobBannerSlot({ bottom }: Props) {
     }
   }, []);
 
-  if (Platform.OS === 'web' || !config.banner.enabled || !unitId || !adModule) return null;
+  if (
+    Platform.OS === 'web' ||
+    !sdkReady ||
+    !config.banner.enabled ||
+    !unitId ||
+    !adModule
+  ) {
+    return null;
+  }
 
   const { BannerAd, BannerAdSize } = adModule;
+  const cardWidth = Math.min(width, NATIVE_BANNER_W);
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom }]}>
       <View
         style={[
           styles.card,
-          { width, height, borderColor: colors.border, backgroundColor: colors.card },
+          {
+            width: cardWidth,
+            height: NATIVE_BANNER_H,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+          },
         ]}
       >
         <View style={[styles.badge, { backgroundColor: BRAND.primary }]}>
           <Text style={styles.badgeText}>Reklam</Text>
         </View>
-        <View style={[styles.adClip, { width, height }]}>
-          <View style={[styles.adScale, { transform: [{ scale: admobScale }] }]}>
-            <BannerAd
-              unitId={unitId}
-              size={BannerAdSize.BANNER}
-              requestOptions={{ requestNonPersonalizedAdsOnly: false }}
-            />
-          </View>
-        </View>
+        <BannerAd
+          unitId={unitId}
+          size={BannerAdSize.BANNER}
+          requestOptions={{ requestNonPersonalizedAdsOnly: false }}
+        />
       </View>
     </View>
   );
 }
 
-/** Tab bar üstü boşluk hesabı için sabit yükseklik */
-export function getAdMobBannerReserveHeight(bannerHeight: number): number {
-  return bannerHeight + 8;
-}
+export const ADMOB_BANNER_HEIGHT = NATIVE_BANNER_H;
 
 const styles = StyleSheet.create({
   wrap: {
@@ -84,17 +92,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-  },
-  adClip: {
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  adScale: {
-    width: 320,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   badge: {
     position: 'absolute',

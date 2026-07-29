@@ -29,6 +29,7 @@ import {
   normalizeListingLocationParts,
   type ListingCoords,
 } from '@/lib/listing-location';
+import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
 
 const CATEGORIES = LISTING_CATEGORIES.filter((c) => c !== 'Tümü');
 
@@ -192,6 +193,7 @@ export default function PostScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        <SponsorBannerSlot placement="post" />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
             <Ionicons name="images" size={18} color={colors.primary} />

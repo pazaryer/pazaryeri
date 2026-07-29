@@ -49,6 +49,7 @@ import { ListingCommentsSection } from '@/components/ListingCommentsSection';
 import { listingHeroImageProps } from '@/lib/listing-image-props';
 import { formatListingLocation } from '@/lib/listing-location';
 import { getCategoryIcon } from '@/lib/categories';
+import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
 import { BRAND } from '@/constants/brand';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -301,6 +302,7 @@ function MobileListingDetailScreen() {
         {/* ——— İçerik kartı ——— */}
         <View style={styles.sheet}>
           <View style={styles.sheetHandle} />
+          <SponsorBannerSlot placement="listing" style={{ marginBottom: 4 }} />
 
           <View style={styles.priceBlock}>
             <View style={styles.categoryChip}>

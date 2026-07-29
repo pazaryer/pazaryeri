@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useConversations, useDeleteConversation, formatLastActive } from '@/lib/hooks';
 import { showConfirm } from '@/lib/web-alert';
+import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
 
 export default function MessagesScreen() {
   const colors = useColors();
@@ -127,6 +128,8 @@ export default function MessagesScreen() {
           )}
         </View>
       </LinearGradient>
+
+      <SponsorBannerSlot placement="messages" />
 
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />

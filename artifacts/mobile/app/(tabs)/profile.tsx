@@ -23,6 +23,7 @@ import { formatPhoneDisplay } from '@/lib/contact';
 import { BRAND } from '@/constants/brand';
 import { DeveloperActions } from '@/components/DeveloperActions';
 import { ListingPromoteButton } from '@/components/ListingPromoteButton';
+import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
 
 const { width } = Dimensions.get('window');
 const LISTING_CARD_WIDTH = width * 0.36;
@@ -151,6 +152,8 @@ export default function ProfileScreen() {
           <StatPill value={displayProfile.rating > 0 ? displayProfile.rating.toFixed(1) : '—'} label="Puan" />
         </View>
       </View>
+
+      <SponsorBannerSlot placement="profile" />
 
       <View style={styles.actionsRow}>
         <ActionBtn icon="add-circle" label="İlan Ver" primary onPress={() => router.push('/(tabs)/post')} colors={colors} />

@@ -15,6 +15,26 @@ import { Btn, Card, Input, Loading } from '@/components/ui';
 import { PageShell, Section } from '@/components/PageShell';
 import { THEME, SPACING, RADIUS } from '@/lib/theme';
 
+const SPONSOR_PLACEMENTS = [
+  { id: 'home', label: 'Ana Sayfa' },
+  { id: 'explore', label: 'Keşfet' },
+  { id: 'post', label: 'İlan Ver' },
+  { id: 'messages', label: 'Mesajlar' },
+  { id: 'profile', label: 'Profil' },
+  { id: 'listing', label: 'İlan Detay' },
+  { id: 'web', label: 'Web Sitesi' },
+] as const;
+
+type SponsorPlacementId = (typeof SPONSOR_PLACEMENTS)[number]['id'];
+
+type SponsorBannerForm = {
+  placement: SponsorPlacementId;
+  enabled: boolean;
+  imageUrl: string;
+  linkUrl: string;
+  altText: string;
+};
+
 type MobilePromoForm = {
   developer: {
     enabled: boolean;
@@ -32,13 +52,18 @@ type MobilePromoForm = {
       url: string;
     };
   };
-  sponsorBanner: {
-    enabled: boolean;
-    imageUrl: string;
-    linkUrl: string;
-    altText: string;
-  };
+  sponsorBanners: SponsorBannerForm[];
 };
+
+function emptySponsorBanners(): SponsorBannerForm[] {
+  return SPONSOR_PLACEMENTS.map((p) => ({
+    placement: p.id,
+    enabled: false,
+    imageUrl: '',
+    linkUrl: '',
+    altText: 'Sponsor',
+  }));
+}
 
 function emptyForm(): MobilePromoForm {
   return {
@@ -58,13 +83,50 @@ function emptyForm(): MobilePromoForm {
         url: '',
       },
     },
-    sponsorBanner: {
-      enabled: false,
-      imageUrl: '',
-      linkUrl: '',
-      altText: 'Sponsor',
-    },
+    sponsorBanners: emptySponsorBanners(),
   };
+}
+
+function mergeSponsorBannersFromApi(
+  raw: SponsorBannerForm[] | undefined,
+  legacy?: { enabled: boolean; imageUrl: string | null; linkUrl: string | null; altText: string },
+): SponsorBannerForm[] {
+  const defaults = emptySponsorBanners();
+  if (raw?.length) {
+    return defaults.map((d) => {
+      const found = raw.find((b) => b.placement === d.placement);
+      if (!found) return d;
+      return {
+        placement: d.placement,
+        enabled: found.enabled,
+        imageUrl: found.imageUrl ?? '',
+        linkUrl: found.linkUrl ?? '',
+        altText: found.altText || 'Sponsor',
+      };
+    });
+  }
+  if (legacy) {
+    return defaults.map((d) =>
+      d.placement === 'home' || d.placement === 'web'
+        ? {
+            ...d,
+            enabled: legacy.enabled,
+            imageUrl: legacy.imageUrl ?? '',
+            linkUrl: legacy.linkUrl ?? '',
+            altText: legacy.altText,
+          }
+        : d,
+    );
+  }
+  return defaults;
+}
+
+function updateSponsorBanner(
+  banners: SponsorBannerForm[],
+  placement: SponsorPlacementId,
+  patch: Partial<SponsorBannerForm>,
+): SponsorBannerForm[] {
+  return banners.map((b) => (b.placement === placement ? { ...b, ...patch } : b));
 }
 
 function ToggleRow({
@@ -97,12 +159,14 @@ export default function MobilePromoScreen() {
   const { profile } = useAuth();
   const [form, setForm] = useState<MobilePromoForm>(emptyForm());
   const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingPlacement, setUploadingPlacement] = useState<SponsorPlacementId | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-mobile-promo'],
     queryFn: async () => {
-      const res = await adminFetch<{ promo: MobilePromoForm }>('/admin/mobile-promo');
+      const res = await adminFetch<{
+        promo: MobilePromoForm & { sponsorBanner?: SponsorBannerForm };
+      }>('/admin/mobile-promo');
       const p = res.promo;
       setForm({
         developer: {
@@ -121,18 +185,16 @@ export default function MobilePromoScreen() {
             url: p.developer.otherApps.url ?? '',
           },
         },
-        sponsorBanner: {
-          enabled: p.sponsorBanner.enabled,
-          imageUrl: p.sponsorBanner.imageUrl ?? '',
-          linkUrl: p.sponsorBanner.linkUrl ?? '',
-          altText: p.sponsorBanner.altText,
-        },
+        sponsorBanners: mergeSponsorBannersFromApi(
+          p.sponsorBanners,
+          p.sponsorBanner as { enabled: boolean; imageUrl: string | null; linkUrl: string | null; altText: string } | undefined,
+        ),
       });
       return res;
     },
   });
 
-  async function uploadBanner() {
+  async function uploadBanner(placement: SponsorPlacementId) {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert('İzin', 'Galeri erişimi gerekli');
@@ -145,7 +207,7 @@ export default function MobilePromoScreen() {
     });
     if (picked.canceled || !picked.assets[0]?.base64) return;
 
-    setUploading(true);
+    setUploadingPlacement(placement);
     try {
       const asset = picked.assets[0]!;
       const res = await adminFetch<{ publicUrl: string }>('/admin/upload/brand-asset', {
@@ -157,16 +219,22 @@ export default function MobilePromoScreen() {
       });
       setForm((f) => ({
         ...f,
-        sponsorBanner: { ...f.sponsorBanner, imageUrl: res.publicUrl },
+        sponsorBanners: updateSponsorBanner(f.sponsorBanners, placement, { imageUrl: res.publicUrl }),
       }));
     } catch (e) {
       Alert.alert('Yükleme hatası', e instanceof Error ? e.message : 'Görsel yüklenemedi');
     } finally {
-      setUploading(false);
+      setUploadingPlacement(null);
     }
   }
 
   function payload() {
+    const sponsorBanners = form.sponsorBanners.map((b) => ({
+      ...b,
+      imageUrl: b.imageUrl.trim() || null,
+      linkUrl: b.linkUrl.trim() || null,
+    }));
+    const home = sponsorBanners.find((b) => b.placement === 'home') ?? sponsorBanners[0];
     return {
       developer: {
         ...form.developer,
@@ -181,11 +249,15 @@ export default function MobilePromoScreen() {
           url: form.developer.otherApps.url.trim() || null,
         },
       },
-      sponsorBanner: {
-        ...form.sponsorBanner,
-        imageUrl: form.sponsorBanner.imageUrl.trim() || null,
-        linkUrl: form.sponsorBanner.linkUrl.trim() || null,
-      },
+      sponsorBanners,
+      sponsorBanner: home
+        ? {
+            enabled: home.enabled,
+            imageUrl: home.imageUrl,
+            linkUrl: home.linkUrl,
+            altText: home.altText,
+          }
+        : undefined,
     };
   }
 
@@ -214,8 +286,10 @@ export default function MobilePromoScreen() {
       Alert.alert('Yetki', 'Yayınlamak için süper admin gerekli');
       return;
     }
-    if (form.sponsorBanner.enabled && !form.sponsorBanner.imageUrl.trim()) {
-      Alert.alert('Eksik görsel', 'Banner açıkken bir görsel URL veya yüklenmiş dosya gerekli.');
+    const badBanner = form.sponsorBanners.find((b) => b.enabled && !b.imageUrl.trim());
+    if (badBanner) {
+      const label = SPONSOR_PLACEMENTS.find((p) => p.id === badBanner.placement)?.label ?? badBanner.placement;
+      Alert.alert('Eksik görsel', `${label} banner açıkken bir görsel gerekli.`);
       return;
     }
     setBusy(true);
@@ -364,96 +438,79 @@ export default function MobilePromoScreen() {
         </Card>
       </Section>
 
-      <Section title="Sponsor Banner">
-        <Card>
-          <Text style={styles.hint}>
-            Önerilen boyut: 320×50 (AdMob standart) veya 728×90. Görsel banner alanına tam oturur.
-          </Text>
-          <ToggleRow
-            label="Banner açık"
-            hint="Kapalıyken hiçbir sayfada görünmez"
-            value={form.sponsorBanner.enabled}
-            onChange={(v) =>
-              setForm((f) => ({
-                ...f,
-                sponsorBanner: { ...f.sponsorBanner, enabled: v },
-              }))
-            }
-          />
-          <Text style={styles.fieldLabel}>Tıklanınca gidilecek link</Text>
-          <Input
-            value={form.sponsorBanner.linkUrl}
-            onChangeText={(v) =>
-              setForm((f) => ({
-                ...f,
-                sponsorBanner: { ...f.sponsorBanner, linkUrl: v },
-              }))
-            }
-            placeholder="https://..."
-            autoCapitalize="none"
-          />
-          <Text style={styles.fieldLabel}>Banner görseli — link (URL)</Text>
-          <Input
-            value={form.sponsorBanner.imageUrl}
-            onChangeText={(v) =>
-              setForm((f) => ({
-                ...f,
-                sponsorBanner: { ...f.sponsorBanner, imageUrl: v },
-              }))
-            }
-            placeholder="https://i.imgur.com/... veya ImgBB linki"
-            autoCapitalize="none"
-          />
-          <Text style={styles.fieldLabel}>veya dosyadan yükle</Text>
-          {form.sponsorBanner.imageUrl ? (
-            <View style={styles.previewWrap}>
-              <Image
-                source={{ uri: form.sponsorBanner.imageUrl }}
-                style={styles.bannerPreview}
-                resizeMode="cover"
-              />
-              <View style={styles.previewBadge}>
-                <Text style={styles.previewBadgeText}>SPONSOR</Text>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.bannerPlaceholder}>
-              <Text style={styles.bannerPlaceholderText}>320 × 50 önizleme</Text>
-            </View>
-          )}
-          <View style={styles.uploadRow}>
-            <Btn
-              label={uploading ? 'Yükleniyor…' : 'Galeriden Yükle'}
-              variant="ghost"
-              onPress={uploadBanner}
-              disabled={uploading}
-            />
-            {form.sponsorBanner.imageUrl ? (
-              <Btn
-                label="Görseli Kaldır"
-                variant="danger"
-                compact
-                onPress={() =>
+      <Section title="Sponsor Bannerlar (Sayfa Bazlı)">
+        <Text style={styles.hint}>
+          Her sayfa için ayrı banner. Önerilen: 320×50. Banner sayfa akışında görünür — içeriğin üstüne binmez.
+        </Text>
+        {form.sponsorBanners.map((banner) => {
+          const meta = SPONSOR_PLACEMENTS.find((p) => p.id === banner.placement)!;
+          const uploading = uploadingPlacement === banner.placement;
+          return (
+            <Card key={banner.placement} style={styles.placementCard}>
+              <Text style={styles.placementTitle}>{meta.label}</Text>
+              <ToggleRow
+                label="Bu sayfada göster"
+                value={banner.enabled}
+                onChange={(v) =>
                   setForm((f) => ({
                     ...f,
-                    sponsorBanner: { ...f.sponsorBanner, imageUrl: '' },
+                    sponsorBanners: updateSponsorBanner(f.sponsorBanners, banner.placement, { enabled: v }),
                   }))
                 }
               />
-            ) : null}
-          </View>
-          <Text style={styles.fieldLabel}>Alt metin (erişilebilirlik)</Text>
-          <Input
-            value={form.sponsorBanner.altText}
-            onChangeText={(v) =>
-              setForm((f) => ({
-                ...f,
-                sponsorBanner: { ...f.sponsorBanner, altText: v },
-              }))
-            }
-            placeholder="Sponsor"
-          />
-        </Card>
+              <Text style={styles.fieldLabel}>Tıklanınca gidilecek link</Text>
+              <Input
+                value={banner.linkUrl}
+                onChangeText={(v) =>
+                  setForm((f) => ({
+                    ...f,
+                    sponsorBanners: updateSponsorBanner(f.sponsorBanners, banner.placement, { linkUrl: v }),
+                  }))
+                }
+                placeholder="https://..."
+                autoCapitalize="none"
+              />
+              <Text style={styles.fieldLabel}>Görsel URL</Text>
+              <Input
+                value={banner.imageUrl}
+                onChangeText={(v) =>
+                  setForm((f) => ({
+                    ...f,
+                    sponsorBanners: updateSponsorBanner(f.sponsorBanners, banner.placement, { imageUrl: v }),
+                  }))
+                }
+                placeholder="https://..."
+                autoCapitalize="none"
+              />
+              {banner.imageUrl ? (
+                <View style={styles.previewWrap}>
+                  <Image source={{ uri: banner.imageUrl }} style={styles.bannerPreview} resizeMode="cover" />
+                </View>
+              ) : null}
+              <View style={styles.uploadRow}>
+                <Btn
+                  label={uploading ? 'Yükleniyor…' : 'Galeriden Yükle'}
+                  variant="ghost"
+                  onPress={() => uploadBanner(banner.placement)}
+                  disabled={uploadingPlacement !== null}
+                />
+                {banner.imageUrl ? (
+                  <Btn
+                    label="Kaldır"
+                    variant="danger"
+                    compact
+                    onPress={() =>
+                      setForm((f) => ({
+                        ...f,
+                        sponsorBanners: updateSponsorBanner(f.sponsorBanners, banner.placement, { imageUrl: '' }),
+                      }))
+                    }
+                  />
+                ) : null}
+              </View>
+            </Card>
+          );
+        })}
       </Section>
 
       <View style={styles.actions}>
@@ -477,6 +534,8 @@ const styles = StyleSheet.create({
   toggleHint: { fontSize: 11, color: THEME.textMuted, marginTop: 2 },
   fieldLabel: { fontSize: 12, fontWeight: '600', color: THEME.textSoft, marginBottom: 6, marginTop: 8 },
   hint: { fontSize: 11, color: THEME.textMuted, lineHeight: 17, marginBottom: SPACING.sm },
+  placementCard: { marginBottom: SPACING.md },
+  placementTitle: { fontSize: 15, fontWeight: '800', color: THEME.primary, marginBottom: SPACING.sm },
   previewWrap: {
     width: '100%',
     aspectRatio: 320 / 50,

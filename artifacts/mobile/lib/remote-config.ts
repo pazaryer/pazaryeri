@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from './api';
 import { BRAND, SUPPORT_EMAIL } from '@/constants/brand';
+import { SPONSOR_PLACEMENTS, type SponsorBannerItem, type SponsorPlacementId } from '@/lib/sponsor-placements';
 import { LISTING_CATEGORIES } from './categories';
 
 export type RemoteAppConfig = {
@@ -57,6 +58,13 @@ export type RemoteAppConfig = {
     linkUrl?: string | null;
     altText?: string;
   };
+  'mobile.sponsorBanners'?: Array<{
+    placement?: string;
+    enabled?: boolean;
+    imageUrl?: string | null;
+    linkUrl?: string | null;
+    altText?: string;
+  }>;
   'mobile.admob'?: import('@/lib/admob/config').AdMobRemoteConfig;
   'web.appDownload'?: {
     enabled?: boolean;
@@ -179,20 +187,53 @@ export function getMobileDeveloper() {
   };
 }
 
+export function getSponsorBanners(): SponsorBannerItem[] {
+  const rawArr = cached?.['mobile.sponsorBanners'];
+  const legacy = cached?.['mobile.sponsorBanner'];
+  const byPlacement = new Map<SponsorPlacementId, Partial<SponsorBannerItem>>();
+
+  if (Array.isArray(rawArr) && rawArr.length > 0) {
+    for (const item of rawArr) {
+      const placement = item?.placement as SponsorPlacementId | undefined;
+      if (placement && SPONSOR_PLACEMENTS.some((p) => p.id === placement)) {
+        byPlacement.set(placement, item as Partial<SponsorBannerItem>);
+      }
+    }
+  }
+
+  const hasNew = byPlacement.size > 0;
+  return SPONSOR_PLACEMENTS.map((p) => {
+    const raw = byPlacement.get(p.id);
+    const useLegacy = !hasNew && legacy && (p.id === 'home' || p.id === 'web');
+    return {
+      placement: p.id,
+      enabled: raw?.enabled ?? (useLegacy ? legacy!.enabled ?? false : false),
+      imageUrl: raw?.imageUrl ?? (useLegacy ? legacy!.imageUrl ?? null : null),
+      linkUrl: raw?.linkUrl ?? (useLegacy ? legacy!.linkUrl ?? null : null),
+      altText: raw?.altText ?? (useLegacy ? legacy!.altText ?? 'Sponsor' : 'Sponsor'),
+    };
+  });
+}
+
+export function getSponsorForPlacement(placement: SponsorPlacementId): SponsorBannerItem | null {
+  const banner = getSponsorBanners().find((b) => b.placement === placement);
+  if (!banner?.enabled || !banner.imageUrl) return null;
+  return banner;
+}
+
 export function getSponsorBanner() {
-  const s = cached?.['mobile.sponsorBanner'];
-  if (!s) return DEFAULT_SPONSOR;
-  return {
-    enabled: s.enabled ?? DEFAULT_SPONSOR.enabled,
-    imageUrl: s.imageUrl ?? DEFAULT_SPONSOR.imageUrl,
-    linkUrl: s.linkUrl ?? DEFAULT_SPONSOR.linkUrl,
-    altText: s.altText ?? DEFAULT_SPONSOR.altText,
-  };
+  return getSponsorForPlacement('home') ?? DEFAULT_SPONSOR;
+}
+
+export function useSponsorForPlacement(placement: SponsorPlacementId) {
+  useRemoteConfigVersion();
+  return getSponsorForPlacement(placement);
 }
 
 export function useSponsorBanner() {
   useRemoteConfigVersion();
-  return getSponsorBanner();
+  const home = getSponsorForPlacement('home');
+  return home ?? DEFAULT_SPONSOR;
 }
 
 export function useMobileDeveloper() {

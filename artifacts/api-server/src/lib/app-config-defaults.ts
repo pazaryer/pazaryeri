@@ -88,6 +88,15 @@ export const DEFAULT_APP_CONFIG: Record<string, unknown> = {
     linkUrl: null,
     altText: "Sponsor",
   },
+  "mobile.sponsorBanners": [
+    { placement: "home", enabled: false, imageUrl: null, linkUrl: null, altText: "Sponsor" },
+    { placement: "explore", enabled: false, imageUrl: null, linkUrl: null, altText: "Sponsor" },
+    { placement: "post", enabled: false, imageUrl: null, linkUrl: null, altText: "Sponsor" },
+    { placement: "messages", enabled: false, imageUrl: null, linkUrl: null, altText: "Sponsor" },
+    { placement: "profile", enabled: false, imageUrl: null, linkUrl: null, altText: "Sponsor" },
+    { placement: "listing", enabled: false, imageUrl: null, linkUrl: null, altText: "Sponsor" },
+    { placement: "web", enabled: false, imageUrl: null, linkUrl: null, altText: "Sponsor" },
+  ],
   "mobile.admob": {
     testMode: true,
     banner: {

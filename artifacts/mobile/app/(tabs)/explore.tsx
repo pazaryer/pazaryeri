@@ -23,6 +23,7 @@ import { MOBILE_EXPLORE_CATEGORIES } from '@/lib/categories';
 import { BRAND } from '@/constants/brand';
 import { useMobileLocation } from '@/contexts/MobileLocationContext';
 import { hasActiveLocationFilter } from '@/lib/location-storage';
+import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
 
 const { width } = Dimensions.get('window');
 const CAT_GAP = 7;
@@ -121,6 +122,8 @@ export default function ExploreScreen() {
           )}
         </View>
       </View>
+
+      <SponsorBannerSlot placement="explore" />
 
       {!showSearch && !selectedCategory && trending.length > 0 && (
         <View style={styles.section}>

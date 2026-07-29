@@ -4,64 +4,41 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Platform,
   Linking,
   type ViewStyle,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSegments } from 'expo-router';
-import { useSponsorBanner } from '@/lib/remote-config';
 import { useColors } from '@/hooks/useColors';
-import { useCompactScreen } from '@/hooks/useCompactScreen';
 import { BRAND } from '@/constants/brand';
-import {
-  BANNER_BORDER_RADIUS,
-  BANNER_INSET_H,
-  useBannerLayout,
-} from '@/lib/banner-layout';
+import { BANNER_BORDER_RADIUS, BANNER_INSET_H, useBannerLayout } from '@/lib/banner-layout';
+import type { SponsorBannerItem } from '@/lib/sponsor-placements';
+
+export type SponsorBannerData = Pick<
+  SponsorBannerItem,
+  'enabled' | 'imageUrl' | 'linkUrl' | 'altText'
+>;
 
 type Props = {
-  variant?: 'inline' | 'floating';
+  banner: SponsorBannerData | null;
   style?: ViewStyle;
-  /** floating: üst veya alt sabitleme */
-  anchor?: 'top' | 'bottom';
-  /** floating + top */
-  top?: number;
-  /** floating + bottom */
-  bottom?: number;
 };
 
-export function SponsorBanner({
-  variant = 'inline',
-  style,
-  anchor = 'bottom',
-  top,
-  bottom,
-}: Props) {
+/** Satır içi sponsor banner — sayfa akışında, üst üste binmez. */
+export function SponsorBanner({ banner, style }: Props) {
   const colors = useColors();
-  const sponsor = useSponsorBanner();
-  const insets = useSafeAreaInsets();
-  const compact = useCompactScreen();
-  const segments = useSegments();
   const { width: bannerWidth, height: bannerHeight } = useBannerLayout();
-  const inTabs = segments[0] === '(tabs)';
-  const tabBarOffset = inTabs ? (compact ? 54 : 58) + insets.bottom : insets.bottom + 8;
-  const floatingTop = top ?? insets.top + 6;
-  const floatingBottom = bottom ?? tabBarOffset + 4;
 
-  if (!sponsor.enabled || !sponsor.imageUrl) return null;
+  if (!banner?.enabled || !banner.imageUrl) return null;
 
   const onPress = () => {
-    if (!sponsor.linkUrl) return;
-    void Linking.openURL(sponsor.linkUrl);
+    if (!banner.linkUrl) return;
+    void Linking.openURL(banner.linkUrl);
   };
 
   const content = (
     <View
       style={[
         styles.card,
-        variant === 'floating' && styles.cardFloating,
         {
           width: bannerWidth,
           borderColor: colors.border,
@@ -72,10 +49,10 @@ export function SponsorBanner({
     >
       <View style={[styles.imageWrap, { height: bannerHeight }]}>
         <Image
-          source={{ uri: sponsor.imageUrl }}
+          source={{ uri: banner.imageUrl }}
           style={styles.image}
           contentFit="cover"
-          accessibilityLabel={sponsor.altText}
+          accessibilityLabel={banner.altText}
         />
         <View style={[styles.badge, { backgroundColor: BRAND.primary }]}>
           <Text style={styles.badgeText}>SPONSOR</Text>
@@ -84,37 +61,16 @@ export function SponsorBanner({
     </View>
   );
 
-  if (variant === 'floating') {
-    const anchorStyle =
-      anchor === 'top'
-        ? [styles.floatingWrap, styles.floatingTop, { top: floatingTop }]
-        : [styles.floatingWrap, styles.floatingBottom, { bottom: floatingBottom }];
-
-    return (
-      <View pointerEvents="box-none" style={anchorStyle}>
-        <Pressable
-          onPress={onPress}
-          disabled={!sponsor.linkUrl}
-          style={({ pressed }) => [pressed && sponsor.linkUrl && styles.pressed]}
-          accessibilityRole={sponsor.linkUrl ? 'link' : 'image'}
-          accessibilityLabel={sponsor.altText}
-        >
-          {content}
-        </Pressable>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.inlineWrap}>
-      {!sponsor.linkUrl ? (
+    <View style={styles.wrap}>
+      {!banner.linkUrl ? (
         content
       ) : (
         <Pressable
           onPress={onPress}
           style={({ pressed }) => [pressed && styles.pressed]}
           accessibilityRole="link"
-          accessibilityLabel={sponsor.altText}
+          accessibilityLabel={banner.altText}
         >
           {content}
         </Pressable>
@@ -124,38 +80,21 @@ export function SponsorBanner({
 }
 
 const styles = StyleSheet.create({
-  inlineWrap: {
+  wrap: {
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: BANNER_INSET_H,
+    marginVertical: 6,
   },
-  floatingWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 999,
-    elevation: 12,
-    paddingHorizontal: BANNER_INSET_H,
-    ...Platform.select({
-      web: { position: 'fixed' as const },
-    }),
-  },
-  floatingTop: { zIndex: 1000 },
-  floatingBottom: { zIndex: 998 },
   card: {
     borderRadius: BANNER_BORDER_RADIUS,
     borderWidth: 1,
     overflow: 'hidden',
-    marginVertical: 4,
     shadowColor: BRAND.primary,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-  },
-  cardFloating: {
-    marginVertical: 0,
   },
   imageWrap: {
     width: '100%',

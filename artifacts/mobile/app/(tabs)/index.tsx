@@ -15,6 +15,7 @@ import { useColors } from '@/hooks/useColors';
 import { ListingCard, LISTING_GRID_COLS } from '@/components/ListingCard';
 import { MobileTrendCategories } from '@/components/MobileTrendCategories';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
+import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
 import { useListings, useNotifications } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobileLocation } from '@/contexts/MobileLocationContext';
@@ -123,6 +124,7 @@ export default function HomeScreen() {
           ListHeaderComponent={
             <View style={styles.listHeader}>
               <AnnouncementBanner embedded subtle style={{ marginTop: 4, marginHorizontal: 0 }} />
+              <SponsorBannerSlot placement="home" />
               <MobileTrendCategories selected={selectedCategory} onSelect={setSelectedCategory} />
               <Text style={styles.sectionTitle}>Popüler İlanlar</Text>
             </View>

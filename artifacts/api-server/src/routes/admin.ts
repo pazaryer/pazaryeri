@@ -853,12 +853,21 @@ const mobilePromoSchema = z.object({
       url: z.string().max(500).nullable(),
     }),
   }),
+  sponsorBanners: z.array(
+    z.object({
+      placement: z.enum(["home", "explore", "post", "messages", "profile", "listing", "web"]),
+      enabled: z.boolean(),
+      imageUrl: z.string().max(500).nullable(),
+      linkUrl: z.string().max(500).nullable(),
+      altText: z.string().max(120),
+    }),
+  ),
   sponsorBanner: z.object({
     enabled: z.boolean(),
     imageUrl: z.string().max(500).nullable(),
     linkUrl: z.string().max(500).nullable(),
     altText: z.string().max(120),
-  }),
+  }).optional(),
 });
 
 const webAppDownloadSchema = z.object({
@@ -888,12 +897,13 @@ router.put("/admin/mobile-promo", superAdminMiddleware, async (req, res, next) =
     const parsed = mobilePromoSchema.parse(req.body) as MobilePromoBundle;
     const keys = mobilePromoToConfigKeys(parsed);
     await setAppConfig("mobile.developer", keys["mobile.developer"], req.user!.id, "Geliştirici bağlantıları");
-    await setAppConfig("mobile.sponsorBanner", keys["mobile.sponsorBanner"], req.user!.id, "Sponsor banner");
+    await setAppConfig("mobile.sponsorBanners", keys["mobile.sponsorBanners"], req.user!.id, "Sponsor bannerlar");
+    await setAppConfig("mobile.sponsorBanner", keys["mobile.sponsorBanner"], req.user!.id, "Sponsor banner (legacy)");
 
     await logAdminAction(req.user!.id, "mobile_promo.update", {
       targetType: "mobile_promo",
       details: {
-        sponsorEnabled: parsed.sponsorBanner.enabled,
+        sponsorEnabled: parsed.sponsorBanners.some((b) => b.enabled),
         developerEnabled: parsed.developer.enabled,
       },
       ip: clientIp(req),
