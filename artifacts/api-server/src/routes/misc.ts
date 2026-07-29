@@ -54,6 +54,7 @@ router.get("/favorites", authMiddleware, async (req, res, next) => {
           null,
           null,
           favCounts.get(listing.id) ?? 0,
+          req.user!.id,
         );
       }),
     );

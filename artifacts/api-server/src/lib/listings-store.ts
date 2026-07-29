@@ -254,6 +254,7 @@ export async function dbListListings(params: {
         userLat,
         userLon,
         favCounts.get(row.id) ?? 0,
+        params.userId,
       ),
     ),
   );
@@ -299,6 +300,7 @@ export async function dbBuildListingDetail(listingId: string, userId?: string) {
     userLat,
     userLon,
     favCounts.get(listing.id) ?? 0,
+    userId,
   );
 
   return {

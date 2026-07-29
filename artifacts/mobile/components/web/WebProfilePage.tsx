@@ -128,7 +128,7 @@ export function WebProfilePage() {
     );
   }
 
-  const totalViews = userListings.reduce((s, l) => s + l.views, 0);
+  const totalViews = userListings.reduce((s, l) => s + (l.views ?? 0), 0);
 
   return (
     <WebShell hideFooter>
@@ -288,7 +288,9 @@ export function WebProfilePage() {
                           )}
                         </View>
                         <Text style={styles.listingTitle} numberOfLines={2}>{item.title}</Text>
-                        <Text style={styles.listingMeta}>{item.views} görüntülenme</Text>
+                        {item.views != null && (
+                          <Text style={styles.listingMeta}>{item.views} görüntülenme</Text>
+                        )}
                       </View>
                     </Pressable>
                   ))}

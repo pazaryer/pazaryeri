@@ -363,6 +363,7 @@ export async function pgListListings(params: {
         userLat,
         userLon,
         favCounts.get(row.id) ?? 0,
+        params.userId,
       );
     }),
   );
@@ -406,6 +407,7 @@ export async function pgBuildListingDetail(listingId: string, userId?: string) {
     userLat,
     userLon,
     favCounts.get(listingId) ?? 0,
+    userId,
   );
 
   return {

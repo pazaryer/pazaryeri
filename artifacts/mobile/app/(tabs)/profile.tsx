@@ -37,7 +37,7 @@ export default function ProfileScreen() {
 
   const { data, isLoading, refetch, isRefetching } = useMyListings();
   const userListings = data?.pages.flatMap((p) => p.items) ?? [];
-  const totalViews = userListings.reduce((s, l) => s + l.views, 0);
+  const totalViews = userListings.reduce((s, l) => s + (l.views ?? 0), 0);
 
   React.useEffect(() => {
     if (user && !profile) refreshProfile();

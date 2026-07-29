@@ -133,10 +133,12 @@ export function WebListingDetailPage() {
               <Text style={styles.metaIcon}>🕐</Text>
               <Text style={styles.metaText}>{formatTimeAgo(listing.createdAt)}</Text>
             </View>
-            <View style={styles.metaItem}>
-              <Text style={styles.metaIcon}>👁️</Text>
-              <Text style={styles.metaText}>{listing.views} görüntülenme</Text>
-            </View>
+            {isOwner && (
+              <View style={styles.metaItem}>
+                <Text style={styles.metaIcon}>👁️</Text>
+                <Text style={styles.metaText}>{listing.views ?? 0} görüntülenme</Text>
+              </View>
+            )}
             <View style={styles.metaItem}>
               <Text style={styles.metaIcon}>❤️</Text>
               <Text style={styles.metaText}>{listing.favoriteCount} favori</Text>

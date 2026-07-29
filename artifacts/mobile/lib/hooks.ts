@@ -13,7 +13,7 @@ export interface ListingSummary {
   city?: string | null;
   district?: string | null;
   location?: string | null;
-  views: number;
+  views?: number;
   favoriteCount: number;
   isFavorite: boolean;
   distance?: string | null;

@@ -49,7 +49,7 @@ export const WebListingCard = React.memo(function WebListingCard({ item }: WebLi
           <Text style={styles.location} numberOfLines={1}>
             {item.city ?? item.district ?? item.location ?? 'Türkiye'}
           </Text>
-          {item.views > 0 && (
+          {item.views != null && item.views > 0 && (
             <Text style={styles.views}>{item.views} görüntülenme</Text>
           )}
         </View>

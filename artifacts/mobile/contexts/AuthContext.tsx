@@ -19,6 +19,7 @@ import { apiFetch } from '@/lib/api';
 import { loadWebProfileExtras } from '@/lib/web-profile';
 import { loadMobileProfileExtras } from '@/lib/mobile-profile';
 import { SITE_URL } from '@/lib/config';
+import { setOnboardingComplete } from '@/lib/onboarding';
 import { requestGoogleIdToken } from '@/lib/google-web-signin';
 
 interface UserProfile {
@@ -109,6 +110,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(buildSyncPayload(u)),
       });
       setProfile(await applyProfileExtras(u, p));
+
+      if (Platform.OS !== 'web') {
+        void setOnboardingComplete();
+      }
 
       apiFetch('/users/me/heartbeat', { method: 'POST' }).catch(() => null);
 

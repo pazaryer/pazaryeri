@@ -53,17 +53,21 @@ function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
   useGoogleOAuthLinkHandler();
-  const [onboardingDone, setOnboardingDone] = useState(true);
+  const [onboardingDone, setOnboardingDone] = useState(false);
+  const [onboardingReady, setOnboardingReady] = useState(Platform.OS === 'web');
   const lastNavTarget = useRef<string | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    void isOnboardingComplete().then(setOnboardingDone);
+    void isOnboardingComplete().then((done) => {
+      setOnboardingDone(done);
+      setOnboardingReady(true);
+    });
     return subscribeOnboarding(setOnboardingDone);
   }, []);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !onboardingReady) return;
 
     const isWeb = Platform.OS === 'web';
     const segName = segments[0] as string | undefined;
@@ -98,6 +102,8 @@ function RootLayoutNav() {
       target = '/giris';
     } else if (!isWeb && !onboardingDone && !isOnboardingDoneSync() && !inOnboarding) {
       target = '/onboarding';
+    } else if (!isWeb && user && onboardingDone && (segName === 'index' || inOnboarding)) {
+      target = '/(tabs)';
     } else if (!user && !inAuth && !inLegal && !isPublicWeb) {
       target = isWeb ? '/giris' : '/login';
     } else if (user && (segName === 'login' || segName === 'email-auth' || segName === 'auth' || segName === 'giris' || segName === 'kayit')) {
@@ -117,7 +123,7 @@ function RootLayoutNav() {
 
     lastNavTarget.current = target;
     router.replace(target as never);
-  }, [user, isLoading, onboardingDone, segments, router]);
+  }, [user, isLoading, onboardingReady, onboardingDone, segments, router]);
 
   return (
     <>

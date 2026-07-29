@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const ONBOARDING_KEY = 'pz_onboarding_done_v1';
 
@@ -28,6 +29,10 @@ export async function isOnboardingComplete(): Promise<boolean> {
     memoryDone = false;
   }
   return memoryDone;
+}
+
+if (Platform.OS !== 'web') {
+  void isOnboardingComplete();
 }
 
 export async function setOnboardingComplete(): Promise<void> {

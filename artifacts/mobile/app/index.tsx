@@ -6,5 +6,5 @@ export default function Index() {
   if (Platform.OS === 'web') {
     return <WebHomePage />;
   }
-  return <Redirect href="/login" />;
+  return <Redirect href="/(tabs)" />;
 }

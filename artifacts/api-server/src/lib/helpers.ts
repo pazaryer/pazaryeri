@@ -111,7 +111,9 @@ export async function formatListingSummary(
   userLat?: number | null,
   userLon?: number | null,
   favoriteCount = 0,
+  viewerUserId?: string | null,
 ) {
+  const isOwner = Boolean(viewerUserId && viewerUserId === seller.id);
   return {
     id: listing.id,
     title: listing.title,
@@ -121,7 +123,7 @@ export async function formatListingSummary(
     city: listing.city,
     district: listing.district,
     location: listing.location,
-    views: listing.views,
+    ...(isOwner ? { views: listing.views } : {}),
     favoriteCount,
     isFavorite,
     distance: calcDistance(userLat, userLon, listing.latitude, listing.longitude),

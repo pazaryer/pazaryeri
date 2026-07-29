@@ -228,10 +228,14 @@ function MobileListingDetailScreen() {
                 {formatTimeAgo(listing.createdAt)}
               </Text>
             </View>
-            <View style={styles.infoItem}>
-              <Ionicons name="eye-outline" size={16} color={colors.mutedForeground} />
-              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>{listing.views} görüntülenme</Text>
-            </View>
+            {isOwner && (
+              <View style={styles.infoItem}>
+                <Ionicons name="eye-outline" size={16} color={colors.mutedForeground} />
+                <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+                  {listing.views ?? 0} görüntülenme
+                </Text>
+              </View>
+            )}
             <View style={styles.infoItem}>
               <Ionicons name="heart" size={16} color={colors.mutedForeground} />
               <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
