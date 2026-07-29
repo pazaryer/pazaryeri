@@ -116,6 +116,17 @@ export const DEFAULT_APP_CONFIG: Record<string, unknown> = {
       boostHours: 2,
     },
   },
+  "web.appDownload": {
+    enabled: true,
+    title: "Mobil Uygulamamızı İndirin",
+    subtitle: "Daha hızlı ilan ver, anında mesajlaş",
+    buttonText: "Uygulamayı İndir",
+    androidStoreUrl: "https://play.google.com/store/apps/details?id=com.pazaryerim",
+    iosStoreUrl: "https://apps.apple.com/app/id0000000000",
+    androidDeepLink: "pazaryeri://",
+    iosDeepLink: "pazaryeri://",
+    showOnDesktop: false,
+  },
 };
 
 export const CONFIG_KEYS = Object.keys(DEFAULT_APP_CONFIG);

@@ -40,6 +40,18 @@ export default function MoreScreen() {
           subtitle="Puanla, diğer uygulamalar, sponsor banner"
           onPress={() => router.push('/(tabs)/mobile-promo')}
         />
+        <MenuCard
+          icon="📊"
+          title="AdMob Reklamları"
+          subtitle="Banner, geçiş, ödüllü — App/Unit ID tablosu"
+          onPress={() => router.push('/(tabs)/admob')}
+        />
+        <MenuCard
+          icon="⬇️"
+          title="Web İndirme Butonu"
+          subtitle="Yüzen uygulama indir CTA — aç/kapat, linkler"
+          onPress={() => router.push('/(tabs)/web-app-download')}
+        />
       </Section>
 
       <Section title="İçerik & Moderasyon">

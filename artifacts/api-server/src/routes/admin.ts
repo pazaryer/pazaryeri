@@ -13,6 +13,7 @@ import { CONFIG_KEYS, DEFAULT_APP_CONFIG } from "../lib/app-config-defaults";
 import { mergeBrandingBundle, brandingBundleToConfigKeys, type BrandingBundle } from "../lib/branding";
 import { mergeMobilePromo, mobilePromoToConfigKeys, type MobilePromoBundle } from "../lib/mobile-promo";
 import { mergeAdMobConfig, admobToConfigKey, type AdMobConfig } from "../lib/mobile-admob";
+import { mergeWebAppDownload, type WebAppDownloadConfig } from "../lib/web-app-download";
 import { storeListingImage } from "../lib/image-storage";
 import { purgeListingCompletely } from "../lib/purge-listing";
 import { dbBuildListingDetail } from "../lib/listings-store";
@@ -858,18 +859,25 @@ const mobilePromoSchema = z.object({
     linkUrl: z.string().max(500).nullable(),
     altText: z.string().max(120),
   }),
-  admob: admobSchema,
+});
+
+const webAppDownloadSchema = z.object({
+  enabled: z.boolean(),
+  title: z.string().max(120),
+  subtitle: z.string().max(200),
+  buttonText: z.string().max(80),
+  androidStoreUrl: z.string().max(500),
+  iosStoreUrl: z.string().max(500),
+  androidDeepLink: z.string().max(200),
+  iosDeepLink: z.string().max(200),
+  showOnDesktop: z.boolean(),
 });
 
 router.get("/admin/mobile-promo", adminMiddleware, async (_req, res, next) => {
   try {
     const config = await getAppConfig();
     const promo = mergeMobilePromo(config);
-    const admob = mergeAdMobConfig(config);
-    res.json({
-      promo: { ...promo, admob },
-      defaults: { ...mergeMobilePromo(DEFAULT_APP_CONFIG), admob: mergeAdMobConfig(DEFAULT_APP_CONFIG) },
-    });
+    res.json({ promo, defaults: mergeMobilePromo(DEFAULT_APP_CONFIG) });
   } catch (err) {
     next(err);
   }
@@ -877,27 +885,21 @@ router.get("/admin/mobile-promo", adminMiddleware, async (_req, res, next) => {
 
 router.put("/admin/mobile-promo", superAdminMiddleware, async (req, res, next) => {
   try {
-    const parsed = mobilePromoSchema.parse(req.body) as MobilePromoBundle & { admob: AdMobConfig };
+    const parsed = mobilePromoSchema.parse(req.body) as MobilePromoBundle;
     const keys = mobilePromoToConfigKeys(parsed);
-    const admobKeys = admobToConfigKey(parsed.admob);
     await setAppConfig("mobile.developer", keys["mobile.developer"], req.user!.id, "Geliştirici bağlantıları");
     await setAppConfig("mobile.sponsorBanner", keys["mobile.sponsorBanner"], req.user!.id, "Sponsor banner");
-    await setAppConfig("mobile.admob", admobKeys["mobile.admob"], req.user!.id, "AdMob reklamları");
 
     await logAdminAction(req.user!.id, "mobile_promo.update", {
       targetType: "mobile_promo",
       details: {
         sponsorEnabled: parsed.sponsorBanner.enabled,
         developerEnabled: parsed.developer.enabled,
-        admobBanner: parsed.admob.banner.enabled,
-        admobInterstitial: parsed.admob.interstitial.enabled,
-        admobRewarded: parsed.admob.rewarded.enabled,
       },
       ip: clientIp(req),
     });
 
-    const config = await getAppConfig();
-    res.json({ success: true, promo: { ...mergeMobilePromo(config), admob: mergeAdMobConfig(config) } });
+    res.json({ success: true, promo: mergeMobilePromo(await getAppConfig()) });
   } catch (err) {
     next(err);
   }
@@ -906,8 +908,7 @@ router.put("/admin/mobile-promo", superAdminMiddleware, async (req, res, next) =
 router.post("/admin/mobile-promo/publish", superAdminMiddleware, async (req, res, next) => {
   try {
     invalidateAppConfigCache();
-    const config = await getAppConfig();
-    const promo = { ...mergeMobilePromo(config), admob: mergeAdMobConfig(config) };
+    const promo = mergeMobilePromo(await getAppConfig());
 
     await logAdminAction(req.user!.id, "mobile_promo.publish", {
       targetType: "mobile_promo",
@@ -919,6 +920,115 @@ router.post("/admin/mobile-promo/publish", superAdminMiddleware, async (req, res
       publishedAt: new Date().toISOString(),
       promo,
       message: "Mobil promosyon ayarları yayınlandı. ~60 saniye içinde herkeste görünür.",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── AdMob ────────────────────────────────────────────────────
+
+router.get("/admin/admob", adminMiddleware, async (_req, res, next) => {
+  try {
+    const config = await getAppConfig();
+    res.json({
+      admob: mergeAdMobConfig(config),
+      defaults: mergeAdMobConfig(DEFAULT_APP_CONFIG),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/admin/admob", superAdminMiddleware, async (req, res, next) => {
+  try {
+    const parsed = admobSchema.parse(req.body) as AdMobConfig;
+    await setAppConfig("mobile.admob", admobToConfigKey(parsed)["mobile.admob"], req.user!.id, "AdMob reklamları");
+
+    await logAdminAction(req.user!.id, "admob.update", {
+      targetType: "admob",
+      details: {
+        banner: parsed.banner.enabled,
+        interstitial: parsed.interstitial.enabled,
+        rewarded: parsed.rewarded.enabled,
+        testMode: parsed.testMode,
+      },
+      ip: clientIp(req),
+    });
+
+    res.json({ success: true, admob: mergeAdMobConfig(await getAppConfig()) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/admin/admob/publish", superAdminMiddleware, async (req, res, next) => {
+  try {
+    invalidateAppConfigCache();
+    const admob = mergeAdMobConfig(await getAppConfig());
+
+    await logAdminAction(req.user!.id, "admob.publish", {
+      targetType: "admob",
+      ip: clientIp(req),
+    });
+
+    res.json({
+      success: true,
+      publishedAt: new Date().toISOString(),
+      admob,
+      message: "AdMob ayarları yayınlandı. Mobil uygulama ~60 sn içinde günceller.",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── Web uygulama indirme butonu ──────────────────────────────
+
+router.get("/admin/web-app-download", adminMiddleware, async (_req, res, next) => {
+  try {
+    const config = await getAppConfig();
+    res.json({
+      appDownload: mergeWebAppDownload(config),
+      defaults: mergeWebAppDownload(DEFAULT_APP_CONFIG),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/admin/web-app-download", superAdminMiddleware, async (req, res, next) => {
+  try {
+    const parsed = webAppDownloadSchema.parse(req.body) as WebAppDownloadConfig;
+    await setAppConfig("web.appDownload", parsed, req.user!.id, "Web uygulama indirme butonu");
+
+    await logAdminAction(req.user!.id, "web_app_download.update", {
+      targetType: "web_app_download",
+      details: { enabled: parsed.enabled },
+      ip: clientIp(req),
+    });
+
+    res.json({ success: true, appDownload: mergeWebAppDownload(await getAppConfig()) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/admin/web-app-download/publish", superAdminMiddleware, async (req, res, next) => {
+  try {
+    invalidateAppConfigCache();
+    const appDownload = mergeWebAppDownload(await getAppConfig());
+
+    await logAdminAction(req.user!.id, "web_app_download.publish", {
+      targetType: "web_app_download",
+      ip: clientIp(req),
+    });
+
+    res.json({
+      success: true,
+      publishedAt: new Date().toISOString(),
+      appDownload,
+      message: "Web indirme butonu yayınlandı.",
     });
   } catch (err) {
     next(err);

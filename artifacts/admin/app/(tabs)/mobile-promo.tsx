@@ -15,14 +15,6 @@ import { Btn, Card, Input, Loading } from '@/components/ui';
 import { PageShell, Section } from '@/components/PageShell';
 import { THEME, SPACING, RADIUS } from '@/lib/theme';
 
-type AdMobUnitForm = {
-  enabled: boolean;
-  androidAppId: string;
-  iosAppId: string;
-  androidUnitId: string;
-  iosUnitId: string;
-};
-
 type MobilePromoForm = {
   developer: {
     enabled: boolean;
@@ -46,29 +38,7 @@ type MobilePromoForm = {
     linkUrl: string;
     altText: string;
   };
-  admob: {
-    testMode: boolean;
-    banner: AdMobUnitForm;
-    interstitial: AdMobUnitForm & {
-      thirdSessionEnabled: boolean;
-      afterSecondListingEnabled: boolean;
-      afterDeleteListingEnabled: boolean;
-    };
-    rewarded: AdMobUnitForm & {
-      boostHours: number;
-    };
-  };
 };
-
-function emptyAdMobUnit(): AdMobUnitForm {
-  return {
-    enabled: false,
-    androidAppId: '',
-    iosAppId: '',
-    androidUnitId: '',
-    iosUnitId: '',
-  };
-}
 
 function emptyForm(): MobilePromoForm {
   return {
@@ -94,66 +64,7 @@ function emptyForm(): MobilePromoForm {
       linkUrl: '',
       altText: 'Sponsor',
     },
-    admob: {
-      testMode: true,
-      banner: emptyAdMobUnit(),
-      interstitial: {
-        ...emptyAdMobUnit(),
-        thirdSessionEnabled: true,
-        afterSecondListingEnabled: true,
-        afterDeleteListingEnabled: true,
-      },
-      rewarded: { ...emptyAdMobUnit(), boostHours: 2 },
-    },
   };
-}
-
-function AdMobUnitFields({
-  unit,
-  onChange,
-  title,
-}: {
-  title: string;
-  unit: AdMobUnitForm;
-  onChange: (unit: AdMobUnitForm) => void;
-}) {
-  return (
-    <>
-      <ToggleRow
-        label={`${title} açık`}
-        value={unit.enabled}
-        onChange={(v) => onChange({ ...unit, enabled: v })}
-      />
-      <Text style={styles.fieldLabel}>Android App ID</Text>
-      <Input
-        value={unit.androidAppId}
-        onChangeText={(v) => onChange({ ...unit, androidAppId: v })}
-        placeholder="ca-app-pub-xxx~yyy"
-        autoCapitalize="none"
-      />
-      <Text style={styles.fieldLabel}>iOS App ID</Text>
-      <Input
-        value={unit.iosAppId}
-        onChangeText={(v) => onChange({ ...unit, iosAppId: v })}
-        placeholder="ca-app-pub-xxx~yyy"
-        autoCapitalize="none"
-      />
-      <Text style={styles.fieldLabel}>Android Unit ID</Text>
-      <Input
-        value={unit.androidUnitId}
-        onChangeText={(v) => onChange({ ...unit, androidUnitId: v })}
-        placeholder="ca-app-pub-xxx/yyy"
-        autoCapitalize="none"
-      />
-      <Text style={styles.fieldLabel}>iOS Unit ID</Text>
-      <Input
-        value={unit.iosUnitId}
-        onChangeText={(v) => onChange({ ...unit, iosUnitId: v })}
-        placeholder="ca-app-pub-xxx/yyy"
-        autoCapitalize="none"
-      />
-    </>
-  );
 }
 
 function ToggleRow({
@@ -216,34 +127,6 @@ export default function MobilePromoScreen() {
           linkUrl: p.sponsorBanner.linkUrl ?? '',
           altText: p.sponsorBanner.altText,
         },
-        admob: {
-          testMode: p.admob?.testMode ?? true,
-          banner: {
-            enabled: p.admob?.banner?.enabled ?? false,
-            androidAppId: p.admob?.banner?.androidAppId ?? '',
-            iosAppId: p.admob?.banner?.iosAppId ?? '',
-            androidUnitId: p.admob?.banner?.androidUnitId ?? '',
-            iosUnitId: p.admob?.banner?.iosUnitId ?? '',
-          },
-          interstitial: {
-            enabled: p.admob?.interstitial?.enabled ?? false,
-            androidAppId: p.admob?.interstitial?.androidAppId ?? '',
-            iosAppId: p.admob?.interstitial?.iosAppId ?? '',
-            androidUnitId: p.admob?.interstitial?.androidUnitId ?? '',
-            iosUnitId: p.admob?.interstitial?.iosUnitId ?? '',
-            thirdSessionEnabled: p.admob?.interstitial?.thirdSessionEnabled ?? true,
-            afterSecondListingEnabled: p.admob?.interstitial?.afterSecondListingEnabled ?? true,
-            afterDeleteListingEnabled: p.admob?.interstitial?.afterDeleteListingEnabled ?? true,
-          },
-          rewarded: {
-            enabled: p.admob?.rewarded?.enabled ?? false,
-            androidAppId: p.admob?.rewarded?.androidAppId ?? '',
-            iosAppId: p.admob?.rewarded?.iosAppId ?? '',
-            androidUnitId: p.admob?.rewarded?.androidUnitId ?? '',
-            iosUnitId: p.admob?.rewarded?.iosUnitId ?? '',
-            boostHours: p.admob?.rewarded?.boostHours ?? 2,
-          },
-        },
       });
       return res;
     },
@@ -303,7 +186,6 @@ export default function MobilePromoScreen() {
         imageUrl: form.sponsorBanner.imageUrl.trim() || null,
         linkUrl: form.sponsorBanner.linkUrl.trim() || null,
       },
-      admob: form.admob,
     };
   }
 
@@ -570,102 +452,6 @@ export default function MobilePromoScreen() {
               }))
             }
             placeholder="Sponsor"
-          />
-        </Card>
-      </Section>
-
-      <Section title="AdMob — Banner">
-        <Card>
-          <Text style={styles.hint}>
-            Tab bar üstünde ince banner. Sponsor bannerın altında konumlanır. Tek istek — tüm sayfalarda aynı.
-          </Text>
-          <ToggleRow
-            label="Test modu (Google test reklamları)"
-            value={form.admob.testMode}
-            onChange={(v) => setForm((f) => ({ ...f, admob: { ...f.admob, testMode: v } }))}
-          />
-          <AdMobUnitFields
-            title="Banner"
-            unit={form.admob.banner}
-            onChange={(banner) => setForm((f) => ({ ...f, admob: { ...f.admob, banner } }))}
-          />
-        </Card>
-      </Section>
-
-      <Section title="AdMob — Geçiş Reklamı (Tam Ekran)">
-        <Card>
-          <AdMobUnitFields
-            title="Geçiş"
-            unit={form.admob.interstitial}
-            onChange={(interstitial) =>
-              setForm((f) => ({
-                ...f,
-                admob: { ...f.admob, interstitial: { ...f.admob.interstitial, ...interstitial } },
-              }))
-            }
-          />
-          <ToggleRow
-            label="Günde 3. uygulama açılışında göster"
-            value={form.admob.interstitial.thirdSessionEnabled}
-            onChange={(v) =>
-              setForm((f) => ({
-                ...f,
-                admob: { ...f.admob, interstitial: { ...f.admob.interstitial, thirdSessionEnabled: v } },
-              }))
-            }
-          />
-          <ToggleRow
-            label="2. ilan verildikten sonra göster"
-            value={form.admob.interstitial.afterSecondListingEnabled}
-            onChange={(v) =>
-              setForm((f) => ({
-                ...f,
-                admob: { ...f.admob, interstitial: { ...f.admob.interstitial, afterSecondListingEnabled: v } },
-              }))
-            }
-          />
-          <ToggleRow
-            label="Kendi ilanı silinince göster"
-            value={form.admob.interstitial.afterDeleteListingEnabled}
-            onChange={(v) =>
-              setForm((f) => ({
-                ...f,
-                admob: { ...f.admob, interstitial: { ...f.admob.interstitial, afterDeleteListingEnabled: v } },
-              }))
-            }
-          />
-        </Card>
-      </Section>
-
-      <Section title="AdMob — Ödüllü Reklam (Öne Çıkar)">
-        <Card>
-          <Text style={styles.hint}>
-            Profil ve kendi ilan sayfasındaki “2 Saatliğine Öne Çıkar” butonu bu reklamı açar.
-          </Text>
-          <AdMobUnitFields
-            title="Ödüllü"
-            unit={form.admob.rewarded}
-            onChange={(rewarded) =>
-              setForm((f) => ({
-                ...f,
-                admob: { ...f.admob, rewarded: { ...f.admob.rewarded, ...rewarded } },
-              }))
-            }
-          />
-          <Text style={styles.fieldLabel}>Öne çıkarma süresi (saat)</Text>
-          <Input
-            value={String(form.admob.rewarded.boostHours)}
-            onChangeText={(v) =>
-              setForm((f) => ({
-                ...f,
-                admob: {
-                  ...f.admob,
-                  rewarded: { ...f.admob.rewarded, boostHours: Math.min(24, Math.max(1, Number(v) || 2)) },
-                },
-              }))
-            }
-            keyboardType="number-pad"
-            placeholder="2"
           />
         </Card>
       </Section>

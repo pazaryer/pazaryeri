@@ -33,6 +33,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="audit" options={{ href: null }} />
       <Tabs.Screen name="web-analytics" options={{ href: null }} />
       <Tabs.Screen name="mobile-promo" options={{ href: null }} />
+      <Tabs.Screen name="admob" options={{ href: null }} />
+      <Tabs.Screen name="web-app-download" options={{ href: null }} />
     </Tabs>
   );
 }

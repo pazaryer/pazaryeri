@@ -6,6 +6,7 @@ import { BrandProvider } from '@/contexts/BrandContext';
 import { BrandWebHead } from '@/components/BrandWebHead';
 import { useMobilePromoRefresh } from '@/hooks/useMobilePromoRefresh';
 import { AppOverlays } from '@/components/AppOverlays';
+import { WebAppDownloadFab } from '@/components/web/WebAppDownloadFab';
 import { useAdMobLifecycle } from '@/lib/admob/init';
 import { useAdMobConfig } from '@/lib/admob/config';
 
@@ -68,6 +69,7 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
   return (
     <BrandProvider brand={brand}>
       {Platform.OS === 'web' ? <BrandWebHead /> : null}
+      {Platform.OS === 'web' ? <WebAppDownloadFab /> : null}
       {children}
       {Platform.OS !== 'web' ? <AppOverlays /> : null}
     </BrandProvider>

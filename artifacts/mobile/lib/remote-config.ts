@@ -58,6 +58,17 @@ export type RemoteAppConfig = {
     altText?: string;
   };
   'mobile.admob'?: import('@/lib/admob/config').AdMobRemoteConfig;
+  'web.appDownload'?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    buttonText?: string;
+    androidStoreUrl?: string;
+    iosStoreUrl?: string;
+    androidDeepLink?: string;
+    iosDeepLink?: string;
+    showOnDesktop?: boolean;
+  };
 };
 
 let cached: RemoteAppConfig | null = null;
@@ -187,4 +198,37 @@ export function useSponsorBanner() {
 export function useMobileDeveloper() {
   useRemoteConfigVersion();
   return getMobileDeveloper();
+}
+
+const DEFAULT_APP_DOWNLOAD = {
+  enabled: true,
+  title: 'Mobil Uygulamamızı İndirin',
+  subtitle: 'Daha hızlı ilan ver, anında mesajlaş',
+  buttonText: 'Uygulamayı İndir',
+  androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.pazaryerim',
+  iosStoreUrl: 'https://apps.apple.com/app/id0000000000',
+  androidDeepLink: 'pazaryeri://',
+  iosDeepLink: 'pazaryeri://',
+  showOnDesktop: false,
+};
+
+export function getWebAppDownload() {
+  const d = cached?.['web.appDownload'];
+  if (!d) return DEFAULT_APP_DOWNLOAD;
+  return {
+    enabled: d.enabled ?? DEFAULT_APP_DOWNLOAD.enabled,
+    title: d.title ?? DEFAULT_APP_DOWNLOAD.title,
+    subtitle: d.subtitle ?? DEFAULT_APP_DOWNLOAD.subtitle,
+    buttonText: d.buttonText ?? DEFAULT_APP_DOWNLOAD.buttonText,
+    androidStoreUrl: d.androidStoreUrl ?? DEFAULT_APP_DOWNLOAD.androidStoreUrl,
+    iosStoreUrl: d.iosStoreUrl ?? DEFAULT_APP_DOWNLOAD.iosStoreUrl,
+    androidDeepLink: d.androidDeepLink ?? DEFAULT_APP_DOWNLOAD.androidDeepLink,
+    iosDeepLink: d.iosDeepLink ?? DEFAULT_APP_DOWNLOAD.iosDeepLink,
+    showOnDesktop: d.showOnDesktop ?? DEFAULT_APP_DOWNLOAD.showOnDesktop,
+  };
+}
+
+export function useWebAppDownload() {
+  useRemoteConfigVersion();
+  return getWebAppDownload();
 }

@@ -24,6 +24,18 @@ export default function CmsScreen() {
           onPress={() => router.push('/(tabs)/mobile-promo')}
         />
         <MenuCard
+          icon="📊"
+          title="AdMob Reklamları"
+          subtitle="Banner, geçiş, ödüllü reklam kimlikleri"
+          onPress={() => router.push('/(tabs)/admob')}
+        />
+        <MenuCard
+          icon="⬇️"
+          title="Web İndirme Butonu"
+          subtitle="Yüzen mobil uygulama indirme CTA"
+          onPress={() => router.push('/(tabs)/web-app-download')}
+        />
+        <MenuCard
           icon="📜"
           title="Kayan Yazılar"
           subtitle="Anasayfa duyuru bandı"
