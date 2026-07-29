@@ -10,22 +10,25 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ANNOUNCEMENTS } from '@/lib/categories';
 import { WebMarquee, MarqueeSlot } from '@/components/WebMarquee';
+import { BRAND } from '@/constants/brand';
 
-const MARQUEE_TEXT = ANNOUNCEMENTS.join('   •   ') + '   •   ';
+const MARQUEE_TEXT = ANNOUNCEMENTS.join('   ·   ') + '   ·   ';
 
 type Props = {
   /** Anasayfa liste içinde — yuvarlatılmış kart stili */
   embedded?: boolean;
+  /** İnce, kibar anasayfa bandı */
+  subtle?: boolean;
   style?: ViewStyle;
 };
 
 /** Mobil — Reanimated kaydırma */
-function NativeMarquee() {
+function NativeMarquee({ subtle }: { subtle?: boolean }) {
   const translateX = useSharedValue(0);
 
   useEffect(() => {
     translateX.value = withRepeat(
-      withTiming(-520, { duration: 18000, easing: Easing.linear }),
+      withTiming(-480, { duration: 22000, easing: Easing.linear }),
       -1,
       false,
     );
@@ -38,33 +41,38 @@ function NativeMarquee() {
   return (
     <MarqueeSlot>
       <Animated.View style={[styles.marqueeRow, animStyle]}>
-        <Text style={styles.marqueeText}>{MARQUEE_TEXT}</Text>
-        <Text style={styles.marqueeText}>{MARQUEE_TEXT}</Text>
+        <Text style={[styles.marqueeText, subtle && styles.marqueeTextSubtle]}>{MARQUEE_TEXT}</Text>
+        <Text style={[styles.marqueeText, subtle && styles.marqueeTextSubtle]}>{MARQUEE_TEXT}</Text>
       </Animated.View>
     </MarqueeSlot>
   );
 }
 
-export function AnnouncementBanner({ embedded, style }: Props) {
+export function AnnouncementBanner({ embedded, subtle, style }: Props) {
   const insets = useSafeAreaInsets();
-  const topPad = !embedded && Platform.OS !== 'web' ? insets.top : 0;
+  const topPad = !embedded && !subtle && Platform.OS !== 'web' ? insets.top : 0;
+  const isSubtle = embedded || subtle;
 
   return (
     <View
       style={[
         styles.wrap,
         embedded && styles.wrapEmbedded,
+        isSubtle && styles.wrapSubtle,
         topPad > 0 && { paddingTop: topPad, height: 38 + topPad },
         style,
       ]}
     >
-      <View style={[styles.badge, embedded && styles.badgeEmbedded]}>
-        <Text style={styles.badgeText}>DUYURU</Text>
-      </View>
+      {!isSubtle && (
+        <View style={[styles.badge, embedded && styles.badgeEmbedded]}>
+          <Text style={styles.badgeText}>DUYURU</Text>
+        </View>
+      )}
+      {isSubtle && <View style={styles.subtleAccent} />}
       {Platform.OS === 'web' ? (
-        <WebMarquee text={MARQUEE_TEXT} />
+        <WebMarquee text={MARQUEE_TEXT} subtle={isSubtle} />
       ) : (
-        <NativeMarquee />
+        <NativeMarquee subtle={isSubtle} />
       )}
     </View>
   );
@@ -93,6 +101,22 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  wrapSubtle: {
+    backgroundColor: '#F3EFFF',
+    borderWidth: 1,
+    borderColor: '#E2D9F0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2D9F0',
+    height: 32,
+    marginHorizontal: 12,
+    marginBottom: 10,
+    borderRadius: 10,
+    shadowColor: BRAND.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
   badge: {
     backgroundColor: '#C9A84C',
     paddingHorizontal: 14,
@@ -112,6 +136,15 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1.5,
   },
+  subtleAccent: {
+    width: 3,
+    height: '60%',
+    backgroundColor: BRAND.primary,
+    borderRadius: 2,
+    marginLeft: 10,
+    marginRight: 4,
+    opacity: 0.7,
+  },
   marqueeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -123,5 +156,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     paddingRight: 48,
     flexShrink: 0,
+  },
+  marqueeTextSubtle: {
+    color: '#5A3D8A',
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
 });

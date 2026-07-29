@@ -59,6 +59,13 @@ input, textarea {
   font-family: 'Inter', system-ui, sans-serif;
   line-height: 34px;
 }
+.pz-marquee-item-subtle {
+  color: #5A3D8A;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 32px;
+}
 @keyframes pz-marquee-scroll {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }

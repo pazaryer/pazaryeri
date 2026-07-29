@@ -1,11 +1,13 @@
 import React, { createElement } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
 
-type Props = { text: string };
+type Props = { text: string; subtle?: boolean };
 
 /** Web — gerçek HTML + CSS animasyonu (RN className çalışmıyor) */
-export function WebMarquee({ text }: Props) {
+export function WebMarquee({ text, subtle }: Props) {
   if (Platform.OS !== 'web') return null;
+
+  const itemClass = subtle ? 'pz-marquee-item pz-marquee-item-subtle' : 'pz-marquee-item';
 
   return createElement(
     'div',
@@ -13,8 +15,8 @@ export function WebMarquee({ text }: Props) {
     createElement(
       'div',
       { className: 'pz-marquee-track' },
-      createElement('span', { className: 'pz-marquee-item' }, text),
-      createElement('span', { className: 'pz-marquee-item' }, text),
+      createElement('span', { className: itemClass }, text),
+      createElement('span', { className: itemClass }, text),
     ),
   );
 }

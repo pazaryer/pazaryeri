@@ -575,6 +575,23 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
+export function useDeleteAllNotifications() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<{ success: boolean }>('/notifications/all', { method: 'DELETE' }),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['notifications'] });
+      const prev = qc.getQueryData<{ items: AppNotification[] }>(['notifications']);
+      qc.setQueryData(['notifications'], { items: [] });
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['notifications'], ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+}
+
 export function useMarkNotificationRead() {
   const qc = useQueryClient();
   return useMutation({

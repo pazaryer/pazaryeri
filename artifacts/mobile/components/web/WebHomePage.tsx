@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { WebShell } from './WebShell';
 import { WebListingGrid } from './WebListingGrid';
 import { WebHeroBanner } from './WebHeroBanner';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { useWebLocation } from '@/contexts/WebLocationContext';
 import { useIsMobileWeb } from '@/hooks/useIsMobileWeb';
 import { WEB_THEME } from '@/lib/web-theme';
@@ -13,6 +14,7 @@ function WebHomeContent() {
 
   return (
     <View style={styles.page}>
+      <AnnouncementBanner embedded subtle style={{ marginTop: 8, marginBottom: 4 }} />
       <WebHeroBanner />
       <WebListingGrid
         title="Popüler İkinci El İlanlar"

@@ -6,12 +6,19 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
+  Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenLayout } from '@/components/ProfileScreenLayout';
 import { useColors } from '@/hooks/useColors';
-import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/hooks';
+import {
+  useDeleteAllNotifications,
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotifications,
+} from '@/lib/hooks';
 import { getPushNavigationPath, parsePushData } from '@/lib/notifications';
 
 export default function NotificationsScreen() {
@@ -20,11 +27,34 @@ export default function NotificationsScreen() {
   const { data, isLoading } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const deleteAll = useDeleteAllNotifications();
   const items = data?.items ?? [];
   const unread = items.filter((n) => !n.isRead).length;
 
   const handleMarkAllRead = () => {
     markAllRead.mutate();
+  };
+
+  const handleDeleteAll = () => {
+    const runDelete = () => deleteAll.mutate();
+    if (Platform.OS === 'web') {
+      if (
+        window.confirm(
+          'Zildeki tüm bildirimler kalıcı olarak silinecek. Devam etmek istiyor musunuz?',
+        )
+      ) {
+        runDelete();
+      }
+      return;
+    }
+    Alert.alert(
+      'Tüm bildirimleri sil',
+      'Zildeki tüm bildirimler kalıcı olarak silinecek. Devam etmek istiyor musunuz?',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Tümünü sil', style: 'destructive', onPress: runDelete },
+      ],
+    );
   };
 
   const handleNotificationPress = async (id: string, type: string, rawData?: string | null) => {
@@ -40,14 +70,25 @@ export default function NotificationsScreen() {
   };
 
   const headerRight =
-    unread > 0 ? (
-      <Pressable onPress={handleMarkAllRead} disabled={markAllRead.isPending} hitSlop={8}>
-        {markAllRead.isPending ? (
-          <ActivityIndicator size="small" color={colors.primary} />
-        ) : (
-          <Ionicons name="checkmark-done" size={22} color={colors.primary} />
+    items.length > 0 ? (
+      <View style={styles.headerActions}>
+        {unread > 0 && (
+          <Pressable onPress={handleMarkAllRead} disabled={markAllRead.isPending} hitSlop={8}>
+            {markAllRead.isPending ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Ionicons name="checkmark-done" size={22} color={colors.primary} />
+            )}
+          </Pressable>
         )}
-      </Pressable>
+        <Pressable onPress={handleDeleteAll} disabled={deleteAll.isPending} hitSlop={8}>
+          {deleteAll.isPending ? (
+            <ActivityIndicator size="small" color="#C0392B" />
+          ) : (
+            <Ionicons name="trash-outline" size={21} color="#C0392B" />
+          )}
+        </Pressable>
+      </View>
     ) : null;
 
   return (
@@ -57,17 +98,29 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {unread > 0 && (
-          <Pressable
-            style={[styles.markAllBtn, { backgroundColor: colors.secondary, borderColor: colors.primary }]}
-            onPress={handleMarkAllRead}
-            disabled={markAllRead.isPending}
-          >
-            <Ionicons name="checkmark-done" size={18} color={colors.primary} />
-            <Text style={[styles.markAllBtnText, { color: colors.primary }]}>
-              Tümünü okundu işaretle ({unread})
-            </Text>
-          </Pressable>
+        {items.length > 0 && (
+          <View style={styles.actionRow}>
+            {unread > 0 && (
+              <Pressable
+                style={[styles.actionBtn, { backgroundColor: colors.secondary, borderColor: colors.primary }]}
+                onPress={handleMarkAllRead}
+                disabled={markAllRead.isPending}
+              >
+                <Ionicons name="checkmark-done" size={16} color={colors.primary} />
+                <Text style={[styles.actionBtnText, { color: colors.primary }]}>
+                  Tümünü okundu işaretle ({unread})
+                </Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={[styles.actionBtn, styles.deleteBtn]}
+              onPress={handleDeleteAll}
+              disabled={deleteAll.isPending}
+            >
+              <Ionicons name="trash-outline" size={16} color="#C0392B" />
+              <Text style={styles.deleteBtnText}>Tümünü sil</Text>
+            </Pressable>
+          </View>
         )}
 
         {isLoading ? (
@@ -115,16 +168,26 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 20, gap: 12, paddingBottom: 32 },
-  markAllBtn: {
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    padding: 12,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
+    flexGrow: 1,
+    flexBasis: '48%',
   },
-  markAllBtnText: { fontSize: 14, fontWeight: '700' },
+  actionBtnText: { fontSize: 13, fontWeight: '700' },
+  deleteBtn: {
+    backgroundColor: '#FFF5F5',
+    borderColor: '#F5C6C6',
+  },
+  deleteBtnText: { fontSize: 13, fontWeight: '700', color: '#C0392B' },
   empty: { alignItems: 'center', padding: 24, borderRadius: 14, borderWidth: 1, gap: 8 },
   emptyText: { fontSize: 14 },
   notifCard: { flexDirection: 'row', padding: 14, borderRadius: 14, borderWidth: 1, gap: 12 },

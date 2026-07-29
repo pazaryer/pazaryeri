@@ -165,6 +165,19 @@ router.patch("/notifications/read-all", authMiddleware, async (req, res, next) =
   }
 });
 
+router.delete("/notifications/all", authMiddleware, async (req, res, next) => {
+  try {
+    const { count } = await getSupabaseAdmin()
+      .from("notifications")
+      .delete({ count: "exact" })
+      .eq("user_id", req.user!.id);
+
+    res.json({ success: true, deleted: count ?? 0 });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.patch("/notifications/:notificationId/read", authMiddleware, async (req, res, next) => {
   try {
     const { data } = await getSupabaseAdmin()
