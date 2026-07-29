@@ -33,28 +33,43 @@ router.get("/search", async (req, res, next) => {
 router.get("/favorites", authMiddleware, async (req, res, next) => {
   try {
     const sb = getSupabaseAdmin();
+    const userId = req.user!.id;
     const { data: favs } = await sb
       .from("favorites")
       .select("listing_id, listings(*, users!listings_seller_id_fkey(*))")
-      .eq("user_id", req.user!.id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    const listingIds = (favs ?? []).map((f) => (f as { listings: DbListing }).listings.id);
-    const favCounts = await getFavoriteCountsMap(listingIds);
+    const rows = (favs ?? []).filter((f) => {
+      const listing = (f as { listings?: DbListing | null }).listings;
+      return listing && listing.status !== "deleted";
+    });
+
+    const listingIds = rows.map((f) => (f as { listings: DbListing }).listings.id);
+    const [imageMap, favCounts] = await Promise.all([
+      getListingImages(listingIds),
+      getFavoriteCountsMap(listingIds),
+    ]);
+
+    let userLat: number | null = null;
+    let userLon: number | null = null;
+    const { data: me } = await sb.from("users").select("latitude, longitude").eq("id", userId).single();
+    userLat = me?.latitude ?? null;
+    userLon = me?.longitude ?? null;
 
     const items = await Promise.all(
-      (favs ?? []).map(async (f) => {
+      rows.map((f) => {
         const listing = (f as { listings: DbListing & { users: DbUser } }).listings;
-        const imageMap = await getListingImages([listing.id]);
+        const seller = listing.users;
         return formatListingSummary(
           listing,
-          listing.users,
+          seller,
           imageMap.get(listing.id)?.[0] ?? "",
           true,
-          null,
-          null,
+          userLat,
+          userLon,
           favCounts.get(listing.id) ?? 0,
-          req.user!.id,
+          userId,
         );
       }),
     );

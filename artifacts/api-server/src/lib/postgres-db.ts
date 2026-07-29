@@ -292,12 +292,12 @@ export async function pgListListings(params: {
     where.push(`l.created_at < $${values.length}`);
   }
   if (params.city) {
-    values.push(`%${params.city}%`);
-    where.push(`l.city ILIKE $${values.length}`);
+    values.push(`%${params.city.replace(/[%_]/g, "")}%`);
+    where.push(`(l.city ILIKE $${values.length} OR l.district ILIKE $${values.length} OR l.location ILIKE $${values.length})`);
   }
   if (params.district) {
-    values.push(`%${params.district}%`);
-    where.push(`l.district ILIKE $${values.length}`);
+    values.push(`%${params.district.replace(/[%_]/g, "")}%`);
+    where.push(`(l.district ILIKE $${values.length} OR l.location ILIKE $${values.length})`);
   }
   if (params.minPrice != null) {
     values.push(params.minPrice);

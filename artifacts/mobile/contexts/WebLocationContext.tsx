@@ -65,13 +65,25 @@ export function WebLocationProvider({ children }: { children: React.ReactNode })
       } catch {
         /* ignore */
       }
+    } else if (v.city) {
+      try {
+        const query = [v.district, v.city, 'Türkiye'].filter(Boolean).join(', ');
+        const results = await Location.geocodeAsync(query);
+        const hit = results[0];
+        if (hit?.latitude != null && hit.longitude != null) {
+          setCoords({ lat: hit.latitude, lon: hit.longitude });
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
     }
     setCoords({});
   }, []);
 
   useEffect(() => {
     void resolveCoords(filter);
-  }, []);
+  }, [filter, resolveCoords]);
 
   const setFilter = useCallback(
     async (v: LocationFilterValue) => {

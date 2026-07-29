@@ -3,6 +3,37 @@ import * as Location from 'expo-location';
 import type { LocationFilterValue } from '@/components/LocationFilterBar';
 import { formatLocationLabel, loadLocationFilter, saveLocationFilter } from '@/lib/location-storage';
 
+async function resolveFilterCoords(v: LocationFilterValue): Promise<{ lat?: number; lon?: number }> {
+  if (v.radiusKm) {
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      const granted =
+        status === 'granted' ||
+        (await Location.requestForegroundPermissionsAsync()).status === 'granted';
+      if (!granted) return {};
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      return { lat: pos.coords.latitude, lon: pos.coords.longitude };
+    } catch {
+      return {};
+    }
+  }
+
+  if (v.city) {
+    try {
+      const query = [v.district, v.city, 'Türkiye'].filter(Boolean).join(', ');
+      const results = await Location.geocodeAsync(query);
+      const hit = results[0];
+      if (hit?.latitude != null && hit.longitude != null) {
+        return { lat: hit.latitude, lon: hit.longitude };
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return {};
+}
+
 type MobileLocationContextValue = {
   filter: LocationFilterValue;
   coords: { lat?: number; lon?: number };
@@ -28,34 +59,31 @@ export function MobileLocationProvider({ children }: { children: React.ReactNode
 
   const refreshCoords = useCallback(async () => {
     try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      const granted =
-        status === 'granted' ||
-        (await Location.requestForegroundPermissionsAsync()).status === 'granted';
-      if (!granted) {
-        setCoords({});
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+      const next = await resolveFilterCoords(filter);
+      setCoords(next);
     } catch {
       setCoords({});
     } finally {
       setLocationReady(true);
     }
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
-    void loadLocationFilter().then((stored) => {
+    void loadLocationFilter().then(async (stored) => {
       setFilterState(stored);
+      const next = await resolveFilterCoords(stored);
+      setCoords(next);
       setReady(true);
+      setLocationReady(true);
     });
-    void refreshCoords();
-  }, [refreshCoords]);
+  }, []);
 
   const setFilter = useCallback(async (v: LocationFilterValue) => {
     setFilterState(v);
     await saveLocationFilter(v);
+    const next = await resolveFilterCoords(v);
+    setCoords(next);
+    setLocationReady(true);
   }, []);
 
   const clearFilter = useCallback(async () => {

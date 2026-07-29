@@ -33,7 +33,7 @@ export default function ExploreScreen() {
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
   const paddingTop = isWeb ? 67 : insets.top;
-  const { filter, coords, label, openPicker, ready, locationReady } = useMobileLocation();
+  const { filter, coords, label, openPicker, ready, locationReady, refreshCoords } = useMobileLocation();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -71,6 +71,9 @@ export default function ExploreScreen() {
 
   const allItems = listingsData?.pages.flatMap((p) => p.items) ?? [];
   const showSearch = searchQuery.length >= 2;
+
+  const needsGps =
+    filter.radiusKm != null && locationReady && (coords.lat == null || coords.lon == null);
 
   const trending = useMemo(() => {
     const titles = allItems.slice(0, 8).map((item) => item.title.split(/\s+/).slice(0, 2).join(' '));
@@ -225,6 +228,21 @@ export default function ExploreScreen() {
     );
   }
 
+  if (needsGps) {
+    return (
+      <View style={[styles.loading, { backgroundColor: colors.background, paddingHorizontal: 24 }]}>
+        <Ionicons name="location-outline" size={40} color={colors.mutedForeground} />
+        <Text style={[styles.gpsTitle, { color: colors.foreground }]}>Konum izni gerekli</Text>
+        <Text style={[styles.gpsHint, { color: colors.mutedForeground }]}>
+          {filter.radiusKm} km yakınındaki ilanları görmek için konum iznini açın.
+        </Text>
+        <Pressable style={[styles.gpsBtn, { backgroundColor: colors.primary }]} onPress={() => void refreshCoords()}>
+          <Text style={styles.gpsBtnText}>Konumu yenile</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <FlatList
       style={{ backgroundColor: BRAND.background }}
@@ -257,6 +275,10 @@ export default function ExploreScreen() {
 
 const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  gpsTitle: { fontSize: 17, fontWeight: '700', marginTop: 12, textAlign: 'center' },
+  gpsHint: { fontSize: 14, textAlign: 'center', lineHeight: 20, marginTop: 6 },
+  gpsBtn: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  gpsBtnText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
   hero: {
     marginHorizontal: -16,
     paddingHorizontal: 16,

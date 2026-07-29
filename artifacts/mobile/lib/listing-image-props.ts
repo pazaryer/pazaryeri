@@ -6,7 +6,6 @@ export const listingThumbImageProps: Partial<ImageProps> = {
   cachePolicy: 'memory-disk',
   transition: 200,
   placeholder: { blurhash: LISTING_BLURHASH },
-  recyclingKey: 'listing-thumb',
 };
 
 export const listingHeroImageProps: Partial<ImageProps> = {

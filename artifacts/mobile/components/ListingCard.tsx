@@ -36,13 +36,19 @@ export const ListingCard = React.memo(function ListingCard({ item, compact = fal
       <Pressable style={flatStyle(styles.cardContainer, compact && styles.compactContainer)}>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.imageContainer, compact ? styles.imageCompact : styles.imageFull]}>
-            <Image
-              source={{ uri: item.image }}
-              style={StyleSheet.absoluteFillObject}
-              contentFit="cover"
-              recyclingKey={item.id}
-              {...listingThumbImageProps}
-            />
+            {item.image ? (
+              <Image
+                source={{ uri: item.image }}
+                style={StyleSheet.absoluteFillObject}
+                contentFit="cover"
+                recyclingKey={`listing-thumb-${item.id}`}
+                {...listingThumbImageProps}
+              />
+            ) : (
+              <View style={[StyleSheet.absoluteFillObject, styles.imagePlaceholder]}>
+                <Ionicons name="image-outline" size={compact ? 20 : 28} color={colors.mutedForeground} />
+              </View>
+            )}
             {item.status === 'sold' && (
               <View style={styles.soldOverlay}>
                 <Text style={styles.soldText}>SATILDI</Text>
@@ -110,6 +116,11 @@ const styles = StyleSheet.create({
   },
   imageCompact: { aspectRatio: 1.2 },
   imageFull: { height: 160 },
+  imagePlaceholder: {
+    backgroundColor: BRAND.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   favoriteButton: {
     position: 'absolute',
     top: 4,
