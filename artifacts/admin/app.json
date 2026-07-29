@@ -2,16 +2,16 @@
   "expo": {
     "name": "Pazaryeri Admin",
     "slug": "pazaryeri-admin",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pazaryeri-admin",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F0A1A"
+      "backgroundColor": "#F4F6FA"
     },
     "android": {
       "package": "com.pazaryerim.admin",
@@ -20,7 +20,7 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0F0A1A"
+        "backgroundColor": "#F4F6FA"
       },
       "permissions": [
         "android.permission.INTERNET",

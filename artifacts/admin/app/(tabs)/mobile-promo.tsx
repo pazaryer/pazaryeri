@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
-  Image,
   StyleSheet,
   Switch,
   Text,
@@ -12,6 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { adminFetch } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Btn, Card, Input, Loading } from '@/components/ui';
+import { SponsorBannerTable } from '@/components/SponsorBannerTable';
 import { PageShell, Section } from '@/components/PageShell';
 import { THEME, SPACING, RADIUS } from '@/lib/theme';
 
@@ -230,9 +230,11 @@ export default function MobilePromoScreen() {
 
   function payload() {
     const sponsorBanners = form.sponsorBanners.map((b) => ({
-      ...b,
+      placement: b.placement,
+      enabled: b.enabled,
       imageUrl: b.imageUrl.trim() || null,
       linkUrl: b.linkUrl.trim() || null,
+      altText: b.altText.trim() || 'Sponsor',
     }));
     const home = sponsorBanners.find((b) => b.placement === 'home') ?? sponsorBanners[0];
     return {
@@ -250,14 +252,12 @@ export default function MobilePromoScreen() {
         },
       },
       sponsorBanners,
-      sponsorBanner: home
-        ? {
-            enabled: home.enabled,
-            imageUrl: home.imageUrl,
-            linkUrl: home.linkUrl,
-            altText: home.altText,
-          }
-        : undefined,
+      sponsorBanner: {
+        enabled: home?.enabled ?? false,
+        imageUrl: home?.imageUrl ?? null,
+        linkUrl: home?.linkUrl ?? null,
+        altText: home?.altText ?? 'Sponsor',
+      },
     };
   }
 
@@ -438,79 +438,25 @@ export default function MobilePromoScreen() {
         </Card>
       </Section>
 
-      <Section title="Sponsor Bannerlar (Sayfa Bazlı)">
+      <Section title="Sponsor Bannerlar">
         <Text style={styles.hint}>
-          Her sayfa için ayrı banner. Önerilen: 320×50. Banner sayfa akışında görünür — içeriğin üstüne binmez.
+          Her sayfa için ayrı banner. Satıra dokunarak düzenleyin. Önerilen boyut: 320×50.
         </Text>
-        {form.sponsorBanners.map((banner) => {
-          const meta = SPONSOR_PLACEMENTS.find((p) => p.id === banner.placement)!;
-          const uploading = uploadingPlacement === banner.placement;
-          return (
-            <Card key={banner.placement} style={styles.placementCard}>
-              <Text style={styles.placementTitle}>{meta.label}</Text>
-              <ToggleRow
-                label="Bu sayfada göster"
-                value={banner.enabled}
-                onChange={(v) =>
-                  setForm((f) => ({
-                    ...f,
-                    sponsorBanners: updateSponsorBanner(f.sponsorBanners, banner.placement, { enabled: v }),
-                  }))
-                }
-              />
-              <Text style={styles.fieldLabel}>Tıklanınca gidilecek link</Text>
-              <Input
-                value={banner.linkUrl}
-                onChangeText={(v) =>
-                  setForm((f) => ({
-                    ...f,
-                    sponsorBanners: updateSponsorBanner(f.sponsorBanners, banner.placement, { linkUrl: v }),
-                  }))
-                }
-                placeholder="https://..."
-                autoCapitalize="none"
-              />
-              <Text style={styles.fieldLabel}>Görsel URL</Text>
-              <Input
-                value={banner.imageUrl}
-                onChangeText={(v) =>
-                  setForm((f) => ({
-                    ...f,
-                    sponsorBanners: updateSponsorBanner(f.sponsorBanners, banner.placement, { imageUrl: v }),
-                  }))
-                }
-                placeholder="https://..."
-                autoCapitalize="none"
-              />
-              {banner.imageUrl ? (
-                <View style={styles.previewWrap}>
-                  <Image source={{ uri: banner.imageUrl }} style={styles.bannerPreview} resizeMode="cover" />
-                </View>
-              ) : null}
-              <View style={styles.uploadRow}>
-                <Btn
-                  label={uploading ? 'Yükleniyor…' : 'Galeriden Yükle'}
-                  variant="ghost"
-                  onPress={() => uploadBanner(banner.placement)}
-                  disabled={uploadingPlacement !== null}
-                />
-                {banner.imageUrl ? (
-                  <Btn
-                    label="Kaldır"
-                    variant="danger"
-                    compact
-                    onPress={() =>
-                      setForm((f) => ({
-                        ...f,
-                        sponsorBanners: updateSponsorBanner(f.sponsorBanners, banner.placement, { imageUrl: '' }),
-                      }))
-                    }
-                  />
-                ) : null}
-              </View>
-            </Card>
-          );
-        })}
+        <SponsorBannerTable
+          rows={form.sponsorBanners.map((b) => ({
+            ...b,
+            label: SPONSOR_PLACEMENTS.find((p) => p.id === b.placement)?.label ?? b.placement,
+          }))}
+          onChange={(placement, patch) =>
+            setForm((f) => ({
+              ...f,
+              sponsorBanners: updateSponsorBanner(f.sponsorBanners, placement as SponsorPlacementId, patch),
+            }))
+          }
+          onUpload={uploadBanner}
+          uploadingPlacement={uploadingPlacement}
+          readOnly={profile?.role !== 'admin'}
+        />
       </Section>
 
       <View style={styles.actions}>

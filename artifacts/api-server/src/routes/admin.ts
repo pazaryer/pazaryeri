@@ -815,6 +815,16 @@ router.post("/admin/upload/brand-asset", superAdminMiddleware, async (req, res, 
   }
 });
 
+const nullableUrl = z.preprocess(
+  (val) => (val === "" || val === undefined || val === null ? null : val),
+  z.union([z.string().max(4000), z.null()]),
+);
+
+const nullableShortText = z.preprocess(
+  (val) => (typeof val === "string" && val.trim() ? val.trim() : "Sponsor"),
+  z.string().max(120),
+);
+
 const admobUnitSchema = z.object({
   enabled: z.boolean(),
   androidAppId: z.string().max(120),
@@ -857,17 +867,19 @@ const mobilePromoSchema = z.object({
     z.object({
       placement: z.enum(["home", "explore", "post", "messages", "profile", "listing", "web"]),
       enabled: z.boolean(),
-      imageUrl: z.string().max(500).nullable(),
-      linkUrl: z.string().max(500).nullable(),
-      altText: z.string().max(120),
+      imageUrl: nullableUrl,
+      linkUrl: nullableUrl,
+      altText: nullableShortText,
     }),
   ),
-  sponsorBanner: z.object({
-    enabled: z.boolean(),
-    imageUrl: z.string().max(500).nullable(),
-    linkUrl: z.string().max(500).nullable(),
-    altText: z.string().max(120),
-  }).optional(),
+  sponsorBanner: z
+    .object({
+      enabled: z.boolean(),
+      imageUrl: nullableUrl,
+      linkUrl: nullableUrl,
+      altText: nullableShortText,
+    })
+    .optional(),
 });
 
 const webAppDownloadSchema = z.object({

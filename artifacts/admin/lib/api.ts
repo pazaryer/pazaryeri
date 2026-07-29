@@ -11,13 +11,15 @@ async function parseResponse<T>(res: Response): Promise<T> {
       typeof (body as { error?: string }).error === 'string'
         ? (body as { error: string }).error
         : null;
+    const details = (body as { details?: string[] }).details;
+    const detailText = details?.length ? `${detail ?? 'Geçersiz istek'} — ${details.slice(0, 4).join(' · ')}` : null;
     if (res.status === 404) {
       throw new Error(detail ?? 'Admin API sunucuda bulunamadı (404). API güncellemesi gerekli.');
     }
     if (res.status === 403) {
       throw new Error(detail ?? 'Admin yetkisi yok. Hesabınıza admin rolü atanmalı.');
     }
-    throw new Error(detail ?? `İstek başarısız (HTTP ${res.status})`);
+    throw new Error(detailText ?? detail ?? `İstek başarısız (HTTP ${res.status})`);
   }
   return body as T;
 }

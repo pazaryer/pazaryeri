@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { adminFetch } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { AdMobTable } from '@/components/AdMobTable';
 import { Btn, Card, Input, Loading } from '@/components/ui';
-import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { PageShell, Section } from '@/components/PageShell';
-import { THEME, SPACING, RADIUS } from '@/lib/theme';
+import { THEME, SPACING } from '@/lib/theme';
 
 type AdMobUnit = {
   enabled: boolean;
@@ -72,65 +72,6 @@ function ToggleRow({
   );
 }
 
-function StatusChip({ label, on }: { label: string; on: boolean }) {
-  return (
-    <View style={[styles.chip, on ? styles.chipOn : styles.chipOff]}>
-      <View style={[styles.chipDot, { backgroundColor: on ? THEME.success : THEME.textMuted }]} />
-      <Text style={[styles.chipText, on ? styles.chipTextOn : styles.chipTextOff]}>{label}</Text>
-      <Text style={styles.chipState}>{on ? 'Açık' : 'Kapalı'}</Text>
-    </View>
-  );
-}
-
-function UnitFields({
-  unit,
-  onChange,
-  disabled,
-}: {
-  unit: AdMobUnit;
-  onChange: (u: AdMobUnit) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <View style={[styles.fieldGrid, disabled && styles.disabledBlock]}>
-      <Text style={styles.groupLabel}>Android</Text>
-      <Text style={styles.cellLabel}>App ID</Text>
-      <Input
-        value={unit.androidAppId}
-        onChangeText={(v) => onChange({ ...unit, androidAppId: v })}
-        placeholder="ca-app-pub-xxx~yyy"
-        autoCapitalize="none"
-        editable={!disabled}
-      />
-      <Text style={styles.cellLabel}>Unit ID</Text>
-      <Input
-        value={unit.androidUnitId}
-        onChangeText={(v) => onChange({ ...unit, androidUnitId: v })}
-        placeholder="ca-app-pub-xxx/yyy"
-        autoCapitalize="none"
-        editable={!disabled}
-      />
-      <Text style={[styles.groupLabel, styles.groupLabelSpaced]}>iOS</Text>
-      <Text style={styles.cellLabel}>App ID</Text>
-      <Input
-        value={unit.iosAppId}
-        onChangeText={(v) => onChange({ ...unit, iosAppId: v })}
-        placeholder="ca-app-pub-xxx~yyy"
-        autoCapitalize="none"
-        editable={!disabled}
-      />
-      <Text style={styles.cellLabel}>Unit ID</Text>
-      <Input
-        value={unit.iosUnitId}
-        onChangeText={(v) => onChange({ ...unit, iosUnitId: v })}
-        placeholder="ca-app-pub-xxx/yyy"
-        autoCapitalize="none"
-        editable={!disabled}
-      />
-    </View>
-  );
-}
-
 export default function AdMobScreen() {
   const { profile } = useAuth();
   const [form, setForm] = useState<AdMobForm>(emptyForm());
@@ -148,7 +89,48 @@ export default function AdMobScreen() {
     },
   });
 
+  const tableRows = useMemo(
+    () => [
+      {
+        key: 'banner',
+        label: 'Banner',
+        subtitle: 'Alt sabit',
+        accent: '#6D28D9',
+        ...form.banner,
+      },
+      {
+        key: 'interstitial',
+        label: 'Geçiş',
+        subtitle: 'Tam ekran',
+        accent: '#D97706',
+        ...form.interstitial,
+      },
+      {
+        key: 'rewarded',
+        label: 'Ödüllü',
+        subtitle: 'Video ödül',
+        accent: '#059669',
+        ...form.rewarded,
+      },
+    ],
+    [form],
+  );
+
   const anyEnabled = form.banner.enabled || form.interstitial.enabled || form.rewarded.enabled;
+
+  function onTableChange(key: string, patch: Partial<AdMobUnit>) {
+    if (key === 'banner') {
+      setForm((f) => ({ ...f, banner: { ...f.banner, ...patch } }));
+      return;
+    }
+    if (key === 'interstitial') {
+      setForm((f) => ({ ...f, interstitial: { ...f.interstitial, ...patch } }));
+      return;
+    }
+    if (key === 'rewarded') {
+      setForm((f) => ({ ...f, rewarded: { ...f.rewarded, ...patch } }));
+    }
+  }
 
   function setAllEnabled(enabled: boolean) {
     setForm((f) => ({
@@ -174,7 +156,7 @@ export default function AdMobScreen() {
       },
       rewarded: { ...defaults.rewarded, enabled: f.rewarded.enabled, boostHours: f.rewarded.boostHours },
     }));
-    Alert.alert('Test ID', 'Google test App/Unit ID değerleri dolduruldu. Test modu açıldı.');
+    Alert.alert('Test ID', 'Google test kimlikleri tabloya dolduruldu.');
   }
 
   async function save() {
@@ -216,177 +198,105 @@ export default function AdMobScreen() {
   if (isLoading && !data) return <Loading />;
 
   return (
-    <PageShell
-      title="AdMob Reklamları"
-      subtitle="Banner, geçiş ve ödüllü reklamları buradan yönetin"
-    >
-      <Section title="Durum">
+    <PageShell title="AdMob Reklamları" subtitle="Tablodan App ID ve Unit ID yönetimi">
+      <Section title="Özet">
         <Card>
-          <View style={styles.chipRow}>
-            <StatusChip label="Banner" on={form.banner.enabled} />
-            <StatusChip label="Geçiş" on={form.interstitial.enabled} />
-            <StatusChip label="Ödüllü" on={form.rewarded.enabled} />
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryItem}>
+              Banner: <Text style={form.banner.enabled ? styles.on : styles.off}>{form.banner.enabled ? 'Açık' : 'Kapalı'}</Text>
+            </Text>
+            <Text style={styles.summaryItem}>
+              Geçiş: <Text style={form.interstitial.enabled ? styles.on : styles.off}>{form.interstitial.enabled ? 'Açık' : 'Kapalı'}</Text>
+            </Text>
+            <Text style={styles.summaryItem}>
+              Ödüllü: <Text style={form.rewarded.enabled ? styles.on : styles.off}>{form.rewarded.enabled ? 'Açık' : 'Kapalı'}</Text>
+            </Text>
           </View>
           <Text style={styles.hint}>
-            {form.testMode
-              ? 'Test modu açık — Google test reklamları gösterilir.'
-              : 'Canlı mod — kendi Unit ID’leriniz kullanılır.'}
+            {form.testMode ? 'Test modu açık — Google test reklamları kullanılır.' : 'Canlı mod — kendi Unit ID’leriniz kullanılır.'}
           </Text>
         </Card>
       </Section>
 
-      <Section title="Hızlı Kontroller">
+      <Section title="Hızlı Ayarlar">
         <Card>
           <ToggleRow
             label="Tüm reklamları aç / kapat"
-            hint="Banner, geçiş ve ödüllü reklamı birlikte yönetir"
             value={anyEnabled}
             onChange={setAllEnabled}
           />
           <ToggleRow
             label="Test modu"
-            hint="Açıkken Google test reklamları; kapalıyken canlı Unit ID’ler"
+            hint="Kapalıyken canlı reklam birimleri kullanılır"
             value={form.testMode}
             onChange={(v) => setForm((f) => ({ ...f, testMode: v }))}
           />
-          <Btn label="Google test ID'lerini doldur" variant="ghost" onPress={fillTestIds} />
+          <Btn label="Google test ID'lerini tabloya doldur" variant="ghost" onPress={fillTestIds} />
         </Card>
       </Section>
 
-      <CollapsibleSection
-        title="Banner Reklamı"
-        subtitle="Alt sabit banner — uygulama altında"
-        defaultOpen
-      >
-        <ToggleRow
-          label="Banner reklamı aktif"
-          value={form.banner.enabled}
-          onChange={(v) => setForm((f) => ({ ...f, banner: { ...f.banner, enabled: v } }))}
-        />
-        <UnitFields
-          unit={form.banner}
-          onChange={(banner) => setForm((f) => ({ ...f, banner }))}
-          disabled={!form.banner.enabled && !form.testMode}
-        />
-      </CollapsibleSection>
+      <Section title="Reklam Tablosu">
+        <Text style={styles.tableHint}>Her satırda ayrı App ID ve Unit ID girin. Tabloyu yatay kaydırabilirsiniz.</Text>
+        <AdMobTable rows={tableRows} onChange={onTableChange} readOnly={!isSuperAdmin} />
+      </Section>
 
-      <CollapsibleSection
-        title="Geçiş Reklamı (Tam Ekran)"
-        subtitle="Interstitial — belirli olaylarda tam ekran"
-        defaultOpen
-      >
-        <ToggleRow
-          label="Geçiş reklamı aktif"
-          value={form.interstitial.enabled}
-          onChange={(v) =>
-            setForm((f) => ({ ...f, interstitial: { ...f.interstitial, enabled: v } }))
-          }
-        />
-        <UnitFields
-          unit={form.interstitial}
-          onChange={(interstitial) =>
-            setForm((f) => ({ ...f, interstitial: { ...f.interstitial, ...interstitial } }))
-          }
-          disabled={!form.interstitial.enabled && !form.testMode}
-        />
-        <View style={styles.divider} />
-        <Text style={styles.subSectionTitle}>Ne zaman gösterilsin?</Text>
-        <ToggleRow
-          label="Günde 3. uygulama açılışı"
-          value={form.interstitial.thirdSessionEnabled}
-          onChange={(v) =>
-            setForm((f) => ({
-              ...f,
-              interstitial: { ...f.interstitial, thirdSessionEnabled: v },
-            }))
-          }
-        />
-        <ToggleRow
-          label="2. ilan verildikten sonra"
-          value={form.interstitial.afterSecondListingEnabled}
-          onChange={(v) =>
-            setForm((f) => ({
-              ...f,
-              interstitial: { ...f.interstitial, afterSecondListingEnabled: v },
-            }))
-          }
-        />
-        <ToggleRow
-          label="Kendi ilanı silinince"
-          value={form.interstitial.afterDeleteListingEnabled}
-          onChange={(v) =>
-            setForm((f) => ({
-              ...f,
-              interstitial: { ...f.interstitial, afterDeleteListingEnabled: v },
-            }))
-          }
-        />
-      </CollapsibleSection>
+      <Section title="Geçiş Reklamı Tetikleyicileri">
+        <Card>
+          <ToggleRow
+            label="Günde 3. uygulama açılışı"
+            value={form.interstitial.thirdSessionEnabled}
+            onChange={(v) =>
+              setForm((f) => ({ ...f, interstitial: { ...f.interstitial, thirdSessionEnabled: v } }))
+            }
+          />
+          <ToggleRow
+            label="2. ilan verildikten sonra"
+            value={form.interstitial.afterSecondListingEnabled}
+            onChange={(v) =>
+              setForm((f) => ({ ...f, interstitial: { ...f.interstitial, afterSecondListingEnabled: v } }))
+            }
+          />
+          <ToggleRow
+            label="Kendi ilanı silinince"
+            value={form.interstitial.afterDeleteListingEnabled}
+            onChange={(v) =>
+              setForm((f) => ({ ...f, interstitial: { ...f.interstitial, afterDeleteListingEnabled: v } }))
+            }
+          />
+        </Card>
+      </Section>
 
-      <CollapsibleSection
-        title="Ödüllü Reklam"
-        subtitle="İlan öne çıkarma için video izleme"
-        defaultOpen
-      >
-        <ToggleRow
-          label="Ödüllü reklam aktif"
-          value={form.rewarded.enabled}
-          onChange={(v) => setForm((f) => ({ ...f, rewarded: { ...f.rewarded, enabled: v } }))}
-        />
-        <UnitFields
-          unit={form.rewarded}
-          onChange={(rewarded) =>
-            setForm((f) => ({ ...f, rewarded: { ...f.rewarded, ...rewarded } }))
-          }
-          disabled={!form.rewarded.enabled && !form.testMode}
-        />
-        <View style={styles.divider} />
-        <Text style={styles.cellLabel}>Öne çıkarma süresi (saat)</Text>
-        <Input
-          value={String(form.rewarded.boostHours)}
-          onChangeText={(v) =>
-            setForm((f) => ({
-              ...f,
-              rewarded: {
-                ...f.rewarded,
-                boostHours: Math.min(24, Math.max(1, Number(v) || 2)),
-              },
-            }))
-          }
-          keyboardType="number-pad"
-        />
-      </CollapsibleSection>
+      <Section title="Ödüllü Reklam">
+        <Card>
+          <Text style={styles.fieldLabel}>Öne çıkarma süresi (saat)</Text>
+          <Input
+            value={String(form.rewarded.boostHours)}
+            onChangeText={(v) =>
+              setForm((f) => ({
+                ...f,
+                rewarded: { ...f.rewarded, boostHours: Math.min(24, Math.max(1, Number(v) || 2)) },
+              }))
+            }
+            keyboardType="number-pad"
+          />
+        </Card>
+      </Section>
 
       <View style={styles.actions}>
         <Btn label="Kaydet" variant="ghost" onPress={save} disabled={busy || !isSuperAdmin} />
         <Btn label="Kaydet ve Yayınla" variant="gold" onPress={publish} disabled={busy || !isSuperAdmin} />
       </View>
-      {!isSuperAdmin ? (
-        <Text style={styles.readOnlyHint}>Salt okunur — değişiklik için süper admin girişi gerekir.</Text>
-      ) : null}
     </PageShell>
   );
 }
 
 const styles = StyleSheet.create({
-  hint: { fontSize: 12, color: THEME.textMuted, lineHeight: 18, marginTop: SPACING.sm },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: RADIUS.pill,
-    borderWidth: 1,
-  },
-  chipOn: { backgroundColor: THEME.successBg, borderColor: '#6EE7B7' },
-  chipOff: { backgroundColor: THEME.bgSoft, borderColor: THEME.border },
-  chipDot: { width: 7, height: 7, borderRadius: 4 },
-  chipText: { fontSize: 12, fontWeight: '700' },
-  chipTextOn: { color: THEME.success },
-  chipTextOff: { color: THEME.textMuted },
-  chipState: { fontSize: 10, color: THEME.textSoft, fontWeight: '600' },
+  hint: { fontSize: 12, color: THEME.textMuted, lineHeight: 18 },
+  tableHint: { fontSize: 11, color: THEME.textMuted, marginBottom: SPACING.sm, lineHeight: 16 },
+  summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginBottom: SPACING.sm },
+  summaryItem: { fontSize: 13, fontWeight: '600', color: THEME.textSoft },
+  on: { color: THEME.success, fontWeight: '800' },
+  off: { color: THEME.textMuted, fontWeight: '800' },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -396,19 +306,7 @@ const styles = StyleSheet.create({
   },
   toggleText: { flex: 1 },
   toggleLabel: { fontSize: 14, fontWeight: '700', color: THEME.text },
-  toggleHint: { fontSize: 11, color: THEME.textMuted, marginTop: 2, lineHeight: 16 },
-  fieldGrid: { gap: 4 },
-  disabledBlock: { opacity: 0.55 },
-  groupLabel: { fontSize: 12, fontWeight: '800', color: THEME.primary, marginTop: 4 },
-  groupLabelSpaced: { marginTop: SPACING.md },
-  cellLabel: { fontSize: 11, fontWeight: '600', color: THEME.textSoft, marginBottom: 4, marginTop: 6 },
-  subSectionTitle: { fontSize: 13, fontWeight: '800', color: THEME.text, marginBottom: SPACING.sm },
-  divider: { height: 1, backgroundColor: THEME.border, marginVertical: SPACING.md },
-  actions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg, marginBottom: SPACING.sm },
-  readOnlyHint: {
-    fontSize: 11,
-    color: THEME.warning,
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
-  },
+  toggleHint: { fontSize: 11, color: THEME.textMuted, marginTop: 2 },
+  fieldLabel: { fontSize: 12, fontWeight: '600', color: THEME.textSoft, marginBottom: 6 },
+  actions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg, marginBottom: SPACING.xl },
 });
