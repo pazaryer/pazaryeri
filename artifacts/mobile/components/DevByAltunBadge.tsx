@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform, type ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable, type ViewStyle } from 'react-native';
+import { getMobileDeveloper } from '@/lib/remote-config';
 
 type Props = {
   compact?: boolean;
@@ -7,22 +8,23 @@ type Props = {
 };
 
 export function DevByAltunBadge({ compact, style }: Props) {
-  const label = 'Dev / ByAltun';
+  const dev = getMobileDeveloper();
+  if (!dev.enabled) return null;
+
+  const label = dev.signatureLabel || 'Dev / ByAltun';
   const isWeb = Platform.OS === 'web';
 
   return (
     <View style={[styles.wrap, compact && styles.wrapCompact, style]} accessibilityRole="text">
-      <Text
-        style={[
-          styles.glow,
-          compact && styles.glowCompact,
-          isWeb && styles.glowWeb,
-        ]}
-        aria-hidden
-      >
-        {label}
-      </Text>
-      <Text style={[styles.main, compact && styles.mainCompact, isWeb && styles.mainWeb]}>{label}</Text>
+      <View style={[styles.pill, compact && styles.pillCompact]}>
+        <Text
+          style={[styles.glow, compact && styles.glowCompact, isWeb && styles.glowWeb]}
+          aria-hidden
+        >
+          {label}
+        </Text>
+        <Text style={[styles.main, compact && styles.mainCompact, isWeb && styles.mainWeb]}>{label}</Text>
+      </View>
     </View>
   );
 }
@@ -31,38 +33,57 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
   },
-  wrapCompact: { paddingVertical: 10 },
+  wrapCompact: { paddingVertical: 12 },
+  pill: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: 'rgba(26, 10, 46, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 215, 142, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  pillCompact: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
   glow: {
     position: 'absolute',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
-    letterSpacing: 2.2,
+    letterSpacing: 2.4,
     textTransform: 'uppercase',
-    color: '#67E8F9',
-    opacity: 0.55,
-    textShadowColor: '#22D3EE',
+    color: '#FDE68A',
+    opacity: 0.5,
+    textShadowColor: '#38BDF8',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 14,
+    textShadowRadius: 16,
   },
-  glowCompact: { fontSize: 11, letterSpacing: 1.8 },
+  glowCompact: { fontSize: 12, letterSpacing: 2 },
   glowWeb: Platform.OS === 'web' ? ({
-    textShadow: '0 0 10px #22D3EE, 0 0 22px #A855F7, 0 0 32px rgba(34,211,238,0.45)',
+    textShadow: '0 0 12px #38BDF8, 0 0 24px #F472B6, 0 0 36px rgba(251,191,36,0.5)',
   } as object) : {},
   main: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
-    letterSpacing: 2.2,
+    letterSpacing: 2.4,
     textTransform: 'uppercase',
-    color: '#E0F2FE',
-    textShadowColor: '#A855F7',
+    color: '#FFF7D6',
+    textShadowColor: '#F59E0B',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 10,
   },
-  mainCompact: { fontSize: 11, letterSpacing: 1.8 },
+  mainCompact: { fontSize: 12, letterSpacing: 2 },
   mainWeb: Platform.OS === 'web' ? ({
-    textShadow: '0 0 6px #E0F2FE, 0 0 14px #C084FC',
+    textShadow: '0 0 8px #FDE68A, 0 0 16px #FBBF24, 0 0 4px #FFFFFF',
   } as object) : {},
 });

@@ -18,6 +18,12 @@ export default function CmsScreen() {
           onPress={() => router.push('/(tabs)/branding')}
         />
         <MenuCard
+          icon="📱"
+          title="Mobil Promosyon"
+          subtitle="Puanla, diğer uygulamalar, sponsor banner"
+          onPress={() => router.push('/(tabs)/mobile-promo')}
+        />
+        <MenuCard
           icon="📜"
           title="Kayan Yazılar"
           subtitle="Anasayfa duyuru bandı"

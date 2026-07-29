@@ -19,6 +19,7 @@ import { useBrand } from '@/contexts/BrandContext';
 import { WEB_THEME } from '@/lib/web-theme';
 import { useNotifications, useConversations } from '@/lib/hooks';
 import { DevByAltunBadge } from '@/components/DevByAltunBadge';
+import { SponsorBanner } from '@/components/SponsorBanner';
 
 const NAV_CATEGORIES = WEB_CATEGORIES.filter((c) => c.label !== 'Tüm İlanlar');
 
@@ -188,6 +189,7 @@ function WebShellInner({
       </View>
 
       <View nativeID="pz-web-main" style={[styles.main, mobile && styles.mainMobile]}>
+        <SponsorBanner variant="inline" />
         {children}
       </View>
 

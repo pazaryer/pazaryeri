@@ -4,11 +4,14 @@ import { fetchRemoteConfig, isMaintenanceMode } from '@/lib/remote-config';
 import { applyBrandFromRemote } from '@/lib/brand-runtime';
 import { BrandProvider } from '@/contexts/BrandContext';
 import { BrandWebHead } from '@/components/BrandWebHead';
+import { AppOverlays } from '@/components/AppOverlays';
+import { useMobilePromoRefresh } from '@/hooks/useMobilePromoRefresh';
 
 export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [maintenance, setMaintenance] = useState({ active: false, message: '' });
   const [brand, setBrand] = useState(() => applyBrandFromRemote({}));
+  useMobilePromoRefresh();
 
   useEffect(() => {
     fetchRemoteConfig()
@@ -41,6 +44,7 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
     <BrandProvider brand={brand}>
       {Platform.OS === 'web' ? <BrandWebHead /> : null}
       {children}
+      <AppOverlays />
     </BrandProvider>
   );
 }

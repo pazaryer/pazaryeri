@@ -11,6 +11,7 @@ import {
 } from "../lib/app-config";
 import { CONFIG_KEYS, DEFAULT_APP_CONFIG } from "../lib/app-config-defaults";
 import { mergeBrandingBundle, brandingBundleToConfigKeys, type BrandingBundle } from "../lib/branding";
+import { mergeMobilePromo, mobilePromoToConfigKeys, type MobilePromoBundle } from "../lib/mobile-promo";
 import { storeListingImage } from "../lib/image-storage";
 import { purgeListingCompletely } from "../lib/purge-listing";
 import { dbBuildListingDetail } from "../lib/listings-store";
@@ -796,6 +797,84 @@ router.post("/admin/upload/brand-asset", superAdminMiddleware, async (req, res, 
     });
 
     res.json({ publicUrl, provider });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const mobilePromoSchema = z.object({
+  developer: z.object({
+    enabled: z.boolean(),
+    signatureLabel: z.string().max(80),
+    rateApp: z.object({
+      enabled: z.boolean(),
+      label: z.string().max(120),
+      androidUrl: z.string().max(500).nullable(),
+      iosUrl: z.string().max(500).nullable(),
+      webUrl: z.string().max(500).nullable(),
+    }),
+    otherApps: z.object({
+      enabled: z.boolean(),
+      label: z.string().max(120),
+      url: z.string().max(500).nullable(),
+    }),
+  }),
+  sponsorBanner: z.object({
+    enabled: z.boolean(),
+    imageUrl: z.string().max(500).nullable(),
+    linkUrl: z.string().max(500).nullable(),
+    altText: z.string().max(120),
+  }),
+});
+
+router.get("/admin/mobile-promo", adminMiddleware, async (_req, res, next) => {
+  try {
+    const config = await getAppConfig();
+    const promo = mergeMobilePromo(config);
+    res.json({ promo, defaults: mergeMobilePromo(DEFAULT_APP_CONFIG) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/admin/mobile-promo", superAdminMiddleware, async (req, res, next) => {
+  try {
+    const parsed = mobilePromoSchema.parse(req.body) as MobilePromoBundle;
+    const keys = mobilePromoToConfigKeys(parsed);
+    await setAppConfig("mobile.developer", keys["mobile.developer"], req.user!.id, "Geliştirici bağlantıları");
+    await setAppConfig("mobile.sponsorBanner", keys["mobile.sponsorBanner"], req.user!.id, "Sponsor banner");
+
+    await logAdminAction(req.user!.id, "mobile_promo.update", {
+      targetType: "mobile_promo",
+      details: {
+        sponsorEnabled: parsed.sponsorBanner.enabled,
+        developerEnabled: parsed.developer.enabled,
+      },
+      ip: clientIp(req),
+    });
+
+    res.json({ success: true, promo: mergeMobilePromo(await getAppConfig()) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/admin/mobile-promo/publish", superAdminMiddleware, async (req, res, next) => {
+  try {
+    invalidateAppConfigCache();
+    const promo = mergeMobilePromo(await getAppConfig());
+
+    await logAdminAction(req.user!.id, "mobile_promo.publish", {
+      targetType: "mobile_promo",
+      ip: clientIp(req),
+    });
+
+    res.json({
+      success: true,
+      publishedAt: new Date().toISOString(),
+      promo,
+      message: "Mobil promosyon ayarları yayınlandı. ~60 saniye içinde herkeste görünür.",
+    });
   } catch (err) {
     next(err);
   }

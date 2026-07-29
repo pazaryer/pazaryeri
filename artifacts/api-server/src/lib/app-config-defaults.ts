@@ -66,6 +66,28 @@ export const DEFAULT_APP_CONFIG: Record<string, unknown> = {
     forceUpdate: false,
     updateMessage: "Yeni sürüm mevcut. Lütfen güncelleyin.",
   },
+  "mobile.developer": {
+    enabled: true,
+    signatureLabel: "Dev / ByAltun",
+    rateApp: {
+      enabled: true,
+      label: "Uygulamayı Puanla & Yorumla",
+      androidUrl: "https://play.google.com/store/apps/details?id=com.pazaryerim",
+      iosUrl: null,
+      webUrl: "https://play.google.com/store/apps/details?id=com.pazaryerim",
+    },
+    otherApps: {
+      enabled: true,
+      label: "Yapımcının Diğer Uygulamaları",
+      url: "https://play.google.com/store/apps/developer?id=By+Altun",
+    },
+  },
+  "mobile.sponsorBanner": {
+    enabled: false,
+    imageUrl: null,
+    linkUrl: null,
+    altText: "Sponsor",
+  },
 };
 
 export const CONFIG_KEYS = Object.keys(DEFAULT_APP_CONFIG);

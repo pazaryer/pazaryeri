@@ -21,7 +21,7 @@ import { formatPrice, useMyListings, useUpdateProfile, type ListingSummary } fro
 import { pickImages } from '@/lib/storage';
 import { formatPhoneDisplay } from '@/lib/contact';
 import { BRAND } from '@/constants/brand';
-import { DevByAltunBadge } from '@/components/DevByAltunBadge';
+import { DeveloperActions } from '@/components/DeveloperActions';
 
 const { width } = Dimensions.get('window');
 const LISTING_CARD_WIDTH = width * 0.36;
@@ -204,7 +204,7 @@ export default function ProfileScreen() {
         <MenuItem icon="log-out-outline" title="Çıkış Yap" destructive onPress={handleLogout} colors={colors} last />
       </View>
 
-      <DevByAltunBadge compact />
+      <DeveloperActions />
     </ScrollView>
   );
 }

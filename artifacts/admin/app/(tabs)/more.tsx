@@ -34,6 +34,12 @@ export default function MoreScreen() {
           subtitle="İsim, logo, renkler, SEO — tam rebrand"
           onPress={() => router.push('/(tabs)/branding')}
         />
+        <MenuCard
+          icon="📱"
+          title="Mobil Promosyon"
+          subtitle="Puanla, diğer uygulamalar, sponsor banner"
+          onPress={() => router.push('/(tabs)/mobile-promo')}
+        />
       </Section>
 
       <Section title="İçerik & Moderasyon">
