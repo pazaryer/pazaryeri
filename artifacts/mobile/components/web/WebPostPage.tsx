@@ -18,6 +18,7 @@ import { showAlert } from '@/lib/web-alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { LISTING_CATEGORIES } from '@/lib/categories';
 import { normalizeListingLocationParts } from '@/lib/listing-location';
+import { validateListingForm } from '@/lib/listing-submit';
 
 const CATEGORIES = LISTING_CATEGORIES.filter((c) => c !== 'Tümü');
 
@@ -70,25 +71,22 @@ export function WebPostPage({ editId }: WebPostPageProps) {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim()) return showAlert('Hata', 'Başlık gerekli');
-    if (!price.trim()) return showAlert('Hata', 'Fiyat gerekli');
-    if (!category) return showAlert('Hata', 'Kategori seçin');
-    if (!phone.trim()) return showAlert('Hata', 'İletişim telefonu gerekli');
-    if (images.length === 0) return showAlert('Hata', 'En az 1 fotoğraf ekleyin');
+    const validation = validateListingForm({ title, price, category, phone, images });
+    if (!validation.ok) return showAlert('Hata', validation.message);
 
     setLoading(true);
     try {
       const locParts = normalizeListingLocationParts(location.trim() || 'Türkiye');
       const payload = {
         title: title.trim(),
-        price: parseInt(price.replace(/\D/g, ''), 10),
+        price: validation.price,
         category,
         description: desc.trim(),
         city: locParts.city ?? 'Türkiye',
         district: locParts.district,
         location: locParts.location || 'Türkiye',
         contactPhone: phone.trim(),
-        images,
+        images: validation.images,
       };
 
       if (isEdit && editId) {

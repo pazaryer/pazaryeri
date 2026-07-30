@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
+import { createListingSchema, updateListingSchema } from "../lib/listing-validation";
 import {
   dbBuildListingDetail,
   dbCreateListing,
@@ -19,25 +20,6 @@ import { notifyAdmins } from "../lib/notify-admins";
 
 const router: IRouter = Router();
 
-const createListingSchema = z.object({
-  title: z.string().min(3).max(200),
-  price: z.number().int().min(0),
-  category: z.string().min(1),
-  description: z.string().default(""),
-  city: z.string().optional(),
-  district: z.string().optional(),
-  location: z.string().optional(),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  acceptsOffers: z.boolean().default(true),
-  contactPhone: z.string().max(30).optional(),
-  images: z
-    .array(z.string().min(1).refine((u) => /^https?:\/\//i.test(u), "Geçersiz görsel URL"))
-    .min(1)
-    .max(10),
-});
-
-const updateListingSchema = createListingSchema.partial();
 const statusSchema = z.object({ status: z.enum(["active", "sold", "reserved", "deleted"]) });
 
 router.get("/listings", optionalAuth, async (req, res, next) => {

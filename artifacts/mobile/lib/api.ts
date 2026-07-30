@@ -59,9 +59,17 @@ export async function apiFetch<T>(
         : typeof err.message === 'string'
           ? err.message
           : null;
-    const message = detail
-      ? `${detail} (HTTP ${res.status})`
-      : `İstek başarısız (HTTP ${res.status}) — ${url}`;
+    const details = Array.isArray(err.details)
+      ? err.details.filter((item: unknown): item is string => typeof item === 'string')
+      : [];
+    const message =
+      detail && detail !== 'Geçersiz istek'
+        ? `${detail} (HTTP ${res.status})`
+        : details[0]
+          ? `${details[0]} (HTTP ${res.status})`
+          : detail
+            ? `${detail} (HTTP ${res.status})`
+            : `İstek başarısız (HTTP ${res.status}) — ${url}`;
     throw new Error(message);
   }
 

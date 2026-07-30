@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod/v4";
+import { formatZodIssueMessage } from "../lib/listing-validation";
 import { logger } from "../lib/logger";
 
 export function errorHandler(
@@ -9,9 +10,10 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   if (err instanceof ZodError) {
+    const details = err.issues.map((issue) => formatZodIssueMessage(issue));
     res.status(400).json({
-      error: "Geçersiz istek",
-      details: err.issues.map((i) => i.message),
+      error: details[0] ?? "Geçersiz istek",
+      details,
     });
     return;
   }

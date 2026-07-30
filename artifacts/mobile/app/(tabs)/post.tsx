@@ -31,6 +31,7 @@ import {
 } from '@/lib/listing-location';
 import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
 import { useAdBannerInset } from '@/hooks/useAdBannerInset';
+import { hasValidCoords, validateListingForm } from '@/lib/listing-submit';
 
 const CATEGORIES = LISTING_CATEGORIES.filter((c) => c !== 'Tümü');
 
@@ -96,24 +97,21 @@ export default function PostScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim()) return Alert.alert('Hata', 'Başlık gerekli');
-    if (!price.trim()) return Alert.alert('Hata', 'Fiyat gerekli');
-    if (!category) return Alert.alert('Hata', 'Kategori seçin');
-    if (!phone.trim()) return Alert.alert('Hata', 'İletişim telefonu gerekli');
-    if (images.length === 0) return Alert.alert('Hata', 'En az 1 fotoğraf ekleyin');
+    const validation = validateListingForm({ title, price, category, phone, images });
+    if (!validation.ok) return Alert.alert('Hata', validation.message);
 
     setLoading(true);
     try {
       let submitCoords = coords;
       let submitLocation = location.trim();
-      if (!submitLocation || submitCoords.latitude == null) {
+      if (!submitLocation || !hasValidCoords(submitCoords.latitude, submitCoords.longitude)) {
         const device = await resolveListingCoords('', {});
-        if (device.latitude != null && device.longitude != null) {
+        if (hasValidCoords(device.latitude, device.longitude)) {
           submitCoords = device;
           if (!submitLocation) {
             const [geo] = await Location.reverseGeocodeAsync({
-              latitude: device.latitude,
-              longitude: device.longitude,
+              latitude: device.latitude!,
+              longitude: device.longitude!,
             });
             submitLocation = formatGeocodedLocation(geo);
           }
@@ -121,14 +119,15 @@ export default function PostScreen() {
       }
 
       const resolved = await resolveListingCoords(submitLocation, submitCoords);
-      if (resolved.latitude == null || resolved.longitude == null) {
+      if (!hasValidCoords(resolved.latitude, resolved.longitude)) {
         Alert.alert('Konum gerekli', 'İlanınızın mesafe filtresinde görünmesi için konum izni verin veya konum alanına adres yazın.');
+        setLoading(false);
         return;
       }
       const locParts = normalizeListingLocationParts(submitLocation);
       const created = await createListing.mutateAsync({
         title: title.trim(),
-        price: parseInt(price.replace(/\D/g, ''), 10),
+        price: validation.price,
         category,
         description: desc.trim(),
         city: locParts.city,
@@ -137,19 +136,35 @@ export default function PostScreen() {
         latitude: resolved.latitude,
         longitude: resolved.longitude,
         contactPhone: phone.trim(),
-        images,
+        images: validation.images,
       });
+
+      const showListingAd = async () => {
+        const { trackListingPublished } = await import('@/lib/admob/session');
+        const shouldShow =
+          (created.sellerListingCount ?? 0) >= 2 || (await trackListingPublished());
+        if (shouldShow) {
+          const { maybeShowListingInterstitial } = await import('@/lib/admob/interstitial');
+          await maybeShowListingInterstitial('second_listing');
+        }
+      };
+
       Alert.alert('Başarılı', 'İlanınız yayınlandı!', [
-        { text: 'İlanı Gör', onPress: () => router.push(`/listing/${created.id}`) },
-        { text: 'Ana Sayfa', onPress: () => router.push('/(tabs)') },
+        {
+          text: 'İlanı Gör',
+          onPress: () => {
+            router.push(`/listing/${created.id}`);
+            void showListingAd();
+          },
+        },
+        {
+          text: 'Ana Sayfa',
+          onPress: () => {
+            router.push('/(tabs)');
+            void showListingAd();
+          },
+        },
       ]);
-      if ((created.sellerListingCount ?? 0) >= 2) {
-        setTimeout(() => {
-          void import('@/lib/admob/interstitial').then((m) =>
-            m.maybeShowListingInterstitial('second_listing'),
-          );
-        }, 600);
-      }
       setTitle('');
       setPrice('');
       setCategory('');

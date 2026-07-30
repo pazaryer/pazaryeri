@@ -12,6 +12,7 @@ function isMediaLibraryGranted(
   return status === 'granted' || status === 'limited';
 }
 
+/** Android 13+ (API 33): sistem foto seçici — ayarlarda ayrı galeri izni görünmez */
 function usesAndroidPhotoPicker(): boolean {
   return Platform.OS === 'android' && Number(Platform.Version) >= 33;
 }
@@ -31,21 +32,19 @@ async function promptOpenAppSettings(title: string, message: string): Promise<vo
   });
 }
 
-/** iOS ve Android 12 ve altı için galeri izni; Android 13+ sistem foto seçici kullanır */
 async function ensureMediaLibraryAccess(ImagePicker: ImagePickerModule): Promise<void> {
-  if (usesAndroidPhotoPicker()) return;
-
   const current = await ImagePicker.getMediaLibraryPermissionsAsync();
   if (isMediaLibraryGranted(current)) return;
 
   const requested = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (isMediaLibraryGranted(requested)) return;
 
-  await promptOpenAppSettings(
-    'Galeri izni gerekli',
-    'İlan fotoğrafı eklemek için ayarlardan Pazaryeri uygulamasına galeri erişimi verin.',
-  );
-  throw new Error('Galeri izni gerekli');
+  const hint = usesAndroidPhotoPicker()
+    ? 'Ayarlar → Uygulamalar → Pazaryeri → İzinler bölümünden fotoğraf erişimini kontrol edin.'
+    : 'Ayarlar → Uygulamalar → Pazaryeri → İzinler → Depolama veya Fotoğraflar iznini açın.';
+
+  await promptOpenAppSettings('Galeri erişimi gerekli', `İlan fotoğrafı eklemek için izin verin.\n\n${hint}`);
+  throw new Error('Galeri erişimi gerekli');
 }
 
 async function ensureCameraAccess(ImagePicker: ImagePickerModule): Promise<void> {
@@ -88,7 +87,6 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-/** Web: resmi küçült + sıkıştır (maliyet ve hız için) */
 async function compressImageFile(file: File): Promise<{ blob: Blob; contentType: string }> {
   if (typeof document === 'undefined') {
     return { blob: file, contentType: file.type || 'image/jpeg' };
@@ -129,7 +127,6 @@ async function compressImageFile(file: File): Promise<{ blob: Blob; contentType:
   });
 }
 
-/** API → R2 / B2 / ImgBB / Supabase (sırayla dener) */
 async function uploadViaApi(blob: Blob, contentType: string): Promise<string> {
   const data = await blobToBase64(blob);
   const body = JSON.stringify({ contentType, data });
@@ -142,7 +139,14 @@ async function uploadViaApi(blob: Blob, contentType: string): Promise<string> {
         method: 'POST',
         body,
       });
-      return publicUrl;
+      if (!publicUrl?.trim()) {
+        throw new Error('Fotoğraf yükleme yanıtı geçersiz');
+      }
+      const normalized = publicUrl.trim().startsWith('//') ? `https:${publicUrl.trim()}` : publicUrl.trim();
+      if (!/^https?:\/\//i.test(normalized)) {
+        throw new Error('Fotoğraf adresi geçersiz. Lütfen tekrar deneyin.');
+      }
+      return normalized;
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e));
       if (!lastError.message.includes('404')) {
@@ -215,20 +219,35 @@ function pickImagesWeb(max: number): Promise<string[]> {
   });
 }
 
+async function launchGalleryPicker(ImagePicker: ImagePickerModule, max: number) {
+  return ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsMultipleSelection: max > 1,
+    selectionLimit: max,
+    quality: 0.7,
+  });
+}
+
 export async function pickImages(max = 10): Promise<string[]> {
   if (Platform.OS === 'web') {
     return pickImagesWeb(max);
   }
 
   const ImagePicker = await import('expo-image-picker');
-  await ensureMediaLibraryAccess(ImagePicker);
 
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    allowsMultipleSelection: true,
-    selectionLimit: max,
-    quality: 0.7,
-  });
+  // Android 13+: önce sistem foto seçici (izin diyalogu gerektirmez)
+  if (!usesAndroidPhotoPicker()) {
+    await ensureMediaLibraryAccess(ImagePicker);
+  }
+
+  let result;
+  try {
+    result = await launchGalleryPicker(ImagePicker, max);
+  } catch {
+    if (!usesAndroidPhotoPicker()) throw new Error('Galeri açılamadı');
+    await ensureMediaLibraryAccess(ImagePicker);
+    result = await launchGalleryPicker(ImagePicker, max);
+  }
 
   if (result.canceled || !result.assets.length) return [];
 
