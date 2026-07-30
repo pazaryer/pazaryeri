@@ -65,6 +65,9 @@ export function ListingBoostSection({ listings }: Props) {
       await qc.invalidateQueries({ queryKey: ['listings'] });
       await qc.invalidateQueries({ queryKey: ['my-listings'] });
 
+      const { maybeShowBoostInterstitial } = await import('@/lib/admob/interstitial');
+      await maybeShowBoostInterstitial();
+
       Alert.alert(
         'Tebrikler!',
         `"${item.title}" ilanı ${config.rewarded.boostHours} saat boyunca öne çıkarıldı.`,

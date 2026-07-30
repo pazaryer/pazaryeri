@@ -6,8 +6,8 @@ const KEY_LAST_SHOWN = 'pz_ad_last_interstitial_ms';
 const KEY_DAILY_COUNT = 'pz_ad_interstitial_daily_count';
 const KEY_DAILY_DATE = 'pz_ad_interstitial_daily_date';
 
-const MIN_GAP_MS = 30 * 60 * 1000;
-const MAX_PER_DAY = 2;
+const MIN_GAP_MS = 90 * 1000;
+const MAX_PER_DAY = 12;
 const APP_OPEN_INTERVAL = 3;
 
 function todayKey(): string {
@@ -21,13 +21,14 @@ async function getDailyCount(): Promise<number> {
   return Number(await AsyncStorage.getItem(KEY_DAILY_COUNT)) || 0;
 }
 
-/** Geçiş reklamı gösterilebilir mi? (soğuma + günlük üst sınır) */
-export async function canShowInterstitialNow(): Promise<boolean> {
+export async function canShowInterstitialNow(bypassCooldown = false): Promise<boolean> {
   if (Platform.OS === 'web') return false;
 
   const now = Date.now();
-  const lastShown = Number(await AsyncStorage.getItem(KEY_LAST_SHOWN)) || 0;
-  if (lastShown > 0 && now - lastShown < MIN_GAP_MS) return false;
+  if (!bypassCooldown) {
+    const lastShown = Number(await AsyncStorage.getItem(KEY_LAST_SHOWN)) || 0;
+    if (lastShown > 0 && now - lastShown < MIN_GAP_MS) return false;
+  }
 
   const dailyCount = await getDailyCount();
   return dailyCount < MAX_PER_DAY;
@@ -52,16 +53,17 @@ export async function trackAppOpen(): Promise<{ count: number; showInterstitial:
   await AsyncStorage.setItem(KEY_APP_OPEN, String(count));
 
   const onThirdOpen = count > 0 && count % APP_OPEN_INTERVAL === 0;
-  const allowed = onThirdOpen && (await canShowInterstitialNow());
+  const allowed = onThirdOpen && (await canShowInterstitialNow(false));
   return { count, showInterstitial: allowed };
 }
 
-/** @deprecated Kapalı */
-export async function trackNavigationTransition(): Promise<boolean> {
-  return false;
+export async function shouldShowListingInterstitial(sellerListingCount: number): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  if (sellerListingCount < 2) return false;
+  return canShowInterstitialNow(false);
 }
 
-/** @deprecated Kapalı */
-export async function trackListingPublished(): Promise<boolean> {
-  return false;
+export async function shouldShowBoostInterstitial(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  return canShowInterstitialNow(true);
 }

@@ -116,35 +116,68 @@ async function showInterstitialAdInternal(): Promise<boolean> {
   }
 }
 
-/** Yalnızca her 3. uygulama açılışında — başka hiçbir yerde çağrılmamalı */
+async function showAndRecord(bypassCooldown: boolean): Promise<void> {
+  const { canShowInterstitialNow, recordInterstitialShown } = await import('./session');
+  if (!(await canShowInterstitialNow(bypassCooldown))) return;
+  const shown = await showInterstitialAdInternal();
+  if (shown) await recordInterstitialShown();
+}
+
+/** Her 3. uygulama açılışında */
 export async function maybeShowThirdSessionInterstitial(): Promise<void> {
   if (!isAdMobSupported()) return;
   try {
     const config = getAdMobConfig();
     if (!config.interstitial.enabled || !config.interstitial.thirdSessionEnabled) return;
 
-    const { trackAppOpen, recordInterstitialShown } = await import('./session');
+    const { trackAppOpen } = await import('./session');
     const { showInterstitial } = await trackAppOpen();
     if (!showInterstitial) return;
 
     const shown = await showInterstitialAdInternal();
-    if (shown) await recordInterstitialShown();
+    if (shown) {
+      const { recordInterstitialShown } = await import('./session');
+      await recordInterstitialShown();
+    }
   } catch {
     /* ignore */
   }
 }
 
-/** Kapalı — ekran geçişlerinde reklam yok */
 export async function maybeShowNavigationInterstitial(): Promise<void> {
   return;
 }
 
-/** Kapalı */
-export async function maybeShowListingInterstitial(_reason: 'second_listing' | 'delete_listing'): Promise<void> {
-  return;
+/** 2. ve sonraki ilan yayınlarından sonra */
+export async function maybeShowListingInterstitial(sellerListingCount: number): Promise<void> {
+  if (!isAdMobSupported()) return;
+  try {
+    const config = getAdMobConfig();
+    if (!config.interstitial.enabled || !config.interstitial.afterSecondListingEnabled) return;
+
+    const { shouldShowListingInterstitial } = await import('./session');
+    if (!(await shouldShowListingInterstitial(sellerListingCount))) return;
+
+    await new Promise((r) => setTimeout(r, 400));
+    await showAndRecord(false);
+  } catch {
+    /* ignore */
+  }
 }
 
-/** Kapalı */
+/** Boost tamamlandıktan hemen sonra */
 export async function maybeShowBoostInterstitial(): Promise<void> {
-  return;
+  if (!isAdMobSupported()) return;
+  try {
+    const config = getAdMobConfig();
+    if (!config.interstitial.enabled) return;
+
+    const { shouldShowBoostInterstitial } = await import('./session');
+    if (!(await shouldShowBoostInterstitial())) return;
+
+    await new Promise((r) => setTimeout(r, 300));
+    await showAndRecord(true);
+  } catch {
+    /* ignore */
+  }
 }

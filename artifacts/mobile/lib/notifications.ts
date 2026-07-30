@@ -154,7 +154,36 @@ export function getPushNavigationPath(data: PushNavigationData): string | null {
   if (data.screen === 'post') return '/(tabs)/post';
   if (data.screen === 'messages') return '/(tabs)/messages';
   if (data.screen === 'home') return '/(tabs)';
-  return '/notifications';
+  return null;
+}
+
+const LAUNCH_NOTIFICATION_MAX_AGE_MS = 20_000;
+let consumedLaunchNotificationId: string | null = null;
+
+function notificationResponseAgeMs(date: number | undefined): number {
+  if (date == null || !Number.isFinite(date)) return Number.POSITIVE_INFINITY;
+  const ms = date > 1e12 ? date : date * 1000;
+  return Date.now() - ms;
+}
+
+function handleNotificationTap(
+  response: { notification: { request: { identifier: string; content: { data?: unknown } }; date?: number } },
+  navigate: (path: string) => void,
+  onlyIfFresh: boolean,
+): void {
+  const id = response.notification.request.identifier;
+  if (consumedLaunchNotificationId === id) return;
+
+  if (onlyIfFresh && notificationResponseAgeMs(response.notification.date) > LAUNCH_NOTIFICATION_MAX_AGE_MS) {
+    return;
+  }
+
+  const data = parsePushData(response.notification.request.content.data);
+  const path = getPushNavigationPath(data);
+  if (!path) return;
+
+  consumedLaunchNotificationId = id;
+  navigate(path);
 }
 
 async function setupAndroidChannels(Notifications: ReturnType<typeof getNotificationsModule>): Promise<void> {
@@ -300,17 +329,13 @@ export function attachPushNotificationListeners(
   });
 
   const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
-    const data = parsePushData(response.notification.request.content.data);
-    const path = getPushNavigationPath(data);
-    if (path) navigate(path);
+    handleNotificationTap(response, navigate, false);
     invalidateAll();
   });
 
   void Notifications.getLastNotificationResponseAsync().then((last) => {
     if (!last) return;
-    const data = parsePushData(last.notification.request.content.data);
-    const path = getPushNavigationPath(data);
-    if (path) navigate(path);
+    handleNotificationTap(last, navigate, true);
   });
 
   return () => {

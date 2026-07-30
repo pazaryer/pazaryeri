@@ -139,17 +139,25 @@ export default function PostScreen() {
         images: validation.images,
       });
 
+      const showListingAd = (sellerCount: number) => {
+        void import('@/lib/admob/interstitial').then((m) =>
+          m.maybeShowListingInterstitial(sellerCount),
+        );
+      };
+
       Alert.alert('Başarılı', 'İlanınız yayınlandı!', [
         {
           text: 'İlanı Gör',
           onPress: () => {
             router.push(`/listing/${created.id}`);
+            showListingAd(created.sellerListingCount ?? 0);
           },
         },
         {
           text: 'Ana Sayfa',
           onPress: () => {
             router.push('/(tabs)');
+            showListingAd(created.sellerListingCount ?? 0);
           },
         },
       ]);
