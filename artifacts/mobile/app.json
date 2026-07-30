@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pazaryeri",
     "slug": "pazaryeri",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "orientation": "portrait",
     "runtimeVersion": "1.1.4",
     "updates": {
@@ -132,7 +132,7 @@
             "targetSdkVersion": 35,
             "compileSdkVersion": 35,
             "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": false
           },
           "ios": {
             "deploymentTarget": "15.1"

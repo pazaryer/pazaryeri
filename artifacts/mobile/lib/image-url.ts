@@ -74,9 +74,15 @@ export function listingMediumUrl(url: string | null | undefined): string | undef
   return resizeImageUrl(url.trim(), MEDIUM_PX);
 }
 
-/** Kategori şeridi */
+/** Kategori şeridi — önceden boyutlandırılmış Unsplash URL'lerini bozma */
 export function categoryImageUrl(url: string): string {
-  return resizeImageUrl(url, CATEGORY_PX);
+  if (!url?.trim()) return url;
+  const trimmed = url.trim();
+  if (trimmed.includes('images.unsplash.com')) {
+    if (/[?&]w=\d+/.test(trimmed)) return trimmed;
+    return unsplashSize(trimmed, CATEGORY_PX);
+  }
+  return resizeImageUrl(trimmed, CATEGORY_PX);
 }
 
 /** Avatar */

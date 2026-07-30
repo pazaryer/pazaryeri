@@ -32,6 +32,7 @@ import { usePresencePing } from '@/lib/presence-ping';
 import { useDeepLinkHandler } from '@/lib/deep-link-handler';
 import { OtaUpdateHandler } from '@/components/OtaUpdateHandler';
 import { AdSenseHead } from '@/components/AdSenseHead';
+import { AnalyticsScreenTracker } from '@/components/AnalyticsScreenTracker';
 
 try {
   initApi();
@@ -139,6 +140,7 @@ function RootLayoutNav() {
     <>
       <OtaUpdateHandler />
       <AdSenseHead />
+      <AnalyticsScreenTracker />
       {Platform.OS !== 'web' ? <StatusBar style="dark" /> : null}
       <PushNotificationHandler />
       <WebPushHandler />

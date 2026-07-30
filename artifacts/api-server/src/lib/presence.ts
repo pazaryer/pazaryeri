@@ -20,8 +20,8 @@ export async function upsertDevicePresence(
     },
     { onConflict: "device_id" },
   );
-  if (error && !error.message.includes("does not exist")) {
-    // migration henüz uygulanmamışsa sessizce geç
+  if (error) {
+    console.warn("[presence] device_presence upsert failed:", error.message);
   }
 }
 

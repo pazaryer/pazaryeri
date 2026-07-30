@@ -36,9 +36,9 @@ function Publish-Ota($dir, $channel, $message) {
 
 Sync-AdminEnvToken
 
-Publish-Ota $mobile 'production' "Pazaryeri v$otaVersion perf admin APK stats icon fix"
-Publish-Ota $mobile 'preview'    "Pazaryeri v$otaVersion preview"
-Publish-Ota $admin  'production' "Admin v1.1.2 back user CRUD APK stats"
-Publish-Ota $admin  'preview'    "Admin v1.1.2 preview"
+Publish-Ota $mobile 'production' "Pazaryeri analytics GA4 screen tracking + web fixes"
+Publish-Ota $mobile 'preview'    "Pazaryeri analytics GA4 screen tracking preview"
+Publish-Ota $admin  'production' "Admin analytics presence improvements"
+Publish-Ota $admin  'preview'    "Admin analytics preview"
 
 Write-Host "`nTamamlandı. Expo dashboard > Updates bölümünden doğrulayın." -ForegroundColor Green

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Statik export index.html dosyasına AdSense meta/script ekler (+html.tsx export'ta birleşmeyebilir).
+ * Statik export index.html dosyasına AdSense + Google Analytics (GA4) ekler.
  */
 import fs from 'fs';
 import path from 'path';
@@ -8,7 +8,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distIndex = path.join(__dirname, '..', 'dist', 'index.html');
-const client = 'ca-pub-7876914696425843';
+const adsenseClient = 'ca-pub-7876914696425843';
+const gaId = 'G-X4KF641X5R';
 
 if (!fs.existsSync(distIndex)) {
   console.warn('inject-adsense-html: dist/index.html yok, atlanıyor.');
@@ -16,15 +17,29 @@ if (!fs.existsSync(distIndex)) {
 }
 
 let html = fs.readFileSync(distIndex, 'utf8');
-const snippet = [
-  `<meta name="google-adsense-account" content="${client}">`,
-  `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}" crossorigin="anonymous"></script>`,
-].join('\n');
+
+const adsenseSnippet = [
+  `<meta name="google-adsense-account" content="${adsenseClient}">`,
+  `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}" crossorigin="anonymous"></script>`,
+].join('\n  ');
+
+const gaSnippet = [
+  `<script async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>`,
+  `<script>`,
+  `  window.dataLayer = window.dataLayer || [];`,
+  `  function gtag(){dataLayer.push(arguments);}`,
+  `  gtag('js', new Date());`,
+  `  gtag('config', '${gaId}', { send_page_view: true });`,
+  `</script>`,
+].join('\n  ');
 
 if (!html.includes('google-adsense-account')) {
-  html = html.replace('</head>', `  ${snippet}\n</head>`);
-  fs.writeFileSync(distIndex, html);
-  console.log('inject-adsense-html: AdSense etiketleri index.html içine eklendi.');
-} else {
-  console.log('inject-adsense-html: zaten mevcut.');
+  html = html.replace('</head>', `  ${adsenseSnippet}\n</head>`);
 }
+
+if (!html.includes(gaId)) {
+  html = html.replace('</head>', `  ${gaSnippet}\n</head>`);
+}
+
+fs.writeFileSync(distIndex, html);
+console.log('inject-adsense-html: AdSense + GA4 etiketleri index.html içine eklendi.');

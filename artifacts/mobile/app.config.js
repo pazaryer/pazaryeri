@@ -76,7 +76,7 @@ module.exports = () => {
         },
     android: {
       ...expo.android,
-      versionCode: 6,
+      versionCode: 7,
       permissions: [
         ...(expo.android.permissions ?? []).filter((p) => p !== 'android.permission.RECORD_AUDIO'),
         'com.google.android.gms.permission.AD_ID',

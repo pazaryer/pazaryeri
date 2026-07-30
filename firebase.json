@@ -5,6 +5,18 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
+        "source": "/account-deletion",
+        "destination": "/account-deletion.html"
+      },
+      {
+        "source": "/privacy",
+        "destination": "/privacy.html"
+      },
+      {
+        "source": "/terms",
+        "destination": "/terms.html"
+      },
+      {
         "source": "/oauth/start",
         "destination": "/oauth/start.html"
       },

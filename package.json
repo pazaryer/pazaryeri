@@ -9,7 +9,7 @@
     "render-build": "pnpm install --ignore-scripts && pnpm --filter @workspace/api-server run build",
     "render-build:ci": "npx --yes pnpm@9.15.9 install --prod=false --no-frozen-lockfile && npx --yes pnpm@9.15.9 --filter @workspace/api-server run build",
     "web:build": "pnpm --filter @workspace/mobile run export:web",
-    "web:deploy": "firebase deploy --only hosting",
+    "web:deploy": "pnpm web:build && firebase deploy --only hosting",
     "ota:publish": "powershell -ExecutionPolicy Bypass -File scripts/publish-eas-updates.ps1",
     "setup:storage": "node scripts/setup-storage.mjs",
     "start": "node --enable-source-maps artifacts/api-server/dist/index.mjs",

@@ -1,15 +1,14 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { BRAND } from '@/constants/brand';
-import { MOBILE_EXPLORE_CATEGORIES } from '@/lib/categories';
+import { CATEGORY_ALL_IMAGE, MOBILE_EXPLORE_CATEGORIES } from '@/lib/categories';
 import { CategoryTile } from '@/components/CategoryTile';
 import { categoryImageProps } from '@/lib/listing-image-props';
-import { categoryImageUrl } from '@/lib/image-url';
 
-const ALL_CATEGORY_URI = categoryImageUrl(
-  'https://images.unsplash.com/photo-1607083206869-4c6b59bdfa1a?w=120&h=120&fit=crop&q=70&auto=format',
-);
+const ALL_GRADIENT: [string, string] = ['#9B7FD4', '#5C3D99'];
 
 type Props = {
   selected: string;
@@ -17,8 +16,13 @@ type Props = {
 };
 
 export const MobileTrendCategories = React.memo(function MobileTrendCategories({ selected, onSelect }: Props) {
+  const allActive = selected === 'Tümü';
+
   useEffect(() => {
-    const uris = [ALL_CATEGORY_URI, ...MOBILE_EXPLORE_CATEGORIES.map((c) => categoryImageUrl(c.imageThumb))];
+    const uris = [
+      (CATEGORY_ALL_IMAGE as { uri?: string }).uri,
+      ...MOBILE_EXPLORE_CATEGORIES.map((c) => (c.imageThumb as { uri?: string }).uri),
+    ].filter(Boolean) as string[];
     void Image.prefetch(uris);
   }, []);
 
@@ -27,17 +31,21 @@ export const MobileTrendCategories = React.memo(function MobileTrendCategories({
       <Text style={styles.title}>Kategoriler</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         <Pressable
-          style={[styles.allTile, selected === 'Tümü' && styles.allTileActive]}
+          style={[styles.allTile, allActive && styles.allTileActive]}
           onPress={() => onSelect('Tümü')}
         >
+          <LinearGradient colors={ALL_GRADIENT} style={StyleSheet.absoluteFillObject} />
           <Image
-            source={{ uri: ALL_CATEGORY_URI, width: 120, height: 76 }}
-            style={StyleSheet.absoluteFillObject}
+            source={CATEGORY_ALL_IMAGE}
+            style={[StyleSheet.absoluteFillObject, { opacity: 0.45 }]}
             contentFit="cover"
             recyclingKey="cat-all"
             {...categoryImageProps}
           />
           <View style={styles.allOverlay} />
+          <View style={styles.allIconWrap}>
+            <Ionicons name="grid-outline" size={16} color="#FFF" />
+          </View>
           <Text style={styles.allLabel}>Tümü</Text>
         </Pressable>
         {MOBILE_EXPLORE_CATEGORIES.map((cat) => (
@@ -46,6 +54,7 @@ export const MobileTrendCategories = React.memo(function MobileTrendCategories({
             name={cat.name}
             icon={cat.icon}
             image={cat.imageThumb}
+            gradient={cat.gradient}
             active={selected === cat.name}
             onPress={() => onSelect(cat.name)}
             variant="mini"
@@ -69,21 +78,34 @@ const styles = StyleSheet.create({
   allTile: {
     width: 62,
     height: 76,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingBottom: 8,
   },
-  allTileActive: { borderWidth: 1.5, borderColor: BRAND.gold },
+  allTileActive: { borderWidth: 2, borderColor: BRAND.gold },
   allOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(61, 26, 120, 0.5)',
+    backgroundColor: 'rgba(61, 26, 120, 0.35)',
+  },
+  allIconWrap: {
+    position: 'absolute',
+    top: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   allLabel: {
     fontSize: 9,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFF',
     zIndex: 1,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });

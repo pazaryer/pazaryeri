@@ -3,6 +3,7 @@ import type { PropsWithChildren } from 'react';
 
 const SITE_URL = 'https://pazaryeri0.web.app';
 const ADSENSE_CLIENT = 'ca-pub-7876914696425843';
+const GA_MEASUREMENT_ID = 'G-X4KF641X5R';
 
 export default function Root({ children }: PropsWithChildren) {
   return (
@@ -63,6 +64,18 @@ export default function Root({ children }: PropsWithChildren) {
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
           crossOrigin="anonymous"
+        />
+
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}', { send_page_view: true });
+            `,
+          }}
         />
 
         <ScrollViewStyleReset />

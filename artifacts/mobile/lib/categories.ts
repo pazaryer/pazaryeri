@@ -1,3 +1,10 @@
+import type { ImageSource } from 'expo-image';
+
+/** Firebase Hosting — APK/OTA'da güvenilir uzak kategori görselleri */
+const CAT_CDN = 'https://pazaryeri0.web.app/categories';
+
+export const CATEGORY_ALL_IMAGE: ImageSource = { uri: `${CAT_CDN}/tumu.jpg` };
+
 export interface CategoryItem {
   label: string;
   icon: string;
@@ -75,21 +82,20 @@ export const MOBILE_EXPLORE_CATEGORIES: {
   name: string;
   icon: CategoryIconName;
   gradient: [string, string];
-  image: string;
-  imageThumb: string;
+  imageThumb: ImageSource;
 }[] = [
-  { name: 'Elektronik', icon: 'phone-portrait-outline', gradient: ['#6B5B9A', '#3D1A78'], image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=160&h=160&fit=crop&q=75' },
-  { name: 'Telefon', icon: 'call-outline', gradient: ['#7A5CA8', '#4A2C7A'], image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=160&h=160&fit=crop&q=75' },
-  { name: 'Bilgisayar', icon: 'laptop-outline', gradient: ['#5A6FA5', '#2C4A6E'], image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=160&h=160&fit=crop&q=75' },
-  { name: 'Araç', icon: 'car-sport-outline', gradient: ['#8A6F4E', '#4A3520'], image: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=160&h=160&fit=crop&q=75' },
-  { name: 'Emlak', icon: 'business-outline', gradient: ['#4A7FA5', '#2C5A7E'], image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=160&h=160&fit=crop&q=75' },
-  { name: 'Mobilya', icon: 'bed-outline', gradient: ['#9B7F57', '#5C4A30'], image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=160&h=160&fit=crop&q=75' },
-  { name: 'Moda', icon: 'shirt-outline', gradient: ['#AB5D8A', '#6B2D5A'], image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=160&h=160&fit=crop&q=75' },
-  { name: 'Spor', icon: 'bicycle-outline', gradient: ['#4D9B7E', '#2A5C4A'], image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=160&h=160&fit=crop&q=75' },
-  { name: 'Ev & Bahçe', icon: 'home-outline', gradient: ['#6AAF6A', '#3A6B3A'], image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=160&h=160&fit=crop&q=75' },
-  { name: 'Bebek', icon: 'happy-outline', gradient: ['#E8A87C', '#C06C4A'], image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=160&h=160&fit=crop&q=75' },
-  { name: 'Hobi', icon: 'book-outline', gradient: ['#7A8FA5', '#4A5A6E'], image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=160&h=160&fit=crop&q=75' },
-  { name: 'Hayvanlar', icon: 'paw-outline', gradient: ['#8B7355', '#5C4A38'], image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&h=400&fit=crop&q=80', imageThumb: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=160&h=160&fit=crop&q=75' },
+  { name: 'Elektronik', icon: 'phone-portrait-outline', gradient: ['#6B5B9A', '#3D1A78'], imageThumb: { uri: `${CAT_CDN}/elektronik.jpg` } },
+  { name: 'Telefon', icon: 'call-outline', gradient: ['#7A5CA8', '#4A2C7A'], imageThumb: { uri: `${CAT_CDN}/telefon.jpg` } },
+  { name: 'Bilgisayar', icon: 'laptop-outline', gradient: ['#5A6FA5', '#2C4A6E'], imageThumb: { uri: `${CAT_CDN}/bilgisayar.jpg` } },
+  { name: 'Araç', icon: 'car-sport-outline', gradient: ['#8A6F4E', '#4A3520'], imageThumb: { uri: `${CAT_CDN}/arac.jpg` } },
+  { name: 'Emlak', icon: 'business-outline', gradient: ['#4A7FA5', '#2C5A7E'], imageThumb: { uri: `${CAT_CDN}/emlak.jpg` } },
+  { name: 'Mobilya', icon: 'bed-outline', gradient: ['#9B7F57', '#5C4A30'], imageThumb: { uri: `${CAT_CDN}/mobilya.jpg` } },
+  { name: 'Moda', icon: 'shirt-outline', gradient: ['#AB5D8A', '#6B2D5A'], imageThumb: { uri: `${CAT_CDN}/moda.jpg` } },
+  { name: 'Spor', icon: 'bicycle-outline', gradient: ['#4D9B7E', '#2A5C4A'], imageThumb: { uri: `${CAT_CDN}/spor.jpg` } },
+  { name: 'Ev & Bahçe', icon: 'home-outline', gradient: ['#6AAF6A', '#3A6B3A'], imageThumb: { uri: `${CAT_CDN}/ev-bahce.jpg` } },
+  { name: 'Bebek', icon: 'happy-outline', gradient: ['#E8A87C', '#C06C4A'], imageThumb: { uri: `${CAT_CDN}/bebek.jpg` } },
+  { name: 'Hobi', icon: 'book-outline', gradient: ['#7A8FA5', '#4A5A6E'], imageThumb: { uri: `${CAT_CDN}/hobi.jpg` } },
+  { name: 'Hayvanlar', icon: 'paw-outline', gradient: ['#8B7355', '#5C4A38'], imageThumb: { uri: `${CAT_CDN}/hayvanlar.jpg` } },
 ];
 
 export function getCategoryIcon(name: string): CategoryIconName {

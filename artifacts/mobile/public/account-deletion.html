@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Pazaryeri uygulamasında hesap ve veri silme talebi — Google Play uyumlu hesap silme sayfası." />
+  <title>Pazaryeri — Hesap Silme</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #F7F5FC;
+      color: #1A0A2E;
+      line-height: 1.6;
+    }
+    .hero {
+      background: linear-gradient(160deg, #3D1A78 0%, #2A1260 100%);
+      color: #fff;
+      padding: 48px 24px 40px;
+      text-align: center;
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .hero p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #E8E0F4;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(61, 26, 120, 0.06);
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      color: #3D1A78;
+    }
+    ol, ul {
+      margin: 0;
+      padding-left: 22px;
+    }
+    li { margin-bottom: 10px; }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #3D1A78;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    .steps li {
+      list-style: none;
+      padding-left: 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .steps span:last-child { flex: 1; }
+    .warn {
+      background: #FFF4F3;
+      border: 1px solid #FECDCA;
+      border-radius: 12px;
+      padding: 16px;
+      color: #912018;
+      font-size: 14px;
+    }
+    .email {
+      display: inline-block;
+      margin-top: 8px;
+      color: #3D1A78;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .email:hover { text-decoration: underline; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #E8E0F4;
+      vertical-align: top;
+    }
+    th {
+      background: #F4F1FA;
+      color: #3D1A78;
+      font-weight: 700;
+    }
+    footer {
+      text-align: center;
+      font-size: 13px;
+      color: #7A6B8A;
+      padding: 24px;
+      border-top: 1px solid #E8E0F4;
+    }
+    footer a { color: #3D1A78; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <h1>Pazaryeri</h1>
+    <p>Hesap ve Veri Silme Talebi</p>
+  </header>
+
+  <main class="wrap">
+    <div class="card">
+      <h2>Hesabınızı nasıl silebilirsiniz?</h2>
+      <p>
+        <strong>Pazaryeri</strong> uygulamasında (geliştirici: ByAltun) hesabınızı ve ilişkili tüm verilerinizi
+        kalıcı olarak silebilirsiniz. Aşağıdaki adımları izleyin:
+      </p>
+      <ol class="steps" style="margin-top: 20px; padding-left: 0;">
+        <li>
+          <span class="step-num">1</span>
+          <span>Pazaryeri uygulamasını açın ve hesabınıza <strong>giriş yapın</strong>.</span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span>Alt menüden <strong>Profil</strong> sekmesine gidin.</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span><strong>Ayarlar</strong> sayfasını açın.</span>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span>Sayfanın altındaki <strong>«Hesabımı Kalıcı Sil»</strong> butonuna dokunun.</span>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span>İki kez onaylayın. Hesabınız ve verileriniz anında kalıcı olarak silinir.</span>
+        </li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Web üzerinden silme</h2>
+      <p>
+        Web tarayıcısından giriş yaptıysanız
+        <a href="https://pazaryeri0.web.app/settings">pazaryeri0.web.app/settings</a>
+        adresine giderek aynı <strong>«Hesabımı Kalıcı Sil»</strong> işlemini yapabilirsiniz.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>E-posta ile silme talebi</h2>
+      <p>
+        Uygulamaya erişemiyorsanız, kayıtlı e-posta adresinizden aşağıdaki adrese
+        <strong>«Hesap silme talebi»</strong> konulu e-posta gönderin. Kimliğinizi doğruladıktan sonra
+        en geç <strong>30 gün</strong> içinde hesabınız silinir.
+      </p>
+      <a class="email" href="mailto:pazaryer0@gmail.com?subject=Pazaryeri%20Hesap%20Silme%20Talebi">
+        pazaryer0@gmail.com
+      </a>
+    </div>
+
+    <div class="card">
+      <h2>Silinen veriler</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Veri türü</th>
+            <th>Silinir mi?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Profil bilgileri (ad, e-posta, telefon, şehir, avatar)</td><td>Evet — kalıcı</td></tr>
+          <tr><td>İlanlar ve ilan fotoğrafları</td><td>Evet — kalıcı</td></tr>
+          <tr><td>Mesajlar ve konuşmalar</td><td>Evet — kalıcı</td></tr>
+          <tr><td>Favoriler, yorumlar, değerlendirmeler</td><td>Evet — kalıcı</td></tr>
+          <tr><td>Bildirimler ve push token kayıtları</td><td>Evet — kalıcı</td></tr>
+          <tr><td>Konum verileri (ilan/profil)</td><td>Evet — kalıcı</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Saklanan veriler</h2>
+      <p>
+        Hesap silindikten sonra kişisel verileriniz uygulama veritabanında <strong>saklanmaz</strong>.
+        Yasal yükümlülük veya güvenlik gereği tutulması zorunlu anonim kayıtlar varsa en fazla
+        <strong>30 gün</strong> içinde otomatik olarak silinir.
+      </p>
+      <p>
+        Kısmi veri silme (hesabı silmeden tüm verileri silme) şu an desteklenmemektedir.
+        Yalnızca tek tek ilan silme veya tam hesap silme yapılabilir.
+      </p>
+    </div>
+
+    <div class="warn">
+      <strong>Uyarı:</strong> Hesap silme işlemi geri alınamaz. Tüm ilanlarınız, mesajlarınız ve profil
+      bilgileriniz kalıcı olarak kaldırılır.
+    </div>
+  </main>
+
+  <footer>
+    <p>
+      <a href="https://pazaryeri0.web.app/privacy">Gizlilik Politikası</a>
+      &nbsp;·&nbsp;
+      <a href="https://pazaryeri0.web.app/terms">Kullanım Şartları</a>
+      &nbsp;·&nbsp;
+      <a href="mailto:pazaryer0@gmail.com">pazaryer0@gmail.com</a>
+    </p>
+    <p>© Pazaryeri — ByAltun</p>
+  </footer>
+</body>
+</html>

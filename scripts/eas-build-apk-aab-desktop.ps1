@@ -4,7 +4,7 @@ $mobile = Join-Path (Split-Path -Parent $PSScriptRoot) 'artifacts\mobile'
 $desktop = [Environment]::GetFolderPath('Desktop')
 $adb = Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe'
 $serial = if ($env:ADB_SERIAL) { $env:ADB_SERIAL } else { 'R58M77182JJ' }
-$ver = '1.1.4'
+$ver = '1.1.5'
 
 $tokenLine = Get-Content (Join-Path $mobile '.env') -ErrorAction SilentlyContinue |
   Where-Object { $_ -match '^\s*EXPO_TOKEN\s*=' } | Select-Object -First 1

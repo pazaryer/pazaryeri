@@ -4,7 +4,7 @@ import {
   getAuth,
   type Auth,
 } from 'firebase/auth';
-import { getAnalytics, isSupported } from 'firebase/analytics';
+import { initAnalytics } from './analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
@@ -81,9 +81,7 @@ export function initFirebase(): FirebaseApp | null {
     auth = initAuthInstance(app);
 
     if (Constants.platform?.web) {
-      isSupported().then((supported) => {
-        if (supported && app) getAnalytics(app);
-      });
+      void initAnalytics();
     }
 
     return app;

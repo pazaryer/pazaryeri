@@ -166,6 +166,7 @@ export default function ExploreScreen() {
                   name={cat.name}
                   icon={cat.icon}
                   image={cat.imageThumb}
+                  gradient={cat.gradient}
                   active={selectedCategory === cat.name}
                   onPress={() => selectCategory(cat.name)}
                   style={{ width: CAT_WIDTH }}

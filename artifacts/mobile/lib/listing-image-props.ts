@@ -30,8 +30,7 @@ export const listingGalleryImageProps: Partial<ImageProps> = {
 export const categoryImageProps: Partial<ImageProps> = {
   ...baseCache,
   transition: 80,
-  placeholder: { blurhash: LISTING_BLURHASH },
-  priority: 'normal',
+  priority: 'high',
 };
 
 export const avatarImageProps: Partial<ImageProps> = {
