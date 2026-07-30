@@ -56,6 +56,7 @@ export default function WebAnalyticsScreen() {
 
   return (
     <PageShell
+      showBack
       title="Web Ziyaretçileri"
       subtitle="Tarayıcı · masaüstü & mobil web · giriş ve hareketler"
       refreshing={isRefetching}

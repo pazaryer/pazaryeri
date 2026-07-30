@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
 import { useListings, type ListingSort } from '@/lib/hooks';
 import { ListingCard, LISTING_GRID_COLS } from '@/components/ListingCard';
@@ -24,6 +23,7 @@ import { BRAND } from '@/constants/brand';
 import { useMobileLocation } from '@/contexts/MobileLocationContext';
 import { hasActiveLocationFilter } from '@/lib/location-storage';
 import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
+import { useAdBannerInset } from '@/hooks/useAdBannerInset';
 
 const { width } = Dimensions.get('window');
 const CAT_GAP = 7;
@@ -32,7 +32,7 @@ const CAT_WIDTH = (width - 32 - CAT_GAP * 3) / 4;
 export default function ExploreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const { scrollPaddingBottom } = useAdBannerInset();
   const isWeb = Platform.OS === 'web';
   const paddingTop = isWeb ? 67 : insets.top;
   const { filter, coords, label, openPicker, ready, locationReady, refreshCoords } = useMobileLocation();
@@ -55,6 +55,9 @@ export default function ExploreScreen() {
     isLoading: listingsLoading,
     refetch,
     isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useListings(
     {
       category: selectedCategory && searchQuery.length < 2 ? selectedCategory : undefined,
@@ -92,139 +95,160 @@ export default function ExploreScreen() {
 
   const clearCategory = useCallback(() => setSelectedCategory(null), []);
 
-  const listHeader = (
-    <>
-      <View style={[styles.hero, { paddingTop: paddingTop + 6 }]}>
-        <Text style={styles.heroTitle}>Keşfet</Text>
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-        <Pressable style={styles.locationPill} onPress={openPicker}>
-          <Ionicons name="location-outline" size={13} color={BRAND.primary} />
-          <Text style={styles.locationText} numberOfLines={1}>{label}</Text>
-          <Ionicons name="chevron-down" size={12} color={BRAND.textMuted} />
-        </Pressable>
+  const renderItem = useCallback(
+    ({ item }: { item: (typeof allItems)[0] }) => <ListingCard item={item} compact />,
+    [],
+  );
 
-        <View style={[styles.searchBar, { borderColor: colors.border, backgroundColor: colors.card }]}>
-          <Ionicons name="search" size={15} color={BRAND.textMuted} />
-          <TextInput
-            placeholder="Ara..."
-            placeholderTextColor={BRAND.textMuted}
-            style={[styles.searchInput, { color: colors.foreground }]}
-            value={searchQuery}
-            onChangeText={(t) => {
-              setSearchQuery(t);
-              if (t.length >= 2) setSelectedCategory(null);
-            }}
-          />
-          {searchQuery.length > 0 && (
-            <Pressable onPress={() => { setSearchQuery(''); setSelectedCategory(null); }} hitSlop={8}>
-              <Ionicons name="close-circle" size={15} color={BRAND.textMuted} />
-            </Pressable>
-          )}
-        </View>
-      </View>
-
-      <SponsorBannerSlot placement="explore" />
-
-      {!showSearch && !selectedCategory && trending.length > 0 && (
-        <View style={styles.section}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            {trending.map((term) => (
-              <Pressable
-                key={term}
-                style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => setSearchQuery(term)}
-              >
-                <Text style={[styles.chipText, { color: colors.foreground }]}>{term}</Text>
+  const listHeader = useMemo(
+    () => (
+      <>
+        <View style={[styles.hero, { paddingTop: paddingTop + 6 }]}>
+          <Text style={styles.heroTitle}>Keşfet</Text>
+          <Pressable style={styles.locationPill} onPress={openPicker}>
+            <Ionicons name="location-outline" size={13} color={BRAND.primary} />
+            <Text style={styles.locationText} numberOfLines={1}>{label}</Text>
+            <Ionicons name="chevron-down" size={12} color={BRAND.textMuted} />
+          </Pressable>
+          <View style={[styles.searchBar, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <Ionicons name="search" size={15} color={BRAND.textMuted} />
+            <TextInput
+              placeholder="Ara..."
+              placeholderTextColor={BRAND.textMuted}
+              style={[styles.searchInput, { color: colors.foreground }]}
+              value={searchQuery}
+              onChangeText={(t) => {
+                setSearchQuery(t);
+                if (t.length >= 2) setSelectedCategory(null);
+              }}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => { setSearchQuery(''); setSelectedCategory(null); }} hitSlop={8}>
+                <Ionicons name="close-circle" size={15} color={BRAND.textMuted} />
               </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {!showSearch && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Kategoriler</Text>
-            {selectedCategory ? (
-              <Pressable onPress={clearCategory}>
-                <Text style={styles.clearFilter}>Temizle</Text>
-              </Pressable>
-            ) : null}
+            )}
           </View>
-          <View style={styles.categoryGrid}>
-            {MOBILE_EXPLORE_CATEGORIES.map((cat) => (
-              <CategoryTile
-                key={cat.name}
-                name={cat.name}
-                icon={cat.icon}
-                image={cat.imageThumb}
-                active={selectedCategory === cat.name}
-                onPress={() => selectCategory(cat.name)}
-                style={{ width: CAT_WIDTH }}
-                variant="micro"
+        </View>
+        <SponsorBannerSlot placement="explore" />
+        {!showSearch && !selectedCategory && trending.length > 0 && (
+          <View style={styles.section}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              {trending.map((term) => (
+                <Pressable
+                  key={term}
+                  style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => setSearchQuery(term)}
+                >
+                  <Text style={[styles.chipText, { color: colors.foreground }]}>{term}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+        {!showSearch && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Kategoriler</Text>
+              {selectedCategory ? (
+                <Pressable onPress={clearCategory}>
+                  <Text style={styles.clearFilter}>Temizle</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <View style={styles.categoryGrid}>
+              {MOBILE_EXPLORE_CATEGORIES.map((cat) => (
+                <CategoryTile
+                  key={cat.name}
+                  name={cat.name}
+                  icon={cat.icon}
+                  image={cat.imageThumb}
+                  active={selectedCategory === cat.name}
+                  onPress={() => selectCategory(cat.name)}
+                  style={{ width: CAT_WIDTH }}
+                  variant="micro"
+                />
+              ))}
+            </View>
+          </View>
+        )}
+        <View style={[styles.section, styles.resultsHeader]}>
+          <Text style={styles.resultsTitle}>
+            {showSearch ? `"${searchQuery}"` : selectedCategory ?? 'İlanlar'}
+          </Text>
+          <Pressable onPress={() => setShowFilters((v) => !v)} hitSlop={8}>
+            <Ionicons name="options-outline" size={20} color={BRAND.primary} />
+          </Pressable>
+          {allItems.length > 0 && <Text style={styles.resultCount}>{allItems.length}</Text>}
+        </View>
+        {showFilters && (
+          <View style={[styles.filterPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Sıralama</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              {([
+                ['date_desc', 'En yeni'],
+                ['date_asc', 'En eski'],
+                ['price_asc', 'Fiyat ↑'],
+                ['price_desc', 'Fiyat ↓'],
+              ] as const).map(([value, sortLabel]) => (
+                <Pressable
+                  key={value}
+                  style={[
+                    styles.chip,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    sort === value && { borderColor: colors.primary, backgroundColor: colors.secondary },
+                  ]}
+                  onPress={() => setSort(value)}
+                >
+                  <Text style={[styles.chipText, { color: sort === value ? colors.primary : colors.foreground }]}>
+                    {sortLabel}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <View style={styles.priceRow}>
+              <TextInput
+                style={[styles.priceInput, { borderColor: colors.border, color: colors.foreground }]}
+                placeholder="Min ₺"
+                placeholderTextColor={BRAND.textMuted}
+                keyboardType="numeric"
+                value={minPrice}
+                onChangeText={setMinPrice}
               />
-            ))}
+              <Text style={{ color: colors.mutedForeground }}>—</Text>
+              <TextInput
+                style={[styles.priceInput, { borderColor: colors.border, color: colors.foreground }]}
+                placeholder="Max ₺"
+                placeholderTextColor={BRAND.textMuted}
+                keyboardType="numeric"
+                value={maxPrice}
+                onChangeText={setMaxPrice}
+              />
+            </View>
           </View>
-        </View>
-      )}
-
-      <View style={[styles.section, styles.resultsHeader]}>
-        <Text style={styles.resultsTitle}>
-          {showSearch ? `"${searchQuery}"` : selectedCategory ?? 'İlanlar'}
-        </Text>
-        <Pressable onPress={() => setShowFilters(!showFilters)} hitSlop={8}>
-          <Ionicons name="options-outline" size={20} color={BRAND.primary} />
-        </Pressable>
-        {allItems.length > 0 && <Text style={styles.resultCount}>{allItems.length}</Text>}
-      </View>
-
-      {showFilters && (
-        <View style={[styles.filterPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Sıralama</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            {([
-              ['date_desc', 'En yeni'],
-              ['date_asc', 'En eski'],
-              ['price_asc', 'Fiyat ↑'],
-              ['price_desc', 'Fiyat ↓'],
-            ] as const).map(([value, label]) => (
-              <Pressable
-                key={value}
-                style={[
-                  styles.chip,
-                  { backgroundColor: colors.background, borderColor: colors.border },
-                  sort === value && { borderColor: colors.primary, backgroundColor: colors.secondary },
-                ]}
-                onPress={() => setSort(value)}
-              >
-                <Text style={[styles.chipText, { color: sort === value ? colors.primary : colors.foreground }]}>
-                  {label}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <View style={styles.priceRow}>
-            <TextInput
-              style={[styles.priceInput, { borderColor: colors.border, color: colors.foreground }]}
-              placeholder="Min ₺"
-              placeholderTextColor={BRAND.textMuted}
-              keyboardType="numeric"
-              value={minPrice}
-              onChangeText={setMinPrice}
-            />
-            <Text style={{ color: colors.mutedForeground }}>—</Text>
-            <TextInput
-              style={[styles.priceInput, { borderColor: colors.border, color: colors.foreground }]}
-              placeholder="Max ₺"
-              placeholderTextColor={BRAND.textMuted}
-              keyboardType="numeric"
-              value={maxPrice}
-              onChangeText={setMaxPrice}
-            />
-          </View>
-        </View>
-      )}
-    </>
+        )}
+      </>
+    ),
+    [
+      paddingTop,
+      colors,
+      label,
+      openPicker,
+      searchQuery,
+      showSearch,
+      selectedCategory,
+      trending,
+      selectCategory,
+      clearCategory,
+      allItems.length,
+      showFilters,
+      sort,
+      minPrice,
+      maxPrice,
+    ],
   );
 
   if (!ready) {
@@ -257,12 +281,20 @@ export default function ExploreScreen() {
       keyExtractor={(item) => item.id}
       numColumns={LISTING_GRID_COLS}
       columnWrapperStyle={styles.resultsRow}
-      renderItem={({ item }) => <ListingCard item={item} compact />}
-      initialNumToRender={12}
-      maxToRenderPerBatch={9}
-      windowSize={7}
+      renderItem={renderItem}
+      initialNumToRender={9}
+      maxToRenderPerBatch={6}
+      windowSize={5}
+      updateCellsBatchingPeriod={50}
       removeClippedSubviews
       ListHeaderComponent={listHeader}
+      ListFooterComponent={
+        isFetchingNextPage ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />
+        ) : null
+      }
+      onEndReached={onEndReached}
+      onEndReachedThreshold={0.5}
       ListEmptyComponent={
         listingsLoading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
@@ -274,7 +306,7 @@ export default function ExploreScreen() {
           </View>
         )
       }
-      contentContainerStyle={{ paddingBottom: insets.bottom + 100, paddingHorizontal: 16 }}
+      contentContainerStyle={{ paddingBottom: scrollPaddingBottom, paddingHorizontal: 16 }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}

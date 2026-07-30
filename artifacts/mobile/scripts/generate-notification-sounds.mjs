@@ -52,26 +52,26 @@ function writeWav(filePath, notes, durationMs, sampleRate = 44100) {
 fs.mkdirSync(outDir, { recursive: true });
 
 // Uygulama içi popup — yumuşak çift nota
-writeWav(path.join(outDir, 'pazaryeri-inapp.wav'), [
+writeWav(path.join(outDir, 'pazaryeri_inapp.wav'), [
   { freq: 880, amp: 0.55, start: 0, end: 0.14, harmonic: 2 },
   { freq: 1174.66, amp: 0.45, start: 0.1, end: 0.32, harmonic: 2 },
 ], 340);
 
 // Push bildirimi — daha belirgin, sıcak üçlü akor hissi
-writeWav(path.join(outDir, 'pazaryeri-push.wav'), [
+writeWav(path.join(outDir, 'pazaryeri_push.wav'), [
   { freq: 523.25, amp: 0.5, start: 0, end: 0.18, harmonic: 2 },
   { freq: 659.25, amp: 0.42, start: 0.08, end: 0.28, harmonic: 2 },
   { freq: 783.99, amp: 0.35, start: 0.16, end: 0.45, harmonic: 2 },
 ], 480);
 
 // Mesaj push — hafif farklı (yüksek tını)
-writeWav(path.join(outDir, 'pazaryeri-message.wav'), [
+writeWav(path.join(outDir, 'pazaryeri_message.wav'), [
   { freq: 698.46, amp: 0.48, start: 0, end: 0.2, harmonic: 2 },
   { freq: 932.33, amp: 0.4, start: 0.12, end: 0.38, harmonic: 2 },
 ], 400);
 
 // Favori / ilan güncelleme push
-writeWav(path.join(outDir, 'pazaryeri-favorite.wav'), [
+writeWav(path.join(outDir, 'pazaryeri_favorite.wav'), [
   { freq: 440, amp: 0.45, start: 0, end: 0.16, harmonic: 3 },
   { freq: 554.37, amp: 0.5, start: 0.1, end: 0.35, harmonic: 2 },
 ], 380);

@@ -23,7 +23,7 @@ const FAQ = [
   },
   {
     q: 'Hesabımı nasıl silerim?',
-    a: `${SUPPORT_EMAIL} adresine e-posta göndererek hesap silme talebinde bulunabilirsiniz.`,
+    a: 'Ayarlar > Hesabımı Kalıcı Sil bölümünden hesabınızı anında silebilirsiniz. Tüm ilanlar, mesajlar ve verileriniz kalıcı olarak kaldırılır.',
   },
 ];
 

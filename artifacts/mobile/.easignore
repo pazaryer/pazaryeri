@@ -1,0 +1,22 @@
+# EAS upload — monorepo (eas.json bu klasörde; yollar repo köküne göre)
+**/node_modules/
+**/.git/
+**/.expo/
+**/.turbo/
+**/.cache/
+**/dist/
+../../artifacts/api-server/
+../../artifacts/admin/
+../../artifacts/mockup-sandbox/
+../../artifacts/web/
+../../lib/db/
+../../lib/integrations/
+../../scripts/
+../../**/.cursor/
+../../**/.firebase/
+../../*.md
+../../*.bat
+../../*.ps1
+android/
+.expo/
+**/*.map

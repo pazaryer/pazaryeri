@@ -8,11 +8,17 @@
     "build": "node scripts/build.js",
     "export:web": "node scripts/generate-notification-sounds.mjs && node scripts/sync-deep-links.mjs && node scripts/generate-sitemap.js && expo export -p web && node scripts/inject-adsense-html.mjs",
     "eas:android:apk": "eas build --profile preview --platform android",
+    "android:prebuild": "expo prebuild --platform android --no-install && node scripts/patch-android-settings.mjs",
+    "android:apk:debug": "node scripts/android-apk-debug.mjs",
     "eas:android:production": "eas build --profile production --platform android",
+    "eas:update:preview": "eas update --channel preview --non-interactive",
+    "eas:update:production": "eas update --channel production --non-interactive",
     "generate:brand": "python scripts/generate-brand-assets.py",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "eas-build-pre-install": "cd ../.. && corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install --frozen-lockfile --filter @workspace/mobile..."
+    "eas-build-pre-install": "cd ../.. && pnpm install --frozen-lockfile --filter @workspace/mobile...",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -53,6 +59,7 @@
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
+    "expo-updates": "~29.0.19",
     "expo-web-browser": "~15.0.10",
     "react": "catalog:",
     "react-dom": "catalog:",

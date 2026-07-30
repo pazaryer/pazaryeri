@@ -21,6 +21,7 @@ import { getLiveAnalytics } from "../lib/presence";
 import { getPlatformAnalytics } from "../lib/platform-analytics";
 import { resetLiveAnalytics, getAnalyticsResetAt } from "../lib/analytics-reset";
 import { logAdminAction } from "../lib/admin-audit";
+import { deleteUserAccountCompletely } from "../lib/delete-user-account";
 
 const router: IRouter = Router();
 
@@ -71,6 +72,8 @@ router.get("/admin/stats", adminMiddleware, async (_req, res, next) => {
       reports,
       conversations,
       bannedUsers,
+      androidInstalls,
+      mobileInstalls,
     ] = await Promise.all([
       sb.from("users").select("id", { count: "exact", head: true }),
       sb.from("listings").select("id", { count: "exact", head: true }),
@@ -80,6 +83,8 @@ router.get("/admin/stats", adminMiddleware, async (_req, res, next) => {
       sb.from("reports").select("id", { count: "exact", head: true }).eq("status", "pending"),
       sb.from("conversations").select("id", { count: "exact", head: true }),
       sb.from("users").select("id", { count: "exact", head: true }).eq("is_banned", true),
+      sb.from("device_presence").select("device_id", { count: "exact", head: true }).eq("platform", "android"),
+      sb.from("device_presence").select("device_id", { count: "exact", head: true }).in("platform", ["android", "ios"]),
     ]);
 
     const { data: recentUsers } = await sb
@@ -105,6 +110,8 @@ router.get("/admin/stats", adminMiddleware, async (_req, res, next) => {
         pendingReports: reports.count ?? 0,
         conversations: conversations.count ?? 0,
         bannedUsers: bannedUsers.count ?? 0,
+        androidInstalls: androidInstalls.count ?? 0,
+        mobileInstalls: mobileInstalls.count ?? 0,
       },
       live,
       platformActivity: {
@@ -279,6 +286,35 @@ router.patch("/admin/users/:userId", adminMiddleware, async (req, res, next) => 
     });
 
     res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/admin/users/:userId", superAdminMiddleware, async (req, res, next) => {
+  try {
+    const userId = param(req.params.userId);
+    if (userId === req.user!.id) {
+      throw new AppError("Kendi hesabınızı bu ekrandan silemezsiniz", 400);
+    }
+
+    const sb = getSupabaseAdmin();
+    const { data: target } = await sb.from("users").select("id, name, email, role").eq("id", userId).single();
+    if (!target) throw new AppError("Kullanıcı bulunamadı", 404);
+    if (target.role === "admin") {
+      throw new AppError("Süper admin hesabı silinemez", 403);
+    }
+
+    await deleteUserAccountCompletely(userId);
+
+    await logAdminAction(req.user!.id, "user.delete", {
+      targetType: "user",
+      targetId: userId,
+      details: { email: target.email, name: target.name },
+      ip: clientIp(req),
+    });
+
+    res.json({ success: true, deletedUserId: userId });
   } catch (err) {
     next(err);
   }

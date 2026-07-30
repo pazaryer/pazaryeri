@@ -194,6 +194,7 @@ export default function BrandingScreen() {
 
   return (
     <PageShell
+      showBack
       title="Marka & Kimlik"
       subtitle="Uygulama adı, logo, renkler, SEO — tam rebrand"
     >

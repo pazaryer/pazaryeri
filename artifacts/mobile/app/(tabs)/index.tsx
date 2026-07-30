@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -21,10 +21,31 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMobileLocation } from '@/contexts/MobileLocationContext';
 import { hasActiveLocationFilter } from '@/lib/location-storage';
 import { BRAND } from '@/constants/brand';
+import { useAdBannerInset } from '@/hooks/useAdBannerInset';
+import { Image } from 'expo-image';
+import { listingThumbUrl } from '@/lib/image-url';
+
+const HomeListHeader = React.memo(function HomeListHeader({
+  selectedCategory,
+  onSelectCategory,
+}: {
+  selectedCategory: string;
+  onSelectCategory: (c: string) => void;
+}) {
+  return (
+    <View style={styles.listHeader}>
+      <AnnouncementBanner embedded subtle style={{ marginTop: 4, marginHorizontal: 0 }} />
+      <SponsorBannerSlot placement="home" />
+      <MobileTrendCategories selected={selectedCategory} onSelect={onSelectCategory} />
+      <Text style={styles.sectionTitle}>Popüler İlanlar</Text>
+    </View>
+  );
+});
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { scrollPaddingBottom } = useAdBannerInset();
   const router = useRouter();
   const { user } = useAuth();
   const { filter, coords, label, openPicker, ready, locationReady } = useMobileLocation();
@@ -67,6 +88,21 @@ export default function HomeScreen() {
   const onEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: (typeof allItems)[0] }) => <ListingCard item={item} compact />,
+    [],
+  );
+
+  const listHeader = useMemo(
+    () => <HomeListHeader selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />,
+    [selectedCategory],
+  );
+
+  useEffect(() => {
+    const uris = allItems.slice(0, 18).map((i) => listingThumbUrl(i.image)).filter(Boolean) as string[];
+    if (uris.length) void Image.prefetch(uris);
+  }, [allItems.length, selectedCategory]);
 
   if (!ready) {
     return (
@@ -116,19 +152,13 @@ export default function HomeScreen() {
           keyExtractor={(item) => item.id}
           numColumns={LISTING_GRID_COLS}
           columnWrapperStyle={styles.row}
-          renderItem={({ item }) => <ListingCard item={item} compact />}
-          initialNumToRender={12}
-          maxToRenderPerBatch={9}
-          windowSize={7}
+          renderItem={renderItem}
+          initialNumToRender={9}
+          maxToRenderPerBatch={6}
+          windowSize={5}
+          updateCellsBatchingPeriod={50}
           removeClippedSubviews
-          ListHeaderComponent={
-            <View style={styles.listHeader}>
-              <AnnouncementBanner embedded subtle style={{ marginTop: 4, marginHorizontal: 0 }} />
-              <SponsorBannerSlot placement="home" />
-              <MobileTrendCategories selected={selectedCategory} onSelect={setSelectedCategory} />
-              <Text style={styles.sectionTitle}>Popüler İlanlar</Text>
-            </View>
-          }
+          ListHeaderComponent={listHeader}
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={{ color: colors.mutedForeground }}>
@@ -150,7 +180,7 @@ export default function HomeScreen() {
           onEndReachedThreshold={0.5}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: insets.bottom + 100 }}
+          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: scrollPaddingBottom }}
         />
       )}
     </View>

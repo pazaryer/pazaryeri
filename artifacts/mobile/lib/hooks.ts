@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import { apiFetch } from './api';
 import { updateWebProfile } from './web-profile';
@@ -236,6 +236,36 @@ export function useFavorites(enabled = true) {
   });
 }
 
+function patchListingFavorite(
+  listingId: string,
+  isFavorite: boolean,
+): (item: ListingSummary) => ListingSummary {
+  return (item) => {
+    if (item.id !== listingId) return item;
+    return {
+      ...item,
+      isFavorite: !isFavorite,
+      favoriteCount: Math.max(0, item.favoriteCount + (isFavorite ? -1 : 1)),
+    };
+  };
+}
+
+function patchListingsCache(
+  data: InfiniteData<ListResponse> | undefined,
+  listingId: string,
+  isFavorite: boolean,
+): InfiniteData<ListResponse> | undefined {
+  if (!data) return data;
+  const patch = patchListingFavorite(listingId, isFavorite);
+  return {
+    ...data,
+    pages: data.pages.map((page) => ({
+      ...page,
+      items: page.items.map(patch),
+    })),
+  };
+}
+
 export function useToggleFavorite() {
   const qc = useQueryClient();
   return useMutation({
@@ -248,23 +278,34 @@ export function useToggleFavorite() {
     },
     onMutate: async ({ listingId, isFavorite }) => {
       await qc.cancelQueries({ queryKey: ['listing', listingId] });
-      const prev = qc.getQueryData<ListingDetail>(['listing', listingId]);
-      if (prev) {
+      await qc.cancelQueries({ queryKey: ['listings'] });
+
+      const prevDetail = qc.getQueryData<ListingDetail>(['listing', listingId]);
+      if (prevDetail) {
         qc.setQueryData(['listing', listingId], {
-          ...prev,
+          ...prevDetail,
           isFavorite: !isFavorite,
-          favoriteCount: Math.max(0, prev.favoriteCount + (isFavorite ? -1 : 1)),
+          favoriteCount: Math.max(0, prevDetail.favoriteCount + (isFavorite ? -1 : 1)),
         });
       }
-      return { prev };
+
+      const prevListings = qc.getQueriesData<InfiniteData<ListResponse>>({ queryKey: ['listings'] });
+      for (const [key, data] of prevListings) {
+        qc.setQueryData(key, patchListingsCache(data, listingId, isFavorite));
+      }
+
+      return { prevDetail, prevListings };
     },
     onError: (_err, { listingId }, ctx) => {
-      if (ctx?.prev) qc.setQueryData(['listing', listingId], ctx.prev);
+      if (ctx?.prevDetail) qc.setQueryData(['listing', listingId], ctx.prevDetail);
+      if (ctx?.prevListings) {
+        for (const [key, data] of ctx.prevListings) {
+          qc.setQueryData(key, data);
+        }
+      }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['listings'] });
       qc.invalidateQueries({ queryKey: ['favorites'] });
-      qc.invalidateQueries({ queryKey: ['listing'] });
       qc.invalidateQueries({ queryKey: ['listing-insights'] });
       qc.invalidateQueries({ queryKey: ['notifications'] });
     },

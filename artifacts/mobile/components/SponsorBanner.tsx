@@ -12,6 +12,7 @@ import { useColors } from '@/hooks/useColors';
 import { BRAND } from '@/constants/brand';
 import { BANNER_BORDER_RADIUS, BANNER_INSET_H, useBannerLayout } from '@/lib/banner-layout';
 import type { SponsorBannerItem } from '@/lib/sponsor-placements';
+import { bannerImageProps } from '@/lib/listing-image-props';
 
 export type SponsorBannerData = Pick<
   SponsorBannerItem,
@@ -53,6 +54,8 @@ export function SponsorBanner({ banner, style }: Props) {
           style={styles.image}
           contentFit="cover"
           accessibilityLabel={banner.altText}
+          recyclingKey={`sponsor-${banner.imageUrl}`}
+          {...bannerImageProps}
         />
         <View style={[styles.badge, { backgroundColor: BRAND.primary }]}>
           <Text style={styles.badgeText}>SPONSOR</Text>

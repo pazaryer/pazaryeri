@@ -30,6 +30,7 @@ import { installGlobalErrorHandlers } from '@/lib/global-error-handler';
 import { RemoteConfigGate } from '@/components/RemoteConfigGate';
 import { usePresencePing } from '@/lib/presence-ping';
 import { useDeepLinkHandler } from '@/lib/deep-link-handler';
+import { OtaUpdateHandler } from '@/components/OtaUpdateHandler';
 import { AdSenseHead } from '@/components/AdSenseHead';
 
 try {
@@ -136,6 +137,7 @@ function RootLayoutNav() {
 
   return (
     <>
+      <OtaUpdateHandler />
       <AdSenseHead />
       {Platform.OS !== 'web' ? <StatusBar style="dark" /> : null}
       <PushNotificationHandler />

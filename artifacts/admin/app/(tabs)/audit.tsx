@@ -25,7 +25,7 @@ export default function AuditScreen() {
 
   if (profile?.role !== 'admin') {
     return (
-      <PageShell title="Denetim Kaydı" subtitle="Sadece süper admin erişebilir">
+      <PageShell showBack title="Denetim Kaydı" subtitle="Sadece süper admin erişebilir">
         <EmptyState message="Bu sayfaya erişim yetkiniz yok" />
       </PageShell>
     );
@@ -35,6 +35,7 @@ export default function AuditScreen() {
 
   return (
     <PageShell
+      showBack
       title="Admin İşlem Kaydı"
       subtitle="Tüm moderasyon ve yapılandırma işlemleri"
     >

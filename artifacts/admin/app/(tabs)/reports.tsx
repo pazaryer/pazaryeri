@@ -33,6 +33,7 @@ export default function ReportsScreen() {
 
   return (
     <PageShell
+      showBack
       title="Şikayetler"
       subtitle={`${data?.items?.length ?? 0} bekleyen şikayet`}
       refreshing={isRefetching}

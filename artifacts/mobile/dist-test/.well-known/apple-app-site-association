@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.pazaryerim",
+        "paths": [
+          "/listing/*",
+          "/kesfet",
+          "/kesfet/*",
+          "/ilan/*",
+          "/"
+        ]
+      }
+    ]
+  }
+}

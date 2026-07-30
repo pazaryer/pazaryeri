@@ -24,6 +24,7 @@ import { BRAND } from '@/constants/brand';
 import { DeveloperActions } from '@/components/DeveloperActions';
 import { ListingPromoteButton } from '@/components/ListingPromoteButton';
 import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
+import { useAdBannerInset } from '@/hooks/useAdBannerInset';
 
 const { width } = Dimensions.get('window');
 const LISTING_CARD_WIDTH = width * 0.36;
@@ -31,6 +32,7 @@ const LISTING_CARD_WIDTH = width * 0.36;
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { scrollPaddingBottom } = useAdBannerInset();
   const router = useRouter();
   const { profile, user, signOut, refreshProfile, patchProfile } = useAuth();
   const isWeb = Platform.OS === 'web';
@@ -108,7 +110,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}
+      contentContainerStyle={{ paddingBottom: scrollPaddingBottom }}
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={colors.primary} />}
       showsVerticalScrollIndicator={false}
     >

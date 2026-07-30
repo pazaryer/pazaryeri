@@ -1,5 +1,4 @@
 {
-  "androidAppId": "",
-  "iosAppId": "",
-  "_note": "Mobil APK build öncesi Admin panelden aldığınız App ID'leri buraya yazın. Runtime Unit ID'ler yalnızca admin panelden yönetilir."
+  "androidAppId": "ca-app-pub-8045800087063412~1027890609",
+  "iosAppId": "ca-app-pub-8045800087063412~1027890609"
 }

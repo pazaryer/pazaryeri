@@ -75,6 +75,7 @@ export default function ConfigScreen() {
   if (selectedKey) {
     return (
       <PageShell
+        showBack
         title={CONFIG_LABELS[selectedKey] ?? selectedKey}
         subtitle="JSON düzenleyici — web ve mobil uygulamayı uzaktan yönetir"
       >
@@ -98,6 +99,7 @@ export default function ConfigScreen() {
 
   return (
     <PageShell
+      showBack
       title="Site & Uygulama CMS"
       subtitle="Web sitesi ve mobil uygulamanın tüm içeriğini buradan yönetin"
     >

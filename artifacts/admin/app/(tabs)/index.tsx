@@ -39,6 +39,8 @@ interface StatsResponse {
     pendingReports: number;
     conversations: number;
     bannedUsers: number;
+    androidInstalls: number;
+    mobileInstalls: number;
   };
   analyticsResetAt?: string | null;
   live: {
@@ -186,6 +188,15 @@ export default function DashboardScreen() {
           <Btn label="Yenile" variant="ghost" compact onPress={() => refetch()} />
         </View>
       </View>
+
+      <Section title="Kurulum & Kullanıcı">
+        <View style={styles.statsGrid}>
+          <StatCard icon="📲" label="APK Kurulum" value={data.counts.androidInstalls} color={THEME.accent} />
+          <StatCard icon="📱" label="Mobil Cihaz" value={data.counts.mobileInstalls} color={THEME.info} />
+          <StatCard icon="👥" label="Kayıtlı Üye" value={data.counts.users} color={THEME.primary} />
+          <StatCard icon="🚫" label="Engelli" value={data.counts.bannedUsers} color={THEME.warning} />
+        </View>
+      </Section>
 
       <Section title="Özet">
         <View style={styles.statsGrid}>

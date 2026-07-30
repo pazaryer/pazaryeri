@@ -89,6 +89,7 @@ export default function WebAppDownloadScreen() {
 
   return (
     <PageShell
+      showBack
       title="Web İndirme Butonu"
       subtitle="Yüzen mobil uygulama indirme CTA — yüklüyse gizlenir"
     >

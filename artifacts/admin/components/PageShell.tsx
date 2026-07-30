@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, type ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { THEME, SPACING, RADIUS } from '@/lib/theme';
 
 type Props = {
@@ -12,6 +14,9 @@ type Props = {
   refreshing?: boolean;
   onRefresh?: () => void;
   style?: ViewStyle;
+  /** Stack / alt sayfalarda geri dönüş butonu */
+  showBack?: boolean;
+  onBack?: () => void;
 };
 
 export function PageShell({
@@ -23,12 +28,27 @@ export function PageShell({
   refreshing,
   onRefresh,
   style,
+  showBack = false,
+  onBack,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const padBottom = 100 + insets.bottom;
+
+  const handleBack = () => {
+    if (onBack) onBack();
+    else if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)');
+  };
 
   const header = (
     <View style={styles.headerCard}>
+      {showBack ? (
+        <Pressable style={styles.backBtn} onPress={handleBack} hitSlop={10} accessibilityRole="button" accessibilityLabel="Geri">
+          <Ionicons name="chevron-back" size={22} color={THEME.primary} />
+          <Text style={styles.backText}>Geri</Text>
+        </Pressable>
+      ) : null}
       <View style={styles.headerRow}>
         <View style={styles.headerText}>
           <Text style={styles.title}>{title}</Text>
@@ -84,6 +104,15 @@ export function FilterRow({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: THEME.bg },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+    paddingBottom: 4,
+  },
+  backText: { fontSize: 15, fontWeight: '600', color: THEME.primary },
   headerCard: {
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,

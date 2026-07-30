@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,10 +19,14 @@ import { useColors } from '@/hooks/useColors';
 import { useConversations, useDeleteConversation, formatLastActive } from '@/lib/hooks';
 import { showConfirm } from '@/lib/web-alert';
 import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
+import { useAdBannerInset } from '@/hooks/useAdBannerInset';
+import { listingThumbImageProps } from '@/lib/listing-image-props';
+import { listingSmallUrl, avatarUrl } from '@/lib/image-url';
 
 export default function MessagesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { scrollPaddingBottom } = useAdBannerInset();
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
   const paddingTop = isWeb ? 67 : insets.top;
@@ -52,20 +56,30 @@ export default function MessagesScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: (typeof messages)[0] }) => (
+  const renderItem = useCallback(
+    ({ item }: { item: (typeof messages)[0] }) => (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Pressable style={styles.rowPress} onPress={() => router.push(`/chat/${item.id}`)}>
       <View style={styles.thumbWrap}>
         {item.listingImage ? (
-          <Image source={{ uri: item.listingImage }} style={styles.thumb} contentFit="cover" />
+          <Image
+            source={{ uri: listingSmallUrl(item.listingImage) ?? item.listingImage, width: 52, height: 52 }}
+            style={styles.thumb}
+            contentFit="cover"
+            recyclingKey={`msg-listing-${item.id}`}
+            {...listingThumbImageProps}
+          />
         ) : (
           <View style={[styles.thumb, styles.thumbPlaceholder, { backgroundColor: colors.secondary }]}>
             <Ionicons name="image-outline" size={20} color={colors.mutedForeground} />
           </View>
         )}
         <Image
-          source={{ uri: item.otherUser.avatar ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(item.otherUser.name)}` }}
+          source={{ uri: avatarUrl(item.otherUser.avatar, 26, item.otherUser.name), width: 52, height: 52 }}
           style={styles.avatar}
+          contentFit="cover"
+          recyclingKey={`msg-avatar-${item.id}`}
+          {...listingThumbImageProps}
         />
         {item.otherUser.isOnline && <View style={styles.onlineDot} />}
       </View>
@@ -114,6 +128,8 @@ export default function MessagesScreen() {
         <Ionicons name="trash-outline" size={20} color="#C62828" />
       </Pressable>
     </View>
+    ),
+    [colors, router, deleteConversation.isPending],
   );
 
   return (
@@ -138,6 +154,10 @@ export default function MessagesScreen() {
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -151,7 +171,7 @@ export default function MessagesScreen() {
               </Pressable>
             </View>
           }
-          contentContainerStyle={{ padding: 12, paddingBottom: insets.bottom + 100, gap: 8 }}
+          contentContainerStyle={{ padding: 12, paddingBottom: scrollPaddingBottom, gap: 8 }}
         />
       )}
     </View>

@@ -8,7 +8,7 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { authFetch, getBootstrapAdminEmails } from '@/lib/api';
-import { registerAdminPushNotifications } from '@/lib/notifications';
+import { registerAdminPushNotifications, unregisterAdminPushToken } from '@/lib/notifications';
 
 export interface AdminProfile {
   id: string;
@@ -137,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    await unregisterAdminPushToken();
     await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
     await firebaseSignOut(getFirebaseAuth());
     setProfile(null);

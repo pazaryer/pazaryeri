@@ -9,6 +9,7 @@ import { formatListingLocation } from '@/lib/listing-location';
 import { flatStyle } from '@/lib/flat-style';
 import { BRAND } from '@/constants/brand';
 import { listingThumbImageProps } from '@/lib/listing-image-props';
+import { listingThumbUrl } from '@/lib/image-url';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 export const LISTING_GRID_COLS = 3;
@@ -38,7 +39,11 @@ export const ListingCard = React.memo(function ListingCard({ item, compact = fal
           <View style={[styles.imageContainer, compact ? styles.imageCompact : styles.imageFull]}>
             {item.image ? (
               <Image
-                source={{ uri: item.image }}
+                source={{
+                  uri: listingThumbUrl(item.image) ?? item.image,
+                  width: 128,
+                  height: 154,
+                }}
                 style={StyleSheet.absoluteFillObject}
                 contentFit="cover"
                 recyclingKey={`listing-thumb-${item.id}`}

@@ -65,6 +65,7 @@ export default function ListingDetailScreen() {
 
   return (
     <PageShell
+      showBack
       title={editMode ? 'İlan Düzenle' : String(data.title)}
       subtitle={editMode ? 'Değişiklikleri kaydedin' : subtitle}
       headerRight={

@@ -6,7 +6,7 @@ import { inAppNotificationKey, shouldShowInAppNotification } from '@/lib/notific
 
 let handlerConfigured = false;
 
-const ANDROID_SOUND = 'pazaryeri-push.wav';
+const ANDROID_SOUND = 'pazaryeri_push.wav';
 
 function getNotificationsModule() {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -168,6 +168,15 @@ export async function registerAdminPushNotifications(): Promise<string | null> {
   }
 
   return token;
+}
+
+export async function unregisterAdminPushToken(): Promise<void> {
+  try {
+    const { authFetch } = await import('@/lib/api');
+    await authFetch('/users/me/push-token', { method: 'DELETE' });
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function syncAdminBadge(unreadCount: number): Promise<void> {

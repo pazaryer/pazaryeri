@@ -8,10 +8,10 @@ import { inAppNotificationKey, shouldShowInAppNotification } from '@/lib/notific
 let handlerConfigured = false;
 
 const ANDROID_SOUNDS = {
-  default: 'pazaryeri-push.wav',
-  messages: 'pazaryeri-message.wav',
-  favorites: 'pazaryeri-favorite.wav',
-  engagement: 'pazaryeri-push.wav',
+  default: 'pazaryeri_push.wav',
+  messages: 'pazaryeri_message.wav',
+  favorites: 'pazaryeri_favorite.wav',
+  engagement: 'pazaryeri_push.wav',
 } as const;
 
 function getNotificationsModule() {

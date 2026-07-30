@@ -315,6 +315,7 @@ export default function MobilePromoScreen() {
 
   return (
     <PageShell
+      showBack
       title="Mobil Promosyon"
       subtitle="Geliştirici imzası, puanla butonu, sponsor banner"
     >

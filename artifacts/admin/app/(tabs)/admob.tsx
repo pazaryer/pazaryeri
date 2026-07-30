@@ -182,7 +182,7 @@ export default function AdMobScreen() {
   if (isLoading && !data) return <Loading />;
 
   return (
-    <PageShell title="AdMob Reklamları" subtitle="Tablodan App ID ve Unit ID yönetimi">
+    <PageShell showBack title="AdMob Reklamları" subtitle="Tablodan App ID ve Unit ID yönetimi">
       <Section title="Özet">
         <Card>
           <View style={styles.summaryRow}>

@@ -46,7 +46,8 @@ import { ListingOffersSection } from '@/components/ListingOffersSection';
 import { BuyerOfferSection } from '@/components/BuyerOfferSection';
 import { ListingMapPin } from '@/components/ListingMapPin';
 import { ListingCommentsSection } from '@/components/ListingCommentsSection';
-import { listingHeroImageProps } from '@/lib/listing-image-props';
+import { listingHeroImageProps, listingThumbImageProps } from '@/lib/listing-image-props';
+import { listingMediumUrl, listingThumbUrl } from '@/lib/image-url';
 import { formatListingLocation } from '@/lib/listing-location';
 import { getCategoryIcon } from '@/lib/categories';
 import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
@@ -132,7 +133,8 @@ function MobileListingDetailScreen() {
     if (!listing) return;
     const imgs = listing.images.length > 0 ? listing.images : [listing.image];
     imgs.slice(0, 5).forEach((uri) => {
-      if (uri) Image.prefetch(uri);
+      const optimized = listingMediumUrl(uri) ?? uri;
+      if (optimized) Image.prefetch(optimized);
     });
   }, [listing?.id, listing?.images, listing?.image]);
 
@@ -248,7 +250,7 @@ function MobileListingDetailScreen() {
             {images.map((img, idx) => (
               <Pressable key={`${listing.id}-img-${idx}`} onPress={() => openGallery(idx)}>
                 <Image
-                  source={{ uri: img }}
+                  source={{ uri: listingMediumUrl(img) ?? img, width: SCREEN_WIDTH, height: HERO_HEIGHT }}
                   style={styles.heroImage}
                   contentFit="cover"
                   recyclingKey={`${listing.id}-${idx}`}
@@ -348,7 +350,13 @@ function MobileListingDetailScreen() {
                   onPress={() => scrollToImage(idx)}
                   style={[styles.thumbWrap, activeImageIndex === idx && styles.thumbWrapActive]}
                 >
-                  <Image source={{ uri: img }} style={styles.thumb} contentFit="cover" />
+                  <Image
+                    source={{ uri: listingThumbUrl(img) ?? img, width: 64, height: 64 }}
+                    style={styles.thumb}
+                    contentFit="cover"
+                    recyclingKey={`thumb-${listing.id}-${idx}`}
+                    {...listingThumbImageProps}
+                  />
                 </Pressable>
               ))}
             </ScrollView>

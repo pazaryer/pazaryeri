@@ -1,13 +1,12 @@
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 
 export type InAppSoundKind = 'popup' | 'favorite' | 'message';
 
 const SOUND_FILES: Record<InAppSoundKind, ReturnType<typeof require>> = {
-  popup: require('@/assets/sounds/pazaryeri-inapp.wav'),
-  favorite: require('@/assets/sounds/pazaryeri-favorite.wav'),
-  message: require('@/assets/sounds/pazaryeri-message.wav'),
+  popup: require('@/assets/sounds/pazaryeri_inapp.wav'),
+  favorite: require('@/assets/sounds/pazaryeri_favorite.wav'),
+  message: require('@/assets/sounds/pazaryeri_message.wav'),
 };
 
 let audioModeReady = false;
@@ -29,7 +28,7 @@ async function ensureAudioMode(): Promise<void> {
 
 /** Uygulama içi popup/toast sesi */
 export async function playInAppNotificationSound(kind: InAppSoundKind = 'popup'): Promise<void> {
-  if (Platform.OS === 'web' || Constants.appOwnership === 'expo') return;
+  if (Platform.OS === 'web') return;
   try {
     await ensureAudioMode();
     const { sound } = await Audio.Sound.createAsync(SOUND_FILES[kind], {
@@ -47,13 +46,13 @@ export async function playInAppNotificationSound(kind: InAppSoundKind = 'popup')
 }
 
 export const PUSH_SOUND_BY_TYPE: Record<string, string> = {
-  message: 'pazaryeri-message.wav',
-  favorite: 'pazaryeri-favorite.wav',
-  favorite_update: 'pazaryeri-favorite.wav',
-  engagement: 'pazaryeri-push.wav',
-  offer: 'pazaryeri-push.wav',
-  review: 'pazaryeri-push.wav',
-  default: 'pazaryeri-push.wav',
+  message: 'pazaryeri_message.wav',
+  favorite: 'pazaryeri_favorite.wav',
+  favorite_update: 'pazaryeri_favorite.wav',
+  engagement: 'pazaryeri_push.wav',
+  offer: 'pazaryeri_push.wav',
+  review: 'pazaryeri_push.wav',
+  default: 'pazaryeri_push.wav',
 };
 
 export function getPushSoundForType(type?: string): string {

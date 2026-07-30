@@ -9,16 +9,21 @@ function loadAdMobAppIds() {
     android: process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID?.trim(),
     ios: process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID?.trim(),
   };
-  if (fromEnv.android && fromEnv.ios) {
-    return { androidAppId: fromEnv.android, iosAppId: fromEnv.ios };
+  if (fromEnv.android) {
+    return {
+      androidAppId: fromEnv.android,
+      iosAppId: fromEnv.ios || fromEnv.android,
+    };
   }
 
   const configPath = path.join(__dirname, 'config', 'admob.ids.json');
   if (fs.existsSync(configPath)) {
     try {
       const raw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      if (raw.androidAppId?.trim() && raw.iosAppId?.trim()) {
-        return { androidAppId: raw.androidAppId.trim(), iosAppId: raw.iosAppId.trim() };
+      const androidAppId = raw.androidAppId?.trim();
+      const iosAppId = raw.iosAppId?.trim();
+      if (androidAppId) {
+        return { androidAppId, iosAppId: iosAppId || androidAppId };
       }
     } catch {
       /* ignore */
@@ -57,10 +62,21 @@ module.exports = () => {
 
   return {
     ...expo,
-    version: expo.version ?? '1.1.0',
+    version: expo.version ?? '1.1.1',
+    autolinking: admobIds
+      ? expo.autolinking
+      : {
+          ...(expo.autolinking ?? {}),
+          exclude: [
+            ...new Set([
+              ...(expo.autolinking?.exclude ?? []),
+              'react-native-google-mobile-ads',
+            ]),
+          ],
+        },
     android: {
       ...expo.android,
-      versionCode: 2,
+      versionCode: 6,
       permissions: [
         ...(expo.android.permissions ?? []).filter((p) => p !== 'android.permission.RECORD_AUDIO'),
         'com.google.android.gms.permission.AD_ID',

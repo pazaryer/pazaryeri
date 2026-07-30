@@ -30,12 +30,14 @@ import {
   type ListingCoords,
 } from '@/lib/listing-location';
 import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
+import { useAdBannerInset } from '@/hooks/useAdBannerInset';
 
 const CATEGORIES = LISTING_CATEGORIES.filter((c) => c !== 'Tümü');
 
 export default function PostScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { scrollPaddingBottom } = useAdBannerInset();
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
   const paddingTop = isWeb ? 67 : insets.top;
@@ -189,7 +191,7 @@ export default function PostScreen() {
       </LinearGradient>
 
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 120 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: scrollPaddingBottom }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

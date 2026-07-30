@@ -5,6 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { BRAND } from '@/constants/brand';
 import type { CategoryIconName } from '@/lib/categories';
+import { categoryImageProps } from '@/lib/listing-image-props';
+import { categoryImageUrl } from '@/lib/image-url';
 
 type Variant = 'mini' | 'micro';
 
@@ -18,8 +20,17 @@ type Props = {
   variant?: Variant;
 };
 
-export function CategoryTile({ name, icon, image, active, onPress, style, variant = 'mini' }: Props) {
+export const CategoryTile = React.memo(function CategoryTile({
+  name,
+  icon,
+  image,
+  active,
+  onPress,
+  style,
+  variant = 'mini',
+}: Props) {
   const micro = variant === 'micro';
+  const uri = categoryImageUrl(image);
 
   return (
     <Pressable
@@ -27,10 +38,11 @@ export function CategoryTile({ name, icon, image, active, onPress, style, varian
       onPress={onPress}
     >
       <Image
-        source={{ uri: image }}
+        source={{ uri, width: 120, height: micro ? 64 : 76 }}
         style={StyleSheet.absoluteFillObject}
         contentFit="cover"
-        transition={150}
+        recyclingKey={`cat-${name}`}
+        {...categoryImageProps}
       />
       <LinearGradient
         colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.5)']}
@@ -46,7 +58,7 @@ export function CategoryTile({ name, icon, image, active, onPress, style, varian
       </Text>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   tile: {

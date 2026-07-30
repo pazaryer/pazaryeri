@@ -1,16 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { BRAND } from '@/constants/brand';
 import { MOBILE_EXPLORE_CATEGORIES } from '@/lib/categories';
 import { CategoryTile } from '@/components/CategoryTile';
+import { categoryImageProps } from '@/lib/listing-image-props';
+import { categoryImageUrl } from '@/lib/image-url';
+
+const ALL_CATEGORY_URI = categoryImageUrl(
+  'https://images.unsplash.com/photo-1607083206869-4c6b59bdfa1a?w=120&h=120&fit=crop&q=70&auto=format',
+);
 
 type Props = {
   selected: string;
   onSelect: (category: string) => void;
 };
 
-export function MobileTrendCategories({ selected, onSelect }: Props) {
+export const MobileTrendCategories = React.memo(function MobileTrendCategories({ selected, onSelect }: Props) {
+  useEffect(() => {
+    const uris = [ALL_CATEGORY_URI, ...MOBILE_EXPLORE_CATEGORIES.map((c) => categoryImageUrl(c.imageThumb))];
+    void Image.prefetch(uris);
+  }, []);
+
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>Kategoriler</Text>
@@ -20,9 +31,11 @@ export function MobileTrendCategories({ selected, onSelect }: Props) {
           onPress={() => onSelect('Tümü')}
         >
           <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1607083206869-4c6b59bdfa1a?w=200&h=200&fit=crop&q=75' }}
+            source={{ uri: ALL_CATEGORY_URI, width: 120, height: 76 }}
             style={StyleSheet.absoluteFillObject}
             contentFit="cover"
+            recyclingKey="cat-all"
+            {...categoryImageProps}
           />
           <View style={styles.allOverlay} />
           <Text style={styles.allLabel}>Tümü</Text>
@@ -41,7 +54,7 @@ export function MobileTrendCategories({ selected, onSelect }: Props) {
       </ScrollView>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: { paddingBottom: 4 },

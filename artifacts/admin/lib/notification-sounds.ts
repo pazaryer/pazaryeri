@@ -1,12 +1,11 @@
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 
 export type AdminSoundKind = 'alert' | 'report';
 
 const SOUND_FILES: Record<AdminSoundKind, ReturnType<typeof require>> = {
-  alert: require('@/assets/sounds/pazaryeri-push.wav'),
-  report: require('@/assets/sounds/pazaryeri-message.wav'),
+  alert: require('@/assets/sounds/pazaryeri_push.wav'),
+  report: require('@/assets/sounds/pazaryeri_message.wav'),
 };
 
 let audioModeReady = false;
@@ -27,7 +26,7 @@ async function ensureAudioMode(): Promise<void> {
 }
 
 export async function playAdminNotificationSound(kind: AdminSoundKind = 'alert'): Promise<void> {
-  if (Platform.OS === 'web' || Constants.appOwnership === 'expo') return;
+  if (Platform.OS === 'web') return;
   try {
     await ensureAudioMode();
     const { sound } = await Audio.Sound.createAsync(SOUND_FILES[kind], {

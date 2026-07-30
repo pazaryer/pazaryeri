@@ -21,6 +21,10 @@ export function AdminPushNotificationHandler() {
   useEffect(() => {
     if (Platform.OS === 'web' || !profile) return;
     void registerAdminPushNotifications();
+    const retry = setInterval(() => {
+      void registerAdminPushNotifications();
+    }, 120_000);
+    return () => clearInterval(retry);
   }, [profile]);
 
   useEffect(() => {

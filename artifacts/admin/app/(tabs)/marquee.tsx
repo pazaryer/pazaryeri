@@ -58,6 +58,7 @@ export default function MarqueeScreen() {
 
   return (
     <PageShell
+      showBack
       title="Kayan Yazılar"
       subtitle="Web ve mobil anasayfa duyuru bandı"
     >

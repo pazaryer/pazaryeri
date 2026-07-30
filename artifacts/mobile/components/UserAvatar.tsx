@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Image } from 'expo-image';
+import { avatarImageProps } from '@/lib/listing-image-props';
+import { avatarUrl } from '@/lib/image-url';
 
 interface UserAvatarProps {
   name: string;
@@ -9,9 +11,8 @@ interface UserAvatarProps {
   online?: boolean;
 }
 
-export function UserAvatar({ name, avatar, size = 40, online }: UserAvatarProps) {
-  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3D1A78&color=fff&size=${size * 2}`;
-  const uri = avatar?.startsWith('http') ? avatar : fallback;
+export const UserAvatar = React.memo(function UserAvatar({ name, avatar, size = 40, online }: UserAvatarProps) {
+  const uri = avatarUrl(avatar, size, name);
 
   return (
     <View style={{ width: size, height: size, position: 'relative' }}>
@@ -20,9 +21,6 @@ export function UserAvatar({ name, avatar, size = 40, online }: UserAvatarProps)
         <img
           src={uri}
           alt={name}
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = fallback;
-          }}
           style={{
             width: size,
             height: size,
@@ -34,9 +32,11 @@ export function UserAvatar({ name, avatar, size = 40, online }: UserAvatarProps)
         />
       ) : (
         <Image
-          source={{ uri }}
+          source={{ uri, width: size * 2, height: size * 2 }}
           style={{ width: size, height: size, borderRadius: size / 2 }}
           contentFit="cover"
+          recyclingKey={`avatar-${name}-${size}`}
+          {...avatarImageProps}
         />
       )}
       {online && (
@@ -55,7 +55,7 @@ export function UserAvatar({ name, avatar, size = 40, online }: UserAvatarProps)
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   dot: {

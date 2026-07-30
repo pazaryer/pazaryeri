@@ -5,22 +5,29 @@
 **/.turbo/
 **/.cache/
 **/dist/
+artifacts/mobile/dist/
+**/.firebase/
 artifacts/api-server/
 artifacts/web/
+artifacts/admin/
+artifacts/mockup-sandbox/
 lib/db/
 lib/integrations/
 scripts/
 *.md
 *.bat
 *.ps1
-.agent/
-.cursor/
+**/.cursor/
+C_pz/
+C_eb/
+C_m/
+C_tmp/
 terminals/
 web-build.log
 pnpm-debug.log*
 **/*.map
 
-# Mobil + workspace bağımlılıkları KALIR:
-# package.json, pnpm-lock.yaml, pnpm-workspace.yaml
-# artifacts/mobile/
-# lib/api-client-react/
+# Yerel derleme çıktıları EAS upload'a dahil edilmesin
+artifacts/mobile/android/
+artifacts/mobile/.expo/
+artifacts/admin/android/

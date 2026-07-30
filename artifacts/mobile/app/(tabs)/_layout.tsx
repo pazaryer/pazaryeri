@@ -5,6 +5,7 @@ import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BRAND } from '@/constants/brand';
 import { useCompactScreen } from '@/hooks/useCompactScreen';
+import { getTabBarBodyHeight } from '@/lib/ad-banner-inset';
 import { MobileLocationPicker } from '@/components/MobileLocationPicker';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +16,7 @@ export default function TabLayout() {
   const compact = useCompactScreen();
   const { user } = useAuth();
   const { data: convoData } = useConversations(!!user);
-  const tabBarHeight = (compact ? 54 : 58) + insets.bottom;
+  const tabBarHeight = getTabBarBodyHeight(compact) + insets.bottom;
   const iconSize = compact ? 22 : 24;
 
   const unreadMessages = useMemo(
