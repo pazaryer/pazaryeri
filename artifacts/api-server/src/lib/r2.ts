@@ -11,6 +11,16 @@ const publicUrl = process.env.R2_PUBLIC_URL;
 
 let client: S3Client | null = null;
 
+/** R2 public URL + S3 kimlik bilgileri tam ise hazir */
+export function isR2Configured(): boolean {
+  return Boolean(
+    accessKeyId?.trim() &&
+      secretAccessKey?.trim() &&
+      endpoint?.trim() &&
+      publicUrl?.trim(),
+  );
+}
+
 function getR2Client(): S3Client {
   if (!accessKeyId || !secretAccessKey || !endpoint) {
     throw new Error("R2 credentials not configured");

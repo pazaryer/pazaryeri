@@ -61,3 +61,7 @@ Git-*.exe
 # Replit
 .cache/
 .local/
+
+# Cloudflare worker local deps
+cloudflare/keepalive-worker/node_modules/
+cloudflare/keepalive-worker/.wrangler/

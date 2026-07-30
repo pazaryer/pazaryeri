@@ -48,9 +48,7 @@ router.get("/healthz", async (_req, res) => {
   const data = HealthCheckResponse.parse({ status: "ok" });
   const listingsDb = await getListingsDbStatus();
   const fcmReady = Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim());
-  const imgbbReady = Boolean(
-    process.env.IMGBB_API_KEY?.trim() || process.env.IMGBB_API_KEYS?.trim(),
-  );
+  const imgbbReady = getImageStorageStatus().ok;
   let admobReady = false;
   try {
     const admob = mergeAdMobConfig(await getAppConfig());

@@ -1,0 +1,14 @@
+name = "pazaryeri-keepalive"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+account_id = "0e91f6e2958cfd7a0ce126a42150c486"
+
+# workers.dev uzerinden test edilebilir (canli API URL degismez)
+workers_dev = true
+
+# Cron: her 14 dakikada Render API ping
+[triggers]
+crons = ["*/14 * * * *"]
+
+[vars]
+API_HEALTH_URL = "https://pazaryerim.onrender.com/api/healthz"

@@ -6,7 +6,7 @@ export function getConfiguredImageProviders(): ImageStorageProvider[] {
   return isImgBBConfigured() ? ["imgbb"] : [];
 }
 
-/** Yalnızca ImgBB — R2/Supabase SSL hatalarından kaçınmak için */
+/** Yalnızca ImgBB — görseller Cloudflare R2 kullanmaz */
 export async function storeListingImage(
   userId: string,
   buffer: Buffer,
