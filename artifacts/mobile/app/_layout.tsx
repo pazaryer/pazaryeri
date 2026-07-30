@@ -31,6 +31,7 @@ import { RemoteConfigGate } from '@/components/RemoteConfigGate';
 import { usePresencePing } from '@/lib/presence-ping';
 import { useDeepLinkHandler } from '@/lib/deep-link-handler';
 import { OtaUpdateHandler } from '@/components/OtaUpdateHandler';
+import { applyOtaOnLaunch } from '@/lib/ota-update';
 import { AdSenseHead } from '@/components/AdSenseHead';
 import { AnalyticsScreenTracker } from '@/components/AnalyticsScreenTracker';
 
@@ -190,12 +191,18 @@ export default function RootLayout() {
     Inter_700Bold,
   });
   const [fontTimeout, setFontTimeout] = useState(Platform.OS !== 'web');
+  const [otaReady, setOtaReady] = useState(Platform.OS === 'web');
   const splashHidden = useRef(false);
 
   const hideSplash = useCallback(() => {
     if (splashHidden.current) return;
     splashHidden.current = true;
     SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    void applyOtaOnLaunch().finally(() => setOtaReady(true));
   }, []);
 
   useEffect(() => {
@@ -220,7 +227,7 @@ export default function RootLayout() {
     }
   }, []);
 
-  const ready = fontsLoaded || fontError || fontTimeout;
+  const ready = (fontsLoaded || fontError || fontTimeout) && otaReady;
   if (!ready) return <BootScreen />;
 
   return (
