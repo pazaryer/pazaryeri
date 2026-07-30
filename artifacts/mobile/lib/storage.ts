@@ -1,6 +1,66 @@
-import { Platform } from 'react-native';
+import { Platform, Alert, Linking } from 'react-native';
 import { apiFetch } from './api';
 import { getFirebaseAuth } from './firebase';
+
+type ImagePickerModule = typeof import('expo-image-picker');
+
+function isMediaLibraryGranted(
+  permission: Awaited<ReturnType<ImagePickerModule['getMediaLibraryPermissionsAsync']>>,
+): boolean {
+  if (permission.granted) return true;
+  const status = String(permission.status ?? '').toLowerCase();
+  return status === 'granted' || status === 'limited';
+}
+
+function usesAndroidPhotoPicker(): boolean {
+  return Platform.OS === 'android' && Number(Platform.Version) >= 33;
+}
+
+async function promptOpenAppSettings(title: string, message: string): Promise<void> {
+  await new Promise<void>((resolve) => {
+    Alert.alert(title, message, [
+      { text: 'İptal', style: 'cancel', onPress: () => resolve() },
+      {
+        text: 'Ayarları Aç',
+        onPress: () => {
+          void Linking.openSettings();
+          resolve();
+        },
+      },
+    ]);
+  });
+}
+
+/** iOS ve Android 12 ve altı için galeri izni; Android 13+ sistem foto seçici kullanır */
+async function ensureMediaLibraryAccess(ImagePicker: ImagePickerModule): Promise<void> {
+  if (usesAndroidPhotoPicker()) return;
+
+  const current = await ImagePicker.getMediaLibraryPermissionsAsync();
+  if (isMediaLibraryGranted(current)) return;
+
+  const requested = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (isMediaLibraryGranted(requested)) return;
+
+  await promptOpenAppSettings(
+    'Galeri izni gerekli',
+    'İlan fotoğrafı eklemek için ayarlardan Pazaryeri uygulamasına galeri erişimi verin.',
+  );
+  throw new Error('Galeri izni gerekli');
+}
+
+async function ensureCameraAccess(ImagePicker: ImagePickerModule): Promise<void> {
+  const current = await ImagePicker.getCameraPermissionsAsync();
+  if (current.granted) return;
+
+  const requested = await ImagePicker.requestCameraPermissionsAsync();
+  if (requested.granted) return;
+
+  await promptOpenAppSettings(
+    'Kamera izni gerekli',
+    'Fotoğraf çekmek için ayarlardan Pazaryeri uygulamasına kamera erişimi verin.',
+  );
+  throw new Error('Kamera izni gerekli');
+}
 
 function guessContentType(uri: string): string {
   const ext = uri.split('.').pop()?.split('?')[0]?.toLowerCase();
@@ -161,10 +221,7 @@ export async function pickImages(max = 10): Promise<string[]> {
   }
 
   const ImagePicker = await import('expo-image-picker');
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') {
-    throw new Error('Galeri izni gerekli');
-  }
+  await ensureMediaLibraryAccess(ImagePicker);
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
@@ -185,10 +242,7 @@ export async function pickImages(max = 10): Promise<string[]> {
 
 export async function takePhoto(): Promise<string | null> {
   const ImagePicker = await import('expo-image-picker');
-  const { status } = await ImagePicker.requestCameraPermissionsAsync();
-  if (status !== 'granted') {
-    throw new Error('Kamera izni gerekli');
-  }
+  await ensureCameraAccess(ImagePicker);
 
   const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
   if (result.canceled || !result.assets[0]) return null;
