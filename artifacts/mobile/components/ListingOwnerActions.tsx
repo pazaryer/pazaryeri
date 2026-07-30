@@ -35,13 +35,6 @@ export function ListingOwnerActions({ listingId, status, onDeleted }: ListingOwn
     const doDelete = async () => {
       await deleteListing.mutateAsync(listingId);
       onDeleted?.();
-      if (Platform.OS !== 'web') {
-        setTimeout(() => {
-          void import('@/lib/admob/interstitial').then((m) =>
-            m.maybeShowListingInterstitial('delete_listing'),
-          );
-        }, 400);
-      }
     };
 
     if (Platform.OS === 'web') {

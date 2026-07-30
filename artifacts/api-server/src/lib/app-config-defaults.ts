@@ -113,8 +113,8 @@ export const DEFAULT_APP_CONFIG: Record<string, unknown> = {
       androidUnitId: "",
       iosUnitId: "",
       thirdSessionEnabled: true,
-      afterSecondListingEnabled: true,
-      afterDeleteListingEnabled: true,
+      afterSecondListingEnabled: false,
+      afterDeleteListingEnabled: false,
     },
     rewarded: {
       enabled: false,

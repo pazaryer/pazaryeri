@@ -139,29 +139,17 @@ export default function PostScreen() {
         images: validation.images,
       });
 
-      const showListingAd = async () => {
-        const { trackListingPublished } = await import('@/lib/admob/session');
-        const shouldShow =
-          (created.sellerListingCount ?? 0) >= 2 || (await trackListingPublished());
-        if (shouldShow) {
-          const { maybeShowListingInterstitial } = await import('@/lib/admob/interstitial');
-          await maybeShowListingInterstitial('second_listing');
-        }
-      };
-
       Alert.alert('Başarılı', 'İlanınız yayınlandı!', [
         {
           text: 'İlanı Gör',
           onPress: () => {
             router.push(`/listing/${created.id}`);
-            void showListingAd();
           },
         },
         {
           text: 'Ana Sayfa',
           onPress: () => {
             router.push('/(tabs)');
-            void showListingAd();
           },
         },
       ]);

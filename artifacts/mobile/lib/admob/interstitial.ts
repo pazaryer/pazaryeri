@@ -74,7 +74,7 @@ export function preloadInterstitial(): void {
   }
 }
 
-export async function showInterstitialAd(): Promise<boolean> {
+async function showInterstitialAdInternal(): Promise<boolean> {
   if (!isAdMobSupported()) return false;
   try {
     const config = getAdMobConfig();
@@ -116,46 +116,35 @@ export async function showInterstitialAd(): Promise<boolean> {
   }
 }
 
+/** Yalnızca her 3. uygulama açılışında — başka hiçbir yerde çağrılmamalı */
 export async function maybeShowThirdSessionInterstitial(): Promise<void> {
   if (!isAdMobSupported()) return;
   try {
     const config = getAdMobConfig();
     if (!config.interstitial.enabled || !config.interstitial.thirdSessionEnabled) return;
-    const { trackAppOpen } = await import('./session');
+
+    const { trackAppOpen, recordInterstitialShown } = await import('./session');
     const { showInterstitial } = await trackAppOpen();
-    if (showInterstitial) await showInterstitialAd();
+    if (!showInterstitial) return;
+
+    const shown = await showInterstitialAdInternal();
+    if (shown) await recordInterstitialShown();
   } catch {
     /* ignore */
   }
 }
 
-/** Ekran geçişi reklamları devre dışı — yalnızca uygulama açılışında gösterilir */
+/** Kapalı — ekran geçişlerinde reklam yok */
 export async function maybeShowNavigationInterstitial(): Promise<void> {
   return;
 }
 
-export async function maybeShowListingInterstitial(reason: 'second_listing' | 'delete_listing'): Promise<void> {
-  if (!isAdMobSupported()) return;
-  try {
-    const config = getAdMobConfig();
-    if (!config.interstitial.enabled) return;
-    if (reason === 'second_listing' && !config.interstitial.afterSecondListingEnabled) return;
-    if (reason === 'delete_listing' && !config.interstitial.afterDeleteListingEnabled) return;
-    await new Promise((r) => setTimeout(r, 400));
-    await showInterstitialAd();
-  } catch {
-    /* ignore */
-  }
+/** Kapalı */
+export async function maybeShowListingInterstitial(_reason: 'second_listing' | 'delete_listing'): Promise<void> {
+  return;
 }
 
+/** Kapalı */
 export async function maybeShowBoostInterstitial(): Promise<void> {
-  if (!isAdMobSupported()) return;
-  try {
-    const config = getAdMobConfig();
-    if (!config.interstitial.enabled) return;
-    await new Promise((r) => setTimeout(r, 500));
-    await showInterstitialAd();
-  } catch {
-    /* ignore */
-  }
+  return;
 }

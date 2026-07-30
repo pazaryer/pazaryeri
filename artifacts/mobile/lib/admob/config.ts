@@ -36,8 +36,8 @@ const DEFAULT_ADMOB: AdMobRemoteConfig = {
   interstitial: {
     ...EMPTY_UNIT,
     thirdSessionEnabled: true,
-    afterSecondListingEnabled: true,
-    afterDeleteListingEnabled: true,
+    afterSecondListingEnabled: false,
+    afterDeleteListingEnabled: false,
   },
   rewarded: { ...EMPTY_UNIT, boostHours: 2 },
 };
