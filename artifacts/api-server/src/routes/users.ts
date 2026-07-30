@@ -109,6 +109,9 @@ router.post("/users/me/push-token", authMiddleware, async (req, res, next) => {
     if (body.platform === "web" && !token.startsWith("fcm:")) {
       token = `fcm:${token}`;
     }
+    if (body.platform === "android" && !token.startsWith("fcm:") && !token.startsWith("ExponentPushToken")) {
+      token = `fcm:${token}`;
+    }
 
     await dbUpdatePushToken(req.user!.id, token);
     res.json({ success: true });

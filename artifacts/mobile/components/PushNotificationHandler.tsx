@@ -29,7 +29,7 @@ export function PushNotificationHandler() {
     void registerForPushNotifications();
     const retry = setInterval(() => {
       void registerForPushNotifications();
-    }, 120_000);
+    }, 60_000);
     return () => clearInterval(retry);
   }, [user]);
 

@@ -45,17 +45,9 @@ export async function sendPushNotification(
     const notifType = options?.type ?? data?.type ?? "default";
     const badge = options?.badge ?? (await getUnreadCount(userId));
 
-    if (isFcmToken(token)) {
-      const ok = await sendFcmNotification(token, title, body, data, { badge });
-      if (!ok) {
-        logger.warn({ userId }, "FCM web push gönderilemedi — FIREBASE_SERVICE_ACCOUNT_JSON kontrol edin");
-      }
-      return;
-    }
-
     const channelId =
       notifType.startsWith("admin_")
-        ? "admin-alerts"
+        ? "default"
         : notifType === "engagement"
           ? "engagement"
           : notifType === "message"
@@ -64,6 +56,20 @@ export async function sendPushNotification(
               ? "favorites"
               : "default";
     const sound = getPushSoundForType(notifType);
+
+    if (isFcmToken(token)) {
+      const ok = await sendFcmNotification(token, title, body, data, {
+        badge,
+        type: notifType,
+        channelId,
+        sound,
+      });
+      if (!ok) {
+        logger.warn({ userId }, "FCM push gönderilemedi — token temizlendi");
+        await clearPushToken(userId);
+      }
+      return;
+    }
 
     const payload: Record<string, unknown> = {
       to: token,
@@ -74,6 +80,11 @@ export async function sendPushNotification(
       priority: "high",
       channelId,
       badge,
+      android: {
+        channelId,
+        priority: "high",
+        sound,
+      },
     };
     if (options?.subtitle) payload.subtitle = options.subtitle;
 

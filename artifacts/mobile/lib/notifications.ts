@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import type { QueryClient } from '@tanstack/react-query';
 import { showMessageBanner } from '@/lib/message-banner-bus';
 import { showInAppToast } from '@/lib/in-app-toast-bus';
@@ -26,6 +26,20 @@ function configureNotificationHandler() {
   const Notifications = getNotificationsModule();
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => {
+      const appState = AppState.currentState;
+      const isForeground = appState === 'active';
+
+      // Arka planda veya kapalıyken sistem bildirimi + ses (OS yönetir)
+      if (!isForeground) {
+        return {
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        };
+      }
+
       const data = parsePushData(notification.request.content.data);
       const content = notification.request.content;
       const isMessage = data.type === 'message' && data.conversationId;
@@ -144,34 +158,58 @@ export function getPushNavigationPath(data: PushNavigationData): string | null {
 }
 
 async function setupAndroidChannels(Notifications: ReturnType<typeof getNotificationsModule>): Promise<void> {
+  const channelDefaults = {
+    vibrationPattern: [0, 250, 250, 250] as [number, number, number, number, ...number[]],
+    lightColor: '#3D1A78',
+    enableVibrate: true,
+    showBadge: true,
+  };
+
   await Notifications.setNotificationChannelAsync('default', {
     name: 'Pazaryeri',
     importance: Notifications.AndroidImportance.MAX,
-    vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#3D1A78',
     sound: ANDROID_SOUNDS.default,
+    ...channelDefaults,
   });
   await Notifications.setNotificationChannelAsync('messages', {
     name: 'Mesajlar',
-    importance: Notifications.AndroidImportance.HIGH,
-    vibrationPattern: [0, 200, 100, 200],
-    lightColor: '#3D1A78',
+    importance: Notifications.AndroidImportance.MAX,
     sound: ANDROID_SOUNDS.messages,
+    vibrationPattern: [0, 200, 100, 200],
+    ...channelDefaults,
   });
   await Notifications.setNotificationChannelAsync('favorites', {
     name: 'Favoriler & İlanlar',
     importance: Notifications.AndroidImportance.HIGH,
-    vibrationPattern: [0, 180, 120, 180],
-    lightColor: '#3D1A78',
     sound: ANDROID_SOUNDS.favorites,
+    vibrationPattern: [0, 180, 120, 180],
+    ...channelDefaults,
   });
   await Notifications.setNotificationChannelAsync('engagement', {
     name: 'Pazaryeri Hatırlatmalar',
-    importance: Notifications.AndroidImportance.DEFAULT,
-    vibrationPattern: [0, 150, 100, 150],
-    lightColor: '#3D1A78',
+    importance: Notifications.AndroidImportance.HIGH,
     sound: ANDROID_SOUNDS.engagement,
+    vibrationPattern: [0, 150, 100, 150],
+    ...channelDefaults,
   });
+}
+
+async function resolvePushToken(
+  Notifications: ReturnType<typeof getNotificationsModule>,
+  projectId?: string,
+): Promise<string | null> {
+  // Android: doğrudan FCM token — uygulama kapalıyken daha güvenilir teslimat
+  if (Platform.OS === 'android') {
+    try {
+      const device = await Notifications.getDevicePushTokenAsync();
+      if (device?.data) return `fcm:${device.data}`;
+    } catch {
+      /* Expo token'a düş */
+    }
+  }
+
+  const tokenData = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+  return tokenData.data ?? null;
 }
 
 export async function registerForPushNotifications(): Promise<string | null> {
@@ -191,6 +229,11 @@ export async function registerForPushNotifications(): Promise<string | null> {
   if (existing !== 'granted') {
     const { status } = await Notifications.requestPermissionsAsync({
       ios: { allowAlert: true, allowBadge: true, allowSound: true },
+      android: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+      },
     });
     finalStatus = status;
   }
@@ -202,10 +245,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 
   const projectId = getProjectId();
-  const tokenData = await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined,
-  );
-  const token = tokenData.data;
+  const token = await resolvePushToken(Notifications, projectId);
+  if (!token) return null;
 
   try {
     const { apiFetch } = await import('./api');
