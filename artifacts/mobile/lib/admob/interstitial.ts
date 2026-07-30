@@ -99,7 +99,7 @@ export async function showInterstitialAd(): Promise<boolean> {
         setTimeout(() => {
           unsub();
           resolve();
-        }, 6000);
+        }, 8000);
       });
     }
 
@@ -117,16 +117,21 @@ export async function showInterstitialAd(): Promise<boolean> {
 }
 
 export async function maybeShowThirdSessionInterstitial(): Promise<void> {
-  if (__DEV__ || !isAdMobSupported()) return;
+  if (!isAdMobSupported()) return;
   try {
     const config = getAdMobConfig();
     if (!config.interstitial.enabled || !config.interstitial.thirdSessionEnabled) return;
-    const { trackDailyAppOpen } = await import('./session');
-    const { isThirdOpen } = await trackDailyAppOpen();
-    if (isThirdOpen) await showInterstitialAd();
+    const { trackAppOpen } = await import('./session');
+    const { showInterstitial } = await trackAppOpen();
+    if (showInterstitial) await showInterstitialAd();
   } catch {
     /* ignore */
   }
+}
+
+/** Ekran geçişi reklamları devre dışı — yalnızca uygulama açılışında gösterilir */
+export async function maybeShowNavigationInterstitial(): Promise<void> {
+  return;
 }
 
 export async function maybeShowListingInterstitial(reason: 'second_listing' | 'delete_listing'): Promise<void> {
@@ -136,6 +141,19 @@ export async function maybeShowListingInterstitial(reason: 'second_listing' | 'd
     if (!config.interstitial.enabled) return;
     if (reason === 'second_listing' && !config.interstitial.afterSecondListingEnabled) return;
     if (reason === 'delete_listing' && !config.interstitial.afterDeleteListingEnabled) return;
+    await new Promise((r) => setTimeout(r, 400));
+    await showInterstitialAd();
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function maybeShowBoostInterstitial(): Promise<void> {
+  if (!isAdMobSupported()) return;
+  try {
+    const config = getAdMobConfig();
+    if (!config.interstitial.enabled) return;
+    await new Promise((r) => setTimeout(r, 500));
     await showInterstitialAd();
   } catch {
     /* ignore */

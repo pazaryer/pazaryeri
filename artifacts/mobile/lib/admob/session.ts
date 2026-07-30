@@ -1,23 +1,28 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const KEY_DATE = 'pz_ad_session_date';
-const KEY_COUNT = 'pz_ad_session_count';
+const KEY_APP_OPEN = 'pz_ad_app_open_count';
+const KEY_LISTING_PUBLISH = 'pz_ad_listing_publish_count';
 
-function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+/** Her 3. uygulama açılışında bir geçiş reklamı (günlük sıfırlanmaz) */
+export async function trackAppOpen(): Promise<{ count: number; showInterstitial: boolean }> {
+  if (Platform.OS === 'web') return { count: 0, showInterstitial: false };
+  let count = Number(await AsyncStorage.getItem(KEY_APP_OPEN)) || 0;
+  count += 1;
+  await AsyncStorage.setItem(KEY_APP_OPEN, String(count));
+  return { count, showInterstitial: count > 0 && count % 3 === 0 };
 }
 
-/** Günlük uygulama açılış sayısını artırır; 3. açılışta true döner. */
-export async function trackDailyAppOpen(): Promise<{ count: number; isThirdOpen: boolean }> {
-  if (Platform.OS === 'web') return { count: 0, isThirdOpen: false };
-  const today = todayKey();
-  const storedDate = (await AsyncStorage.getItem(KEY_DATE)) ?? '';
-  let count = storedDate === today ? Number(await AsyncStorage.getItem(KEY_COUNT)) || 0 : 0;
+/** @deprecated Ekran geçişi reklamları kapatıldı — kullanıcı deneyimi için yalnızca uygulama açılışı kullanılır */
+export async function trackNavigationTransition(): Promise<boolean> {
+  return false;
+}
+
+/** Yayınlanan ilan sayısı (2. ve sonrası için reklam) */
+export async function trackListingPublished(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  let count = Number(await AsyncStorage.getItem(KEY_LISTING_PUBLISH)) || 0;
   count += 1;
-  await AsyncStorage.multiSet([
-    [KEY_DATE, today],
-    [KEY_COUNT, String(count)],
-  ]);
-  return { count, isThirdOpen: count === 3 };
+  await AsyncStorage.setItem(KEY_LISTING_PUBLISH, String(count));
+  return count >= 2;
 }
