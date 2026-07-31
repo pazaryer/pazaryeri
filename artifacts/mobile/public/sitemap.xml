@@ -199,16 +199,4 @@
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
-  <url>
-    <loc>https://pazaryeri0.web.app/listing/eebd1c13-a922-4a6c-82b4-22d291cbb3fa</loc>
-    <lastmod>2026-07-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://pazaryeri0.web.app/ilan/eebd1c13-a922-4a6c-82b4-22d291cbb3fa</loc>
-    <lastmod>2026-07-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
 </urlset>

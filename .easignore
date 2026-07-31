@@ -17,7 +17,8 @@ scripts/
 *.md
 *.bat
 *.ps1
-**/.cursor/
+**/.local/
+.local/
 C_pz/
 C_eb/
 C_m/
@@ -31,3 +32,9 @@ pnpm-debug.log*
 artifacts/mobile/android/
 artifacts/mobile/.expo/
 artifacts/admin/android/
+Pazaryeri-Play-Store/
+cloudflare/
+tmp-eas-inspect*/
+**/*.apk
+**/*.aab
+**/*.txt

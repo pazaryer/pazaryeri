@@ -62,7 +62,7 @@ module.exports = () => {
 
   return {
     ...expo,
-    version: expo.version ?? '1.1.1',
+    version: expo.version ?? '1.1.9',
     autolinking: admobIds
       ? expo.autolinking
       : {
@@ -74,9 +74,9 @@ module.exports = () => {
             ]),
           ],
         },
-    android: {
+      android: {
       ...expo.android,
-      versionCode: 8,
+      versionCode: 17,
       permissions: [
         ...(expo.android.permissions ?? []).filter((p) => p !== 'android.permission.RECORD_AUDIO'),
         'com.google.android.gms.permission.AD_ID',

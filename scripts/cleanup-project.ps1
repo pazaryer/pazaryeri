@@ -74,10 +74,20 @@ Get-ChildItem -Path $root -Recurse -Include *.log -File -ErrorAction SilentlyCon
 $cursorAssets = "$env:USERPROFILE\.cursor\projects\c-Users-hasan-OneDrive-Masa-st-pazaryeri\assets"
 Remove-IfExists $cursorAssets "Cursor gecici play gorselleri"
 
-# Masaustu eski APK/AAB (1.1.3 — 1.1.4 kalir)
+# Masaustu eski APK/AAB (yalnizca 1.1.6 kalsin)
 $desktop = [Environment]::GetFolderPath('Desktop')
 if (-not (Test-Path $desktop)) { $desktop = "$env:USERPROFILE\OneDrive\Masaüstü" }
-Remove-FileIfExists "$desktop\pazaryeri-1.1.3.apk" "eski pazaryeri-1.1.3.apk"
-Remove-FileIfExists "$desktop\pazaryeri-1.1.3.aab" "eski pazaryeri-1.1.3.aab"
+foreach ($old in @('1.1.3', '1.1.4', '1.1.5')) {
+  Remove-FileIfExists "$desktop\pazaryeri-$old.apk" "eski pazaryeri-$old.apk"
+  Remove-FileIfExists "$desktop\pazaryeri-$old.aab" "eski pazaryeri-$old.aab"
+}
+
+# EAS inspect / gecici klasorler
+Get-ChildItem -Path $root -Directory -Filter 'tmp-eas-inspect*' -ErrorAction SilentlyContinue |
+  ForEach-Object { Remove-IfExists $_.FullName $_.Name }
+
+# Cloudflare worker yerel node_modules (deploy sonrasi gereksiz)
+Remove-IfExists "$root\cloudflare\keepalive-worker\node_modules" "cloudflare keepalive node_modules"
+Remove-IfExists "$root\cloudflare\keepalive-worker\.wrangler" "cloudflare keepalive .wrangler"
 
 Write-Host "=== Temizlik tamamlandi ===" -ForegroundColor Green

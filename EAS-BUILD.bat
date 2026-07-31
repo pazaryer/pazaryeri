@@ -8,7 +8,6 @@ if "%EXPO_TOKEN%"=="" (
   exit /b 1
 )
 
-set EAS_NO_VCS=1
 set EAS_PROJECT_ROOT=%CD%
 
 echo === EAS Android Production Build ===

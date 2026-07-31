@@ -64,6 +64,7 @@ export function ListingPromoteButton({
       await qc.invalidateQueries({ queryKey: ['listing', listingId] });
       await qc.invalidateQueries({ queryKey: ['listings'] });
       await qc.invalidateQueries({ queryKey: ['my-listings'] });
+      await qc.refetchQueries({ queryKey: ['listings', 'featured'] });
       Alert.alert(
         'Tebrikler!',
         `İlanınız ${config.rewarded.boostHours} saat boyunca öne çıkarıldı.`,

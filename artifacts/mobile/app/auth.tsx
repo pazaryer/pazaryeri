@@ -34,12 +34,15 @@ export default function AuthCallbackScreen() {
 
     if (idToken) {
       void (async () => {
-        try {
-          await completeGoogleSignInFromUrl(`?id_token=${encodeURIComponent(idToken)}`);
-        } catch {
-          /* runGoogleOAuth zaten tamamlamış olabilir */
+        if (!auth.currentUser) {
+          try {
+            await completeGoogleSignInFromUrl(`?id_token=${encodeURIComponent(idToken)}`);
+          } catch {
+            /* runGoogleOAuth zaten tamamlamış olabilir */
+          }
         }
-        goHome();
+        if (auth.currentUser) goHome();
+        else router.replace('/login');
       })();
       return;
     }

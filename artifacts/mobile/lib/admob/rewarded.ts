@@ -3,60 +3,63 @@ import { getAdMobConfig, resolveRewardedUnitId } from './config';
 import { getAdsModule, isAdMobSupported } from './native';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let rewarded: any = null;
+let preloadAd: any = null;
 let unitIdCache: string | null = null;
-let loading = false;
-let loaded = false;
-const unsubscribers: Array<() => void> = [];
+let preloadLoading = false;
+let preloadLoaded = false;
+const preloadUnsubs: Array<() => void> = [];
 
-function cleanupRewarded(): void {
-  unsubscribers.forEach((u) => {
+function safeUnsub(unsubs: Array<() => void>): void {
+  unsubs.forEach((u) => {
     try {
       u();
     } catch {
       /* ignore */
     }
   });
-  unsubscribers.length = 0;
-  rewarded = null;
-  unitIdCache = null;
-  loaded = false;
-  loading = false;
+  unsubs.length = 0;
 }
 
-function ensureRewarded(unitId: string) {
-  const ads = getAdsModule();
-  if (!ads) return null;
-  if (rewarded && unitIdCache === unitId) return rewarded;
+function cleanupPreload(): void {
+  safeUnsub(preloadUnsubs);
+  preloadAd = null;
+  unitIdCache = null;
+  preloadLoaded = false;
+  preloadLoading = false;
+}
 
-  cleanupRewarded();
+function attachPreloadListeners(ads: ReturnType<typeof getAdsModule>, ad: { addAdEventListener: (...args: unknown[]) => () => void }): void {
+  preloadUnsubs.push(
+    ad.addAdEventListener(ads.RewardedAdEventType.LOADED, () => {
+      preloadLoaded = true;
+      preloadLoading = false;
+    }),
+  );
+  preloadUnsubs.push(
+    ad.addAdEventListener(ads.AdEventType.ERROR, () => {
+      preloadLoaded = false;
+      preloadLoading = false;
+      setTimeout(() => preloadRewarded(), 2500);
+    }),
+  );
+}
+
+function ensurePreloadAd(unitId: string) {
+  const ads = getAdsModule();
+  if (!ads?.RewardedAd?.createForAdRequest) return null;
+  if (preloadAd && unitIdCache === unitId) return preloadAd;
+
+  cleanupPreload();
   unitIdCache = unitId;
-  rewarded = ads.RewardedAd.createForAdRequest(unitId, {
+  preloadAd = ads.RewardedAd.createForAdRequest(unitId, {
     requestNonPersonalizedAdsOnly: false,
   });
-
-  unsubscribers.push(
-    rewarded.addAdEventListener(ads.RewardedAdEventType.LOADED, () => {
-      loaded = true;
-      loading = false;
-    }),
-  );
-  unsubscribers.push(
-    rewarded.addAdEventListener(ads.AdEventType.ERROR, () => {
-      loaded = false;
-      loading = false;
-      setTimeout(() => preloadRewarded(), 2000);
-    }),
-  );
-  unsubscribers.push(
-    rewarded.addAdEventListener(ads.RewardedAdEventType.CLOSED, () => {
-      loaded = false;
-      loading = false;
-      setTimeout(() => preloadRewarded(), 300);
-    }),
-  );
-
-  return rewarded;
+  if (typeof preloadAd?.addAdEventListener !== 'function') {
+    preloadAd = null;
+    return null;
+  }
+  attachPreloadListeners(ads, preloadAd);
+  return preloadAd;
 }
 
 export function preloadRewarded(): void {
@@ -65,16 +68,29 @@ export function preloadRewarded(): void {
     const config = getAdMobConfig();
     if (!config.rewarded.enabled) return;
     const unitId = resolveRewardedUnitId(config);
-    if (!unitId || loading || loaded) return;
-    const ad = ensureRewarded(unitId);
-    if (!ad) return;
-    loading = true;
+    if (!unitId || preloadLoading || preloadLoaded) return;
+    const ad = ensurePreloadAd(unitId);
+    if (!ad?.load) return;
+    preloadLoading = true;
     ad.load();
   } catch {
-    loading = false;
+    preloadLoading = false;
   }
 }
 
+function createShowAd(unitId: string) {
+  const ads = getAdsModule();
+  if (!ads?.RewardedAd?.createForAdRequest) return null;
+  const ad = ads.RewardedAd.createForAdRequest(unitId, {
+    requestNonPersonalizedAdsOnly: false,
+  });
+  if (typeof ad?.addAdEventListener !== 'function' || typeof ad?.load !== 'function') {
+    return null;
+  }
+  return { ads, ad };
+}
+
+/** Her gösterim için ayrı instance — preload dinleyicileriyle çakışmaz */
 export async function showRewardedAdForBoost(): Promise<boolean> {
   if (!isAdMobSupported()) return false;
   const config = getAdMobConfig();
@@ -82,60 +98,50 @@ export async function showRewardedAdForBoost(): Promise<boolean> {
   const unitId = resolveRewardedUnitId(config);
   if (!unitId) return false;
 
-  const ads = getAdsModule();
-  if (!ads) return false;
-
-  const ad = ensureRewarded(unitId);
-  if (!ad) return false;
+  const created = createShowAd(unitId);
+  if (!created) return false;
+  const { ads, ad } = created;
 
   return new Promise<boolean>((resolve) => {
     let earned = false;
     let settled = false;
+    const sessionUnsubs: Array<() => void> = [];
 
     const finish = (ok: boolean) => {
       if (settled) return;
       settled = true;
+      safeUnsub(sessionUnsubs);
+      preloadLoaded = false;
+      preloadLoading = false;
+      setTimeout(() => preloadRewarded(), 600);
       resolve(ok && earned);
     };
 
-    const onLoaded = () => {
-      void ad.show().catch(() => finish(false));
+    const listen = (type: string, handler: () => void) => {
+      try {
+        sessionUnsubs.push(ad.addAdEventListener(type, handler));
+      } catch {
+        finish(false);
+      }
     };
 
-    if (loaded) {
-      onLoaded();
-    } else {
-      const unsub = ad.addAdEventListener(ads.RewardedAdEventType.LOADED, () => {
-        unsub();
-        onLoaded();
-      });
-      if (!loading) {
-        loading = true;
-        ad.load();
-      }
-      setTimeout(() => {
-        unsub();
-        finish(false);
-      }, 8000);
-    }
-
-    const unsubEarned = ad.addAdEventListener(ads.RewardedAdEventType.EARNED_REWARD, () => {
+    listen(ads.RewardedAdEventType.EARNED_REWARD, () => {
       earned = true;
     });
-
-    const unsubClosed = ad.addAdEventListener(ads.RewardedAdEventType.CLOSED, () => {
-      unsubEarned();
-      unsubClosed();
-      unsubErr();
-      finish(earned);
+    listen(ads.RewardedAdEventType.CLOSED, () => finish(earned));
+    listen(ads.AdEventType.ERROR, () => finish(false));
+    listen(ads.RewardedAdEventType.LOADED, () => {
+      void ad.show().catch(() => finish(false));
     });
 
-    const unsubErr = ad.addAdEventListener(ads.AdEventType.ERROR, () => {
-      unsubEarned();
-      unsubClosed();
-      unsubErr();
-      preloadRewarded();
+    try {
+      ad.load();
+    } catch {
       finish(false);
-    });
+      return;
+    }
+
+    const timeout = setTimeout(() => finish(false), 15_000);
+    sessionUnsubs.push(() => clearTimeout(timeout));
   });
 }

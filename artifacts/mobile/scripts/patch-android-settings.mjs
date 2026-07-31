@@ -65,7 +65,8 @@ console.log('patch-android-settings: settings.gradle güncellendi (göreli yolla
 const appBuildGradlePath = path.join(androidDir, 'app', 'build.gradle');
 if (fs.existsSync(appBuildGradlePath)) {
   let appGradle = fs.readFileSync(appBuildGradlePath, 'utf8');
-  const cmakeArg = 'arguments "-DCMAKE_OBJECT_PATH_MAX=128"';
+  appGradle = appGradle.replace(/CMAKE_OBJECT_PATH_MAX=\d+/g, 'CMAKE_OBJECT_PATH_MAX=32');
+  const cmakeArg = 'arguments "-DCMAKE_OBJECT_PATH_MAX=32"';
   if (!appGradle.includes('CMAKE_OBJECT_PATH_MAX')) {
     if (appGradle.includes('externalNativeBuild {')) {
       appGradle = appGradle.replace(
@@ -78,8 +79,16 @@ if (fs.existsSync(appBuildGradlePath)) {
         `defaultConfig {\n        externalNativeBuild {\n            cmake {\n                ${cmakeArg}\n            }\n        }`,
       );
     }
+  }
+  fs.writeFileSync(appBuildGradlePath, appGradle);
+  console.log('patch-android-settings: app/build.gradle CMAKE_OBJECT_PATH_MAX=32');
+  if (appGradle.includes('signingConfig signingConfigs.debug') && appGradle.includes('release {')) {
+    appGradle = appGradle.replace(
+      /release\s*\{[\s\S]*?signingConfig signingConfigs\.debug/,
+      (m) => m.replace('signingConfig signingConfigs.debug', 'signingConfig signingConfigs.release'),
+    );
     fs.writeFileSync(appBuildGradlePath, appGradle);
-    console.log('patch-android-settings: app/build.gradle CMAKE_OBJECT_PATH_MAX eklendi.');
+    console.log('patch-android-settings: release signingConfig düzeltildi.');
   }
 }
 
@@ -95,5 +104,43 @@ if (fs.existsSync(gradlePropsPath)) {
     props += 'android.enableLongPaths=true\n';
     fs.writeFileSync(gradlePropsPath, props);
     console.log('patch-android-settings: gradle.properties enableLongPaths eklendi.');
+  }
+  if (!props.includes('android.packagingOptions.pickFirsts')) {
+    props += 'android.packagingOptions.pickFirsts=**/libworklets.so\n';
+    fs.writeFileSync(gradlePropsPath, props);
+    console.log('patch-android-settings: gradle.properties libworklets pickFirst eklendi.');
+  }
+}
+
+const rootBuildGradlePath = path.join(androidDir, 'build.gradle');
+if (fs.existsSync(rootBuildGradlePath)) {
+  let rootGradle = fs.readFileSync(rootBuildGradlePath, 'utf8');
+  const hook = `
+// Windows MAX_PATH — tüm native modüllerde kısa CMake nesne yolları
+subprojects { sub ->
+  sub.pluginManager.withPlugin('com.android.library') {
+    sub.android {
+      defaultConfig {
+        externalNativeBuild {
+          cmake { arguments '-DCMAKE_OBJECT_PATH_MAX=32' }
+        }
+      }
+    }
+  }
+  sub.pluginManager.withPlugin('com.android.application') {
+    sub.android {
+      defaultConfig {
+        externalNativeBuild {
+          cmake { arguments '-DCMAKE_OBJECT_PATH_MAX=32' }
+        }
+      }
+    }
+  }
+}
+`;
+  if (!rootGradle.includes('CMAKE_OBJECT_PATH_MAX=32')) {
+    rootGradle += hook;
+    fs.writeFileSync(rootBuildGradlePath, rootGradle);
+    console.log('patch-android-settings: root build.gradle subproject CMAKE hook eklendi.');
   }
 }

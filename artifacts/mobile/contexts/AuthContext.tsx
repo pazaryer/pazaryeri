@@ -243,6 +243,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'Google girişi Firebase ile eşleşmedi. Firebase Console → Authentication → Google → Safelist client IDs bölümüne 637257... client ID ekleyin.',
         );
       }
+      if (
+        code === 'auth/duplicate-raw-id' ||
+        code === 'auth/credential-already-in-use'
+      ) {
+        if (getFirebaseAuth().currentUser) return;
+      }
       throw e;
     }
   };

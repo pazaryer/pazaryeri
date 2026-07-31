@@ -17,7 +17,6 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
   const [forceUpdate, setForceUpdate] = useState({ required: false, message: '', storeUrl: '' });
   const [brand, setBrand] = useState(() => applyBrandFromRemote({}));
   useMobilePromoRefresh();
-  useAdMobLifecycle();
 
   useEffect(() => {
     let cancelled = false;
@@ -82,10 +81,16 @@ export function RemoteConfigGate({ children }: { children: React.ReactNode }) {
     <BrandProvider brand={brand}>
       {Platform.OS === 'web' ? <BrandWebHead /> : null}
       {Platform.OS === 'web' ? <WebAppDownloadFab /> : null}
+      <AdMobBootstrap />
       {children}
       {Platform.OS !== 'web' && isAdMobSupported() ? <AppOverlays /> : null}
     </BrandProvider>
   );
+}
+
+function AdMobBootstrap() {
+  useAdMobLifecycle();
+  return null;
 }
 
 const styles = StyleSheet.create({

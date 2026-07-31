@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { getAdsModule, isAdMobSupported } from './native';
+import { fetchRemoteConfig, subscribeRemoteConfig } from '@/lib/remote-config';
 
 let initializing = false;
 let sdkReady = false;
@@ -34,6 +35,7 @@ export async function initAdMobSdk(): Promise<boolean> {
 
   initializing = true;
   try {
+    await fetchRemoteConfig(true);
     await ads.default().initialize();
     sdkReady = true;
     notifyReady();
@@ -51,20 +53,31 @@ export async function initAdMobSdk(): Promise<boolean> {
   }
 }
 
+async function runThirdSessionAd(): Promise<void> {
+  if (thirdSessionHandled || Platform.OS === 'web') return;
+  thirdSessionHandled = true;
+  try {
+    const { maybeShowThirdSessionInterstitial } = await import('./interstitial');
+    await maybeShowThirdSessionInterstitial();
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Remote config yüklendikten sonra çağrılmalı */
 export function useAdMobLifecycle(): void {
   useEffect(() => {
     if (!isAdMobSupported() || Platform.OS === 'web' || lifecycleStarted) return;
     lifecycleStarted = true;
 
-    void initAdMobSdk().then(async (ok) => {
-      if (!ok || !sdkReady || thirdSessionHandled || __DEV__) return;
-      thirdSessionHandled = true;
-      try {
-        const { maybeShowThirdSessionInterstitial } = await import('./interstitial');
-        await maybeShowThirdSessionInterstitial();
-      } catch {
-        /* ignore */
-      }
+    void initAdMobSdk().then((ok) => {
+      if (ok) void runThirdSessionAd();
+    });
+
+    return subscribeRemoteConfig(() => {
+      if (!sdkReady) return;
+      void import('./interstitial').then((m) => m.preloadInterstitial());
+      void import('./rewarded').then((m) => m.preloadRewarded());
     });
   }, []);
 }

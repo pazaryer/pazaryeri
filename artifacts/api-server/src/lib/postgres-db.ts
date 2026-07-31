@@ -276,6 +276,7 @@ export async function pgListListings(params: {
   lon?: number;
   sort?: "date_desc" | "date_asc" | "price_asc" | "price_desc";
   offset?: number;
+  promotedOnly?: boolean;
 }) {
   const db = getPgPool();
   const limit = params.limit;
@@ -333,6 +334,9 @@ export async function pgListListings(params: {
     values.push(params.maxPrice);
     where.push(`l.price <= $${values.length}`);
   }
+  if (params.promotedOnly) {
+    where.push(`l.promoted_until IS NOT NULL AND l.promoted_until > NOW()`);
+  }
 
   if (params.radiusKm && params.lat != null && params.lon != null) {
     const box = boundingBox(params.lat, params.lon, params.radiusKm);
@@ -344,14 +348,15 @@ export async function pgListListings(params: {
   }
 
   const sort = params.sort ?? "date_desc";
+  const promotedPrefix = "l.promoted_until DESC NULLS LAST, ";
   const orderBy =
     sort === "price_asc"
-      ? "l.price ASC, l.created_at DESC"
+      ? `${promotedPrefix}l.price ASC, l.created_at DESC`
       : sort === "price_desc"
-        ? "l.price DESC, l.created_at DESC"
+        ? `${promotedPrefix}l.price DESC, l.created_at DESC`
         : sort === "date_asc"
-          ? "l.created_at ASC"
-          : "l.created_at DESC";
+          ? `${promotedPrefix}l.created_at ASC`
+          : `${promotedPrefix}l.created_at DESC`;
 
   const fetchLimit = params.radiusKm ? Math.min(limit * 5, 120) : limit + 1;
   values.push(fetchLimit);

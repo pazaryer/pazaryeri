@@ -50,12 +50,17 @@ function MobileLoginScreen() {
         }
       })
       .catch((e: unknown) => {
-        const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
-        if (msg.includes('iptal') || msg.includes('cancel')) return;
         if (getFirebaseAuth().currentUser) {
           router.replace('/(tabs)');
           return;
         }
+        const code = (e as { code?: string })?.code;
+        if (code === 'auth/duplicate-raw-id' || code === 'auth/credential-already-in-use') {
+          router.replace('/(tabs)');
+          return;
+        }
+        const msg = e instanceof Error ? e.message : 'Google ile giriş başarısız';
+        if (msg.includes('iptal') || msg.includes('cancel')) return;
         Alert.alert('Giriş Hatası', msg);
       })
       .finally(() => {

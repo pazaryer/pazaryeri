@@ -11,12 +11,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '@/hooks/useColors';
-import { ListingCard, LISTING_GRID_COLS } from '@/components/ListingCard';
+import { ListingCard } from '@/components/ListingCard';
+import { FeaturedListingsSection } from '@/components/FeaturedListingsSection';
+import { HOME_GRID_COLS, GRID_H_PADDING, GRID_GAP } from '@/lib/listing-grid';
 import { MobileTrendCategories } from '@/components/MobileTrendCategories';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
-import { useListings, useNotifications } from '@/lib/hooks';
+import { useListings, useNotifications, useFeaturedListings, type ListingSummary } from '@/lib/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobileLocation } from '@/contexts/MobileLocationContext';
 import { hasActiveLocationFilter } from '@/lib/location-storage';
@@ -28,15 +31,20 @@ import { listingThumbUrl } from '@/lib/image-url';
 const HomeListHeader = React.memo(function HomeListHeader({
   selectedCategory,
   onSelectCategory,
+  featuredItems,
+  featuredLoading,
 }: {
   selectedCategory: string;
   onSelectCategory: (c: string) => void;
+  featuredItems: ListingSummary[];
+  featuredLoading: boolean;
 }) {
   return (
     <View style={styles.listHeader}>
       <AnnouncementBanner embedded subtle style={{ marginTop: 4, marginHorizontal: 0 }} />
       <SponsorBannerSlot placement="home" />
       <MobileTrendCategories selected={selectedCategory} onSelect={onSelectCategory} />
+      <FeaturedListingsSection items={featuredItems} loading={featuredLoading} />
       <Text style={styles.sectionTitle}>Popüler İlanlar</Text>
     </View>
   );
@@ -57,6 +65,24 @@ export default function HomeScreen() {
   const { data: notificationsData } = useNotifications(!!user);
   const unreadNotifs = notificationsData?.items.filter((n) => !n.isRead).length ?? 0;
 
+  const listingFilters = {
+    category: selectedCategory === 'Tümü' ? undefined : selectedCategory,
+    city: filter.city,
+    district: filter.district,
+    neighborhood: filter.neighborhood,
+    radiusKm: filter.radiusKm,
+    lat: filter.radiusKm ? coords.lat : undefined,
+    lon: filter.radiusKm ? coords.lon : undefined,
+  };
+
+  const featuredCategory =
+    selectedCategory === 'Tümü' ? undefined : selectedCategory;
+
+  const { data: featuredData, isLoading: featuredLoading, refetch: refetchFeatured } =
+    useFeaturedListings({ category: featuredCategory }, { enabled: listingsEnabled });
+  const featuredItems = featuredData?.items ?? [];
+  const featuredIds = useMemo(() => new Set(featuredItems.map((i) => i.id)), [featuredItems]);
+
   const {
     data,
     isLoading,
@@ -65,20 +91,19 @@ export default function HomeScreen() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useListings(
-    {
-      category: selectedCategory === 'Tümü' ? undefined : selectedCategory,
-      city: filter.city,
-      district: filter.district,
-      neighborhood: filter.neighborhood,
-      radiusKm: filter.radiusKm,
-      lat: filter.radiusKm ? coords.lat : undefined,
-      lon: filter.radiusKm ? coords.lon : undefined,
-    },
-    { enabled: listingsEnabled },
-  );
+  } = useListings(listingFilters, { enabled: listingsEnabled });
 
-  const allItems = data?.pages.flatMap((p) => p.items) ?? [];
+  const allItems = useMemo(() => {
+    const items = data?.pages.flatMap((p) => p.items) ?? [];
+    if (featuredIds.size === 0) return items;
+    return items.filter((i) => !featuredIds.has(i.id));
+  }, [data?.pages, featuredIds]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (listingsEnabled) void refetchFeatured();
+    }, [listingsEnabled, refetchFeatured]),
+  );
 
   const needsGps =
     filter.radiusKm != null && locationReady && (coords.lat == null || coords.lon == null);
@@ -90,13 +115,22 @@ export default function HomeScreen() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderItem = useCallback(
-    ({ item }: { item: (typeof allItems)[0] }) => <ListingCard item={item} compact />,
+    ({ item }: { item: (typeof allItems)[0] }) => (
+      <ListingCard item={item} compact gridColumns={HOME_GRID_COLS} />
+    ),
     [],
   );
 
   const listHeader = useMemo(
-    () => <HomeListHeader selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />,
-    [selectedCategory],
+    () => (
+      <HomeListHeader
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        featuredItems={featuredItems}
+        featuredLoading={featuredLoading}
+      />
+    ),
+    [selectedCategory, featuredItems, featuredLoading],
   );
 
   useEffect(() => {
@@ -150,7 +184,7 @@ export default function HomeScreen() {
         <FlatList
           data={allItems}
           keyExtractor={(item) => item.id}
-          numColumns={LISTING_GRID_COLS}
+          numColumns={HOME_GRID_COLS}
           columnWrapperStyle={styles.row}
           renderItem={renderItem}
           initialNumToRender={9}
@@ -178,9 +212,21 @@ export default function HomeScreen() {
           }
           onEndReached={onEndReached}
           onEndReachedThreshold={0.5}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={() => {
+                void refetch();
+                void refetchFeatured();
+              }}
+              tintColor={colors.primary}
+            />
+          }
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: scrollPaddingBottom }}
+          contentContainerStyle={{
+            paddingHorizontal: GRID_H_PADDING,
+            paddingBottom: scrollPaddingBottom,
+          }}
         />
       )}
     </View>
@@ -224,11 +270,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#2C2C2C',
-    paddingHorizontal: 10,
+    paddingHorizontal: 0,
     marginTop: 10,
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  row: { justifyContent: 'space-between', gap: 7 },
+  row: { gap: GRID_GAP },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   changeLocationBtn: { marginTop: 12, paddingHorizontal: 14, paddingVertical: 8 },
   changeLocationText: { color: BRAND.primary, fontWeight: '600', fontSize: 14 },

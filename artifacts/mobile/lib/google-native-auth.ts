@@ -12,6 +12,20 @@ WebBrowser.maybeCompleteAuthSession();
 
 const webClientId = resolveGoogleWebClientId();
 let oauthInFlight: Promise<void> | null = null;
+let credentialInflight: Promise<void> | null = null;
+const processedTokenKeys = new Set<string>();
+
+function tokenKey(idToken: string): string {
+  return idToken.slice(0, 48);
+}
+
+function isBenignAuthError(code?: string): boolean {
+  return (
+    code === 'auth/duplicate-raw-id' ||
+    code === 'auth/credential-already-in-use' ||
+    code === 'auth/user-token-expired'
+  );
+}
 
 export function getNativeOAuthRedirectUri(): string {
   return AuthSession.makeRedirectUri({ scheme: 'pazaryeri', path: 'auth' });
@@ -83,7 +97,35 @@ async function safeDismissBrowser(): Promise<void> {
 async function completeGoogleSignIn(idToken: string): Promise<void> {
   const auth = getFirebaseAuth();
   if (auth.currentUser) return;
-  await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+
+  const key = tokenKey(idToken);
+  if (processedTokenKeys.has(key) && auth.currentUser) return;
+
+  if (credentialInflight) {
+    try {
+      await credentialInflight;
+    } catch {
+      /* first attempt may have failed */
+    }
+    if (auth.currentUser) return;
+  }
+
+  processedTokenKeys.add(key);
+  credentialInflight = (async () => {
+    try {
+      await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code;
+      if (isBenignAuthError(code) && auth.currentUser) return;
+      throw e;
+    }
+  })();
+
+  try {
+    await credentialInflight;
+  } finally {
+    credentialInflight = null;
+  }
 }
 
 function waitForSignedInUser(timeoutMs = 6000): Promise<boolean> {
@@ -120,6 +162,19 @@ async function finishFromUrl(url: string): Promise<boolean> {
   const { idToken, error } = parseOAuthReturnUrl(url);
   if (error) throw new Error(error);
   if (!idToken) return false;
+
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) {
+    await safeDismissBrowser();
+    return true;
+  }
+
+  const key = tokenKey(idToken);
+  if (processedTokenKeys.has(key)) {
+    await waitForSignedInUser(2000);
+    return !!auth.currentUser;
+  }
+
   await completeGoogleSignIn(idToken);
   await safeDismissBrowser();
   return true;
@@ -143,19 +198,19 @@ async function runGoogleOAuth(): Promise<void> {
   }
 
   let linkSub: { remove: () => void } | null = null;
-  let done = false;
+  let settled = false;
 
-  const handleUrl = (url: string) => {
-    if (done) return;
-    void finishFromUrl(url)
-      .then((ok) => {
-        if (ok) done = true;
-      })
-      .catch(() => {});
+  const handleUrl = async (url: string): Promise<boolean> => {
+    if (settled) return !!auth.currentUser;
+    const ok = await finishFromUrl(url);
+    if (ok) settled = true;
+    return ok;
   };
 
   try {
-    linkSub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    linkSub = Linking.addEventListener('url', ({ url }) => {
+      void handleUrl(url);
+    });
 
     if (Platform.OS === 'android') {
       try {
@@ -173,18 +228,12 @@ async function runGoogleOAuth(): Promise<void> {
 
     if (__DEV__) console.log('[Google] result:', result.type);
 
-    if (!done && result.type === 'success') {
-      const ok = await finishFromUrl(result.url);
-      if (ok) done = true;
+    if (!settled && result.type === 'success') {
+      await handleUrl(result.url);
     }
 
-    if (!done && !auth.currentUser) {
-      await new Promise((r) => setTimeout(r, Platform.OS === 'android' ? 2000 : 800));
-    }
-
-    if (!done && result.type === 'success') {
-      const ok = await finishFromUrl(result.url);
-      if (ok) done = true;
+    if (!settled && !auth.currentUser) {
+      await new Promise((r) => setTimeout(r, Platform.OS === 'android' ? 1200 : 500));
     }
 
     if (auth.currentUser || (await waitForSignedInUser(4000))) return;
@@ -213,12 +262,13 @@ export function useGoogleOAuthLinkHandler() {
 
     const handle = ({ url }: { url: string }) => {
       if (!isMobileOAuthReturnUrl(url)) return;
+      if (oauthInFlight) return;
       void finishFromUrl(url).catch(() => {});
     };
 
     const sub = Linking.addEventListener('url', handle);
     void Linking.getInitialURL().then((u) => {
-      if (u) handle({ url: u });
+      if (u && !oauthInFlight) handle({ url: u });
     });
     return () => sub.remove();
   }, []);

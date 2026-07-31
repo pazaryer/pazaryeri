@@ -204,6 +204,7 @@ export async function dbListListings(params: {
   lon?: number;
   sort?: "date_desc" | "date_asc" | "price_asc" | "price_desc";
   offset?: number;
+  promotedOnly?: boolean;
 }) {
   const backend = await resolveListingsBackend();
   if (backend === "postgres") {
@@ -262,6 +263,9 @@ export async function dbListListings(params: {
   }
   if (params.minPrice != null) query = query.gte("price", params.minPrice);
   if (params.maxPrice != null) query = query.lte("price", params.maxPrice);
+  if (params.promotedOnly) {
+    query = query.gt("promoted_until", new Date().toISOString());
+  }
 
   if (params.radiusKm && params.lat != null && params.lon != null) {
     const box = boundingBox(params.lat, params.lon, params.radiusKm);

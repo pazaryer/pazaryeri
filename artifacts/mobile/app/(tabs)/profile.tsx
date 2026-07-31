@@ -22,7 +22,7 @@ import { pickImages } from '@/lib/storage';
 import { formatPhoneDisplay } from '@/lib/contact';
 import { BRAND } from '@/constants/brand';
 import { DeveloperActions } from '@/components/DeveloperActions';
-import { ListingPromoteButton } from '@/components/ListingPromoteButton';
+import { ListingBoostSection } from '@/components/ListingBoostSection';
 import { SponsorBannerSlot } from '@/components/SponsorBannerSlot';
 import { useAdBannerInset } from '@/hooks/useAdBannerInset';
 
@@ -205,24 +205,7 @@ export default function ProfileScreen() {
 
       {userListings.filter((l) => l.status === 'active').length > 0 ? (
         <View style={[styles.promoteSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.promoteTitle, { color: colors.foreground }]}>İlanlarını Öne Çıkar</Text>
-          <Text style={[styles.promoteSub, { color: colors.mutedForeground }]}>
-            Kısa reklam izleyerek ilanını 2 saat üst sıralarda tut
-          </Text>
-          {userListings
-            .filter((l) => l.status === 'active')
-            .slice(0, 5)
-            .map((item) => (
-              <View key={item.id} style={styles.promoteItem}>
-                <ListingPromoteButton
-                  listingId={item.id}
-                  title={item.title}
-                  isPromoted={item.isPromoted}
-                  promotedUntil={item.promotedUntil}
-                  compact
-                />
-              </View>
-            ))}
+          <ListingBoostSection listings={userListings} />
         </View>
       ) : null}
 

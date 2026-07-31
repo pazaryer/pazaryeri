@@ -44,6 +44,7 @@ router.get("/listings", optionalAuth, async (req, res, next) => {
       lon,
       sort: req.query.sort as "date_desc" | "date_asc" | "price_asc" | "price_desc" | undefined,
       offset: req.query.offset ? Number(req.query.offset) : undefined,
+      promotedOnly: req.query.promoted === "1" || req.query.promoted === "true",
     });
     res.json(result);
   } catch (err) {

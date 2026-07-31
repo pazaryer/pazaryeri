@@ -9,10 +9,12 @@ $admin = Join-Path $root 'artifacts\admin'
 $tokenLine = Get-Content (Join-Path $mobile '.env') -ErrorAction SilentlyContinue | Where-Object { $_ -match '^\s*EXPO_TOKEN\s*=' } | Select-Object -First 1
 if (-not $tokenLine) { throw 'EXPO_TOKEN bulunamadı: artifacts/mobile/.env' }
 $env:EXPO_TOKEN = ($tokenLine -replace '^\s*EXPO_TOKEN\s*=\s*','').Trim().Trim('"').Trim("'")
-$env:EAS_NO_VCS = '1'
+Remove-Item Env:EAS_NO_VCS -ErrorAction SilentlyContinue
 Remove-Item Env:npm_config_devdir -ErrorAction SilentlyContinue
 
-$otaVersion = '1.1.4'
+$otaMessage = 'Pazaryeri: sessiz OTA güncelleme — splash sırasında otomatik yükleme'
+# Play Store'daki mevcut native sürümler — her runtime için ayrı OTA gerekir
+$mobileRuntimes = @('1.1.4', '1.1.5', '1.1.6', '1.1.7', '1.1.8', '1.1.9')
 
 function Sync-AdminEnvToken {
   $adminEnv = Join-Path $admin '.env'
@@ -34,11 +36,22 @@ function Publish-Ota($dir, $channel, $message) {
   }
 }
 
+function Publish-MobileOtaForRuntimes($channel, $message) {
+  $appJsonPath = Join-Path $mobile 'app.json'
+  $original = Get-Content $appJsonPath -Raw -Encoding UTF8
+  foreach ($rt in $mobileRuntimes) {
+    Write-Host "`n>>> Mobil OTA runtime $rt -> $channel" -ForegroundColor Yellow
+    $patched = $original -replace '"runtimeVersion"\s*:\s*"[^"]+"', "`"runtimeVersion`": `"$rt`""
+    [System.IO.File]::WriteAllText($appJsonPath, $patched, (New-Object System.Text.UTF8Encoding $false))
+    Publish-Ota $mobile $channel "$message (runtime $rt)"
+  }
+  [System.IO.File]::WriteAllText($appJsonPath, $original, (New-Object System.Text.UTF8Encoding $false))
+  Write-Host 'app.json runtimeVersion geri yüklendi.' -ForegroundColor DarkGray
+}
+
 Sync-AdminEnvToken
 
-Publish-Ota $mobile 'production' "Pazaryeri analytics GA4 screen tracking + web fixes"
-Publish-Ota $mobile 'preview'    "Pazaryeri analytics GA4 screen tracking preview"
-Publish-Ota $admin  'production' "Admin analytics presence improvements"
-Publish-Ota $admin  'preview'    "Admin analytics preview"
+Publish-MobileOtaForRuntimes 'production' $otaMessage
+Publish-MobileOtaForRuntimes 'preview'    "$otaMessage [preview]"
 
 Write-Host "`nTamamlandı. Expo dashboard > Updates bölümünden doğrulayın." -ForegroundColor Green

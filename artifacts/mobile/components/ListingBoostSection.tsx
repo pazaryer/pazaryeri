@@ -64,9 +64,14 @@ export function ListingBoostSection({ listings }: Props) {
       await qc.invalidateQueries({ queryKey: ['listing', item.id] });
       await qc.invalidateQueries({ queryKey: ['listings'] });
       await qc.invalidateQueries({ queryKey: ['my-listings'] });
+      await qc.refetchQueries({ queryKey: ['listings', 'featured'] });
 
-      const { maybeShowBoostInterstitial } = await import('@/lib/admob/interstitial');
-      await maybeShowBoostInterstitial();
+      try {
+        const { maybeShowBoostInterstitial } = await import('@/lib/admob/interstitial');
+        await maybeShowBoostInterstitial();
+      } catch {
+        /* öne çıkarma başarılı — interstitial hatası yutulur */
+      }
 
       Alert.alert(
         'Tebrikler!',

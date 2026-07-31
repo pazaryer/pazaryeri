@@ -143,6 +143,25 @@ export function useListings(
   });
 }
 
+export function useFeaturedListings(
+  params?: { category?: string },
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ['listings', 'featured', params],
+    queryFn: async () => {
+      const search = new URLSearchParams();
+      search.set('promoted', '1');
+      search.set('limit', '20');
+      if (params?.category) search.set('category', params.category);
+      return apiFetch<ListResponse>(`/listings?${search}`);
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
 export function useListing(id: string) {
   return useQuery({
     queryKey: ['listing', id],

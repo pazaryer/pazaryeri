@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,22 +10,36 @@ import { flatStyle } from '@/lib/flat-style';
 import { BRAND } from '@/constants/brand';
 import { listingThumbImageProps } from '@/lib/listing-image-props';
 import { listingThumbUrl } from '@/lib/image-url';
+import {
+  DEFAULT_GRID_COLS,
+  GRID_GAP,
+  listingCardWidth,
+} from '@/lib/listing-grid';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-export const LISTING_GRID_COLS = 3;
-const GRID_H_PADDING = 14;
-const GRID_GAP = 7;
-export const LISTING_CARD_WIDTH =
-  (SCREEN_WIDTH - GRID_H_PADDING * 2 - GRID_GAP * (LISTING_GRID_COLS - 1)) / LISTING_GRID_COLS;
+export const LISTING_GRID_COLS = DEFAULT_GRID_COLS;
+export const LISTING_CARD_WIDTH = listingCardWidth(DEFAULT_GRID_COLS);
 
 interface ListingCardProps {
   item: ListingSummary;
   compact?: boolean;
+  featured?: boolean;
+  gridColumns?: number;
+  cardWidth?: number;
 }
 
-export const ListingCard = React.memo(function ListingCard({ item, compact = false }: ListingCardProps) {
+export const ListingCard = React.memo(function ListingCard({
+  item,
+  compact = false,
+  featured = false,
+  gridColumns = DEFAULT_GRID_COLS,
+  cardWidth,
+}: ListingCardProps) {
   const colors = useColors();
   const toggleFavorite = useToggleFavorite();
+  const width = useMemo(
+    () => cardWidth ?? (compact ? listingCardWidth(gridColumns) : undefined),
+    [cardWidth, compact, gridColumns],
+  );
 
   const handleFavorite = (e?: { preventDefault?: () => void }) => {
     e?.preventDefault?.();
@@ -34,9 +48,25 @@ export const ListingCard = React.memo(function ListingCard({ item, compact = fal
 
   return (
     <Link href={`/listing/${item.id}`} asChild>
-      <Pressable style={flatStyle(styles.cardContainer, compact && styles.compactContainer)}>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.imageContainer, compact ? styles.imageCompact : styles.imageFull]}>
+      <Pressable
+        style={flatStyle(
+          styles.cardContainer,
+          compact && width != null && { width, marginBottom: GRID_GAP },
+        )}
+      >
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: colors.card, borderColor: colors.border },
+            (featured || item.isPromoted) && styles.promotedCard,
+          ]}
+        >
+          <View
+            style={[
+              styles.imageContainer,
+              compact ? (featured ? styles.imageFeatured : styles.imageCompact) : styles.imageFull,
+            ]}
+          >
             {item.image ? (
               <Image
                 source={{
@@ -52,6 +82,12 @@ export const ListingCard = React.memo(function ListingCard({ item, compact = fal
             ) : (
               <View style={[StyleSheet.absoluteFillObject, styles.imagePlaceholder]}>
                 <Ionicons name="image-outline" size={compact ? 20 : 28} color={colors.mutedForeground} />
+              </View>
+            )}
+            {(featured || item.isPromoted) && (
+              <View style={styles.promotedBadge}>
+                <Ionicons name="sparkles" size={9} color="#FFF" />
+                <Text style={styles.promotedBadgeText}>Öne Çıkan</Text>
               </View>
             )}
             {item.status === 'sold' && (
@@ -82,7 +118,12 @@ export const ListingCard = React.memo(function ListingCard({ item, compact = fal
               {formatPrice(item.price)}
             </Text>
             <Text
-              style={[styles.title, compact && styles.compactTitle, { color: colors.foreground }]}
+              style={[
+                styles.title,
+                compact && styles.compactTitle,
+                compact && styles.compactTitleFixed,
+                { color: colors.foreground },
+              ]}
               numberOfLines={2}
             >
               {item.title}
@@ -105,21 +146,32 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingBottom: 10,
   },
-  compactContainer: {
-    width: LISTING_CARD_WIDTH,
-    marginBottom: GRID_GAP,
-  },
   card: {
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
+    ...Platform.select({
+      android: { elevation: 2 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+      },
+      default: {},
+    }),
+  },
+  promotedCard: {
+    borderColor: BRAND.gold,
+    borderWidth: 1.5,
   },
   imageContainer: {
     width: '100%',
     position: 'relative',
     backgroundColor: BRAND.primaryLight,
   },
-  imageCompact: { aspectRatio: 1.2 },
+  imageCompact: { aspectRatio: 1.15 },
+  imageFeatured: { aspectRatio: 1.05 },
   imageFull: { height: 160 },
   imagePlaceholder: {
     backgroundColor: BRAND.primaryLight,
@@ -163,6 +215,21 @@ const styles = StyleSheet.create({
   compactPrice: { fontSize: 11, fontWeight: '700' },
   title: { fontSize: 12, fontWeight: '500', lineHeight: 15 },
   compactTitle: { fontSize: 10, lineHeight: 13, fontWeight: '500' },
+  compactTitleFixed: { minHeight: 26 },
+  promotedBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: BRAND.primary,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    zIndex: 2,
+  },
+  promotedBadgeText: { color: '#FFF', fontSize: 8, fontWeight: '800' },
   locationContainer: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 1 },
   distance: { fontSize: 9, flex: 1 },
 });

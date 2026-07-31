@@ -1,0 +1,5 @@
+# android-release.keystore ile ayni klasore kopyalayin: android-release.properties
+# Expo credentials > Android > Production > Keystore > Download
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=YOUR_KEY_ALIAS

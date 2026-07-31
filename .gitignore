@@ -62,6 +62,17 @@ Git-*.exe
 .cache/
 .local/
 
+# Yerel cache / sandbox (EAS upload ~500MB siser)
+.local/**
+
 # Cloudflare worker local deps
 cloudflare/keepalive-worker/node_modules/
 cloudflare/keepalive-worker/.wrangler/
+
+# Yerel Play Store / derleme ciktilari (EAS upload'a girmesin)
+Pazaryeri-Play-Store/
+pazarteri token.txt
+tmp-eas-inspect/
+tmp-eas-inspect-out/
+tmp-eas-inspect2/
+tmp-eas-inspect*/
